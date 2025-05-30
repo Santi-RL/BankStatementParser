@@ -219,6 +219,10 @@ class GenericEnglishParser(BaseBankParser):
         transactions = []
         account_info = self._extract_account_info(text_content)
         
+        # Check if this is a Chase format
+        if 'chase' in text_content.lower() or 'jpmorgan' in text_content.lower():
+            return self._parse_chase_format(text_content, filename, account_info)
+        
         # English transaction patterns
         patterns = [
             # Pattern: MM/DD/YYYY DESCRIPTION AMOUNT BALANCE
@@ -270,6 +274,100 @@ class GenericEnglishParser(BaseBankParser):
                         break
                         
                     except (ValueError, IndexError):
+                        continue
+        
+        return transactions
+    
+    def _parse_chase_format(self, text_content: str, filename: str, account_info: Dict[str, str]) -> List[Dict[str, Any]]:
+        """Parse Chase bank statement format."""
+        transactions = []
+        lines = text_content.split('\n')
+        
+        # Extract statement year from header (e.g., "December 30, 2023 through January 31, 2024")
+        statement_year = datetime.now().year
+        for line in lines[:10]:  # Check first 10 lines for date range
+            year_match = re.search(r'\b(20\d{2})\b', line)
+            if year_match:
+                statement_year = int(year_match.group(1))
+                break
+        
+        # Find sections for deposits, withdrawals, and fees
+        in_deposits = False
+        in_withdrawals = False
+        in_fees = False
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Section markers
+            if '*start*deposits and additions' in line.lower():
+                in_deposits = True
+                continue
+            elif '*end*deposits and additions' in line.lower():
+                in_deposits = False
+                continue
+            elif '*start*electronic withdrawal' in line.lower():
+                in_withdrawals = True
+                continue
+            elif '*end*electronic withdrawal' in line.lower():
+                in_withdrawals = False
+                continue
+            elif '*start*fees section' in line.lower():
+                in_fees = True
+                continue
+            elif '*end*fees section' in line.lower():
+                in_fees = False
+                continue
+            
+            # Skip headers and totals
+            if ('DATE' in line and 'DESCRIPTION' in line and 'AMOUNT' in line) or \
+               line.startswith('Total ') or not line:
+                continue
+            
+            # Parse transaction lines
+            if in_deposits or in_withdrawals or in_fees:
+                # Chase format: MM/DD DESCRIPTION AMOUNT
+                match = re.match(r'(\d{2}/\d{2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$', line)
+                if match:
+                    try:
+                        date_str = match.group(1)
+                        description = clean_text(match.group(2))
+                        amount_str = match.group(3).replace(',', '')
+                        
+                        # Skip if description is too short
+                        if len(description) < 3:
+                            continue
+                        
+                        # Add statement year to date
+                        full_date = f"{date_str}/{statement_year}"
+                        parsed_date = parse_date(full_date)
+                        
+                        if not parsed_date:
+                            continue
+                        
+                        amount = parse_amount(amount_str)
+                        
+                        # Determine sign based on section
+                        if in_withdrawals or in_fees:
+                            amount = -abs(amount)
+                        else:  # deposits
+                            amount = abs(amount)
+                        
+                        transaction = {
+                            'date': parsed_date,
+                            'description': description,
+                            'amount': amount,
+                            'balance': '',
+                            'account': account_info['account_number'],
+                            'bank': "JPMorgan Chase",
+                            'currency': 'USD',
+                            'transaction_type': 'Credit' if amount > 0 else 'Debit'
+                        }
+                        
+                        transactions.append(transaction)
+                        
+                    except (ValueError, IndexError) as e:
+                        self.logger.debug(f"Failed to parse Chase line: {line}, error: {e}")
                         continue
         
         return transactions
