@@ -298,24 +298,28 @@ class GenericEnglishParser(BaseBankParser):
         
         for line in lines:
             line = line.strip()
+            line_lower = line.lower()
             
-            # Section markers
-            if '*start*deposits and additions' in line.lower():
+            # Section markers (more flexible matching)
+            if ('deposits and additions' in line_lower) or ('deposit' in line_lower and 'addition' in line_lower):
                 in_deposits = True
+                in_withdrawals = False
+                in_fees = False
                 continue
-            elif '*end*deposits and additions' in line.lower():
-                in_deposits = False
-                continue
-            elif '*start*electronic withdrawal' in line.lower():
+            elif ('electronic withdrawal' in line_lower) or ('withdrawal' in line_lower):
                 in_withdrawals = True
+                in_deposits = False
+                in_fees = False
                 continue
-            elif '*end*electronic withdrawal' in line.lower():
+            elif ('fees' in line_lower and ('section' in line_lower or 'total' not in line_lower)):
+                in_fees = True
+                in_deposits = False
                 in_withdrawals = False
                 continue
-            elif '*start*fees section' in line.lower():
-                in_fees = True
-                continue
-            elif '*end*fees section' in line.lower():
+            elif line.startswith('Total ') and ('Deposits' in line or 'Withdrawals' in line or 'Fees' in line):
+                # End of section
+                in_deposits = False
+                in_withdrawals = False
                 in_fees = False
                 continue
             
@@ -326,49 +330,60 @@ class GenericEnglishParser(BaseBankParser):
             
             # Parse transaction lines
             if in_deposits or in_withdrawals or in_fees:
-                # Chase format: MM/DD DESCRIPTION AMOUNT
-                match = re.match(r'(\d{2}/\d{2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$', line)
-                if match:
-                    try:
-                        date_str = match.group(1)
-                        description = clean_text(match.group(2))
-                        amount_str = match.group(3).replace(',', '')
-                        
-                        # Skip if description is too short
-                        if len(description) < 3:
+                # Multiple patterns for Chase format
+                patterns = [
+                    # Standard: MM/DD DESCRIPTION AMOUNT
+                    r'(\d{1,2}/\d{1,2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$',
+                    # With spaces around amount
+                    r'(\d{1,2}/\d{1,2})\s+(.+?)\s+\$?\s*([\d,]+\.\d{2})\s*$',
+                    # Description might have multiple spaces
+                    r'(\d{1,2}/\d{1,2})\s+(.+?)\s{2,}\$?([\d,]+\.\d{2})$'
+                ]
+                
+                for pattern in patterns:
+                    match = re.match(pattern, line)
+                    if match:
+                        try:
+                            date_str = match.group(1)
+                            description = clean_text(match.group(2))
+                            amount_str = match.group(3).replace(',', '')
+                            
+                            # Skip if description is too short or contains only numbers/spaces
+                            if len(description.strip()) < 3 or description.strip().isdigit():
+                                break
+                            
+                            # Add statement year to date
+                            full_date = f"{date_str}/{statement_year}"
+                            parsed_date = parse_date(full_date)
+                            
+                            if not parsed_date:
+                                break
+                            
+                            amount = parse_amount(amount_str)
+                            
+                            # Determine sign based on section
+                            if in_withdrawals or in_fees:
+                                amount = -abs(amount)
+                            else:  # deposits
+                                amount = abs(amount)
+                            
+                            transaction = {
+                                'date': parsed_date,
+                                'description': description,
+                                'amount': amount,
+                                'balance': '',
+                                'account': account_info['account_number'],
+                                'bank': "JPMorgan Chase",
+                                'currency': 'USD',
+                                'transaction_type': 'Credit' if amount > 0 else 'Debit'
+                            }
+                            
+                            transactions.append(transaction)
+                            break
+                            
+                        except (ValueError, IndexError) as e:
+                            self.logger.debug(f"Failed to parse Chase line: {line}, error: {e}")
                             continue
-                        
-                        # Add statement year to date
-                        full_date = f"{date_str}/{statement_year}"
-                        parsed_date = parse_date(full_date)
-                        
-                        if not parsed_date:
-                            continue
-                        
-                        amount = parse_amount(amount_str)
-                        
-                        # Determine sign based on section
-                        if in_withdrawals or in_fees:
-                            amount = -abs(amount)
-                        else:  # deposits
-                            amount = abs(amount)
-                        
-                        transaction = {
-                            'date': parsed_date,
-                            'description': description,
-                            'amount': amount,
-                            'balance': '',
-                            'account': account_info['account_number'],
-                            'bank': "JPMorgan Chase",
-                            'currency': 'USD',
-                            'transaction_type': 'Credit' if amount > 0 else 'Debit'
-                        }
-                        
-                        transactions.append(transaction)
-                        
-                    except (ValueError, IndexError) as e:
-                        self.logger.debug(f"Failed to parse Chase line: {line}, error: {e}")
-                        continue
         
         return transactions
 
