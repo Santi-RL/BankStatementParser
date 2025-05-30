@@ -330,34 +330,36 @@ class GenericEnglishParser(BaseBankParser):
             
             # Parse transaction lines
             if in_deposits or in_withdrawals or in_fees:
-                # Multiple patterns for Chase format
-                patterns = [
-                    # Standard: MM/DD DESCRIPTION AMOUNT
-                    r'(\d{1,2}/\d{1,2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$',
-                    # With spaces around amount
-                    r'(\d{1,2}/\d{1,2})\s+(.+?)\s+\$?\s*([\d,]+\.\d{2})\s*$',
-                    # Description might have multiple spaces
-                    r'(\d{1,2}/\d{1,2})\s+(.+?)\s{2,}\$?([\d,]+\.\d{2})$'
-                ]
+                # Chase format has significant spacing - need to handle properly
+                # Example: "01/02                          Deposit    2063844249                                                                                               $300.00"
                 
-                for pattern in patterns:
-                    match = re.match(pattern, line)
-                    if match:
-                        try:
-                            date_str = match.group(1)
-                            description = clean_text(match.group(2))
-                            amount_str = match.group(3).replace(',', '')
+                # Extract date pattern at start
+                date_match = re.match(r'^\s*(\d{1,2}/\d{1,2})\s+(.+)', line)
+                if date_match:
+                    try:
+                        date_str = date_match.group(1)
+                        rest_of_line = date_match.group(2)
+                        
+                        # Find amount at the end - look for $XXX.XX or XXX.XX
+                        amount_match = re.search(r'\$?([\d,]+\.\d{2})\s*$', rest_of_line)
+                        if amount_match:
+                            amount_str = amount_match.group(1).replace(',', '')
+                            
+                            # Extract description (everything between date and amount)
+                            amount_start = amount_match.start()
+                            description = rest_of_line[:amount_start].strip()
+                            description = clean_text(description)
                             
                             # Skip if description is too short or contains only numbers/spaces
-                            if len(description.strip()) < 3 or description.strip().isdigit():
-                                break
+                            if len(description.strip()) < 3:
+                                continue
                             
                             # Add statement year to date
                             full_date = f"{date_str}/{statement_year}"
                             parsed_date = parse_date(full_date)
                             
                             if not parsed_date:
-                                break
+                                continue
                             
                             amount = parse_amount(amount_str)
                             
@@ -379,11 +381,10 @@ class GenericEnglishParser(BaseBankParser):
                             }
                             
                             transactions.append(transaction)
-                            break
                             
-                        except (ValueError, IndexError) as e:
-                            self.logger.debug(f"Failed to parse Chase line: {line}, error: {e}")
-                            continue
+                    except (ValueError, IndexError) as e:
+                        self.logger.debug(f"Failed to parse Chase line: {line}, error: {e}")
+                        continue
         
         return transactions
 
