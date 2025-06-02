@@ -131,7 +131,7 @@ class PDFProcessor:
             return 'ibercaja'
         
         # International banks
-        elif any(keyword in text_lower for keyword in ['chase', 'jp morgan']):
+        elif any(keyword in text_lower for keyword in ['chase', 'jp morgan', 'jpmorgan']):
             return 'chase'
         elif any(keyword in text_lower for keyword in ['bank of america', 'bofa']):
             return 'bank_of_america'

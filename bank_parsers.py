@@ -283,78 +283,62 @@ class GenericEnglishParser(BaseBankParser):
         transactions = []
         lines = text_content.split('\n')
         
-        # Extract statement year from header (e.g., "December 30, 2023 through January 31, 2024")
-        statement_year = datetime.now().year
-        for line in lines[:10]:  # Check first 10 lines for date range
-            year_match = re.search(r'\b(20\d{2})\b', line)
-            if year_match:
-                statement_year = int(year_match.group(1))
+        # Extract statement year from header
+        statement_year = 2024
+        for line in lines[:10]:
+            years = re.findall(r'\b(20\d{2})\b', line)
+            if years:
+                statement_year = max(int(year) for year in years)
                 break
         
-        # Find sections for deposits, withdrawals, and fees
-        in_deposits = False
-        in_withdrawals = False
-        in_fees = False
+        # Parse all transaction sections by looking for specific patterns
+        current_section = None
         
-        for line in lines:
+        for i, line in enumerate(lines):
             line = line.strip()
             line_lower = line.lower()
             
-            # Section markers (more flexible matching)
-            if ('deposits and additions' in line_lower) or ('deposit' in line_lower and 'addition' in line_lower):
-                in_deposits = True
-                in_withdrawals = False
-                in_fees = False
+            # Identify sections
+            if 'deposits and additions' in line_lower:
+                current_section = 'deposits'
                 continue
-            elif ('electronic withdrawal' in line_lower) or ('withdrawal' in line_lower):
-                in_withdrawals = True
-                in_deposits = False
-                in_fees = False
+            elif 'electronic withdrawals' in line_lower:
+                current_section = 'withdrawals'
                 continue
-            elif ('fees' in line_lower and ('section' in line_lower or 'total' not in line_lower)):
-                in_fees = True
-                in_deposits = False
-                in_withdrawals = False
+            elif line_lower.strip() == 'fees':
+                current_section = 'fees'
                 continue
-            elif line.startswith('Total ') and ('Deposits' in line or 'Withdrawals' in line or 'Fees' in line):
-                # End of section
-                in_deposits = False
-                in_withdrawals = False
-                in_fees = False
+            elif line.startswith('Total '):
+                current_section = None
                 continue
             
-            # Skip headers and totals
-            if ('DATE' in line and 'DESCRIPTION' in line and 'AMOUNT' in line) or \
-               line.startswith('Total ') or not line:
+            # Skip headers
+            if ('DATE' in line and 'DESCRIPTION' in line and 'AMOUNT' in line) or not line:
                 continue
             
-            # Parse transaction lines
-            if in_deposits or in_withdrawals or in_fees:
-                # Chase format has significant spacing - need to handle properly
-                # Example: "01/02                          Deposit    2063844249                                                                                               $300.00"
-                
-                # Extract date pattern at start
+            # Parse transaction lines when in a valid section
+            if current_section:
+                # Look for lines that start with a date pattern
                 date_match = re.match(r'^\s*(\d{1,2}/\d{1,2})\s+(.+)', line)
                 if date_match:
                     try:
                         date_str = date_match.group(1)
                         rest_of_line = date_match.group(2)
                         
-                        # Find amount at the end - look for $XXX.XX or XXX.XX
+                        # Find amount at the end
                         amount_match = re.search(r'\$?([\d,]+\.\d{2})\s*$', rest_of_line)
                         if amount_match:
                             amount_str = amount_match.group(1).replace(',', '')
                             
-                            # Extract description (everything between date and amount)
+                            # Extract description
                             amount_start = amount_match.start()
                             description = rest_of_line[:amount_start].strip()
                             description = clean_text(description)
                             
-                            # Skip if description is too short or contains only numbers/spaces
                             if len(description.strip()) < 3:
                                 continue
                             
-                            # Add statement year to date
+                            # Parse date
                             full_date = f"{date_str}/{statement_year}"
                             parsed_date = parse_date(full_date)
                             
@@ -363,10 +347,10 @@ class GenericEnglishParser(BaseBankParser):
                             
                             amount = parse_amount(amount_str)
                             
-                            # Determine sign based on section
-                            if in_withdrawals or in_fees:
+                            # Apply sign based on section
+                            if current_section in ['withdrawals', 'fees']:
                                 amount = -abs(amount)
-                            else:  # deposits
+                            else:
                                 amount = abs(amount)
                             
                             transaction = {
