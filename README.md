@@ -2,6 +2,17 @@
 
 This application converts PDF bank statements into Excel files using a Streamlit interface.
 
+## Instalación
+
+En plataformas como **Streamlit Community Cloud** las dependencias se instalan usando un archivo `requirements.txt`.
+Para generarlo localmente se ejecutó:
+
+```bash
+uv pip compile pyproject.toml -o requirements.txt
+```
+
+El resultado se incluye en el repositorio para que la plataforma lo utilice automáticamente al desplegar la aplicación.
+
 ## Running the App
 
 Use `streamlit run app.py` to start the application. An optional `--debug` flag controls the default logging level.
