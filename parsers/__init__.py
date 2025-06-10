@@ -5,9 +5,10 @@ from .spain.base import SpanishBankParser
 from .spain.santander import SantanderParser
 from .spain.bbva import BBVAParser
 from .spain.caixabank import CaixaBankParser
+from .argentina.base import ArgentinianBankParser
 from .argentina.galicia import GaliciaParser
 
 __all__ = [
     'BaseBankParser', 'SpanishBankParser', 'SantanderParser', 'BBVAParser',
-    'CaixaBankParser', 'GaliciaParser', 'GenericEnglishParser', 'BankParserFactory'
+    'CaixaBankParser', 'ArgentinianBankParser', 'GaliciaParser', 'GenericEnglishParser', 'BankParserFactory'
 ]
