@@ -2,6 +2,14 @@
 
 Esta aplicación convierte extractos bancarios en PDF a archivos Excel mediante la interfaz de Streamlit.
 
+## Instalacion de Dependencias
+
+Antes de ejecutar la aplicación instala las dependencias con pip:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Ejecución de la Aplicación
 
 Usa `streamlit run app.py` para iniciar la aplicación. Un flag opcional `--debug` controla el nivel de registro por defecto.
