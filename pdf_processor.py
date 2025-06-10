@@ -187,6 +187,7 @@ class PDFProcessor:
             'santander': 'santander',
             'bbva': 'bbva',
             'caixabank': 'caixabank',
+            'galicia': 'galicia',
             'bankia': 'bankia',
             'sabadell': 'sabadell',
             'unicaja': 'unicaja',
