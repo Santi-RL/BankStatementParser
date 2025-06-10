@@ -1,5 +1,5 @@
 import pytest
-from bank_parsers import GaliciaParser
+from parsers.argentina.galicia import GaliciaParser
 from pdf_processor import PDFProcessor
 
 sample_text = "\n".join([

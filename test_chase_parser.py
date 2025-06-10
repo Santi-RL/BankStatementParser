@@ -60,7 +60,7 @@ if __name__ == "__main__":
     try:
         processor = PDFProcessor()
         # Simulate the parsing by calling the Chase format parser directly
-        from bank_parsers import GenericEnglishParser
+        from parsers.generic import GenericEnglishParser
         
         parser = GenericEnglishParser()
         account_info = {'account_number': '000000771927196', 'currency': 'USD'}
