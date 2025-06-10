@@ -1,10 +1,10 @@
 from typing import List, Dict, Any
 import re
 
-from ..spain.base import SpanishBankParser
+from .base import ArgentinianBankParser
 from utils import clean_text, parse_amount, parse_date
 
-class GaliciaParser(SpanishBankParser):
+class GaliciaParser(ArgentinianBankParser):
     """Parser para Banco Galicia de Argentina."""
 
     bank_id = 'galicia'
