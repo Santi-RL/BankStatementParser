@@ -23,3 +23,12 @@ streamlit run app.py -- --debug
 - Cambiar la casilla mientras la aplicación está en ejecución ajustará el nivel de registro inmediatamente y la configuración se mantiene entre recargas.
 
 El flag de la CLI solo controla el estado inicial; la casilla de la barra lateral es la fuente de verdad después del arranque.
+
+## Agregar nuevos parsers
+
+Para soportar un banco adicional basta con crear un nuevo módulo dentro del
+directorio `parsers/` (o cualquiera de sus subpaquetes) que contenga una clase
+heredada de `BaseBankParser`. Define el atributo `bank_id` y, opcionalmente,
+`aliases` con otros identificadores reconocibles. Al importar el paquete
+`parsers` las clases se registran automáticamente y `BankParserFactory` podrá
+instanciarlas sin pasos extra.
