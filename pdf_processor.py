@@ -182,7 +182,36 @@ class PDFProcessor:
             str: Bank identifier string
         """
         text_lower = text_content.lower()
-        # (resto de detectores de banco...)
+
+        keywords = {
+            'santander': 'santander',
+            'bbva': 'bbva',
+            'caixabank': 'caixabank',
+            'bankia': 'bankia',
+            'sabadell': 'sabadell',
+            'unicaja': 'unicaja',
+            'kutxabank': 'kutxabank',
+            'ibercaja': 'ibercaja',
+            'jpmorgan': 'chase',
+            'chase bank': 'chase',
+            'bank of america': 'bank_of_america',
+            'wells fargo': 'wells_fargo',
+            'citibank': 'citibank',
+            'hsbc': 'hsbc',
+            'barclays': 'barclays',
+            'deutsche bank': 'deutsche_bank',
+        }
+
+        for key, identifier in keywords.items():
+            if key in text_lower:
+                return identifier
+
+        if any(spanish in text_lower for spanish in ['saldo', 'ingreso', 'cuenta']):
+            return 'generic_spanish'
+
+        if any(english in text_lower for english in ['deposit', 'withdrawal', 'statement']):
+            return 'generic_english'
+
         return 'unknown'
 
     def _validate_transactions(self, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
