@@ -1,5 +1,12 @@
-import pdfplumber
-import PyPDF2
+try:
+    import pdfplumber
+except ImportError:  # pragma: no cover - dependency missing in some envs
+    pdfplumber = None
+
+try:
+    import PyPDF2
+except ImportError:  # pragma: no cover - dependency missing in some envs
+    PyPDF2 = None
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -124,21 +131,26 @@ class PDFProcessor:
             str: Cleaned extracted text.
         """
         text_content = ""
-        try:
-            with pdfplumber.open(file_path) as pdf:
-                for page in pdf.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        text_content += page_text + "\n"
+        if pdfplumber is not None:
+            try:
+                with pdfplumber.open(file_path) as pdf:
+                    for page in pdf.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            text_content += page_text + "\n"
+                if debug_log is not None:
+                    debug_log.append("pdfplumber succeeded")
+            except Exception as e:
+                self.logger.warning(f"pdfplumber failed: {e}")
+                if debug_log is not None:
+                    debug_log.append(f"pdfplumber failed: {e}")
+        else:
+            self.logger.warning("pdfplumber library not available")
             if debug_log is not None:
-                debug_log.append("pdfplumber succeeded")
-        except Exception as e:
-            self.logger.warning(f"pdfplumber failed: {e}")
-            if debug_log is not None:
-                debug_log.append(f"pdfplumber failed: {e}")
+                debug_log.append("pdfplumber missing")
 
         # Fallback a PyPDF2 si pdfplumber no extrajo texto
-        if not text_content.strip():
+        if not text_content.strip() and PyPDF2 is not None:
             try:
                 with open(file_path, 'rb') as file:
                     pdf_reader = PyPDF2.PdfReader(file)
@@ -152,6 +164,10 @@ class PDFProcessor:
                 self.logger.warning(f"PyPDF2 failed: {e}")
                 if debug_log is not None:
                     debug_log.append(f"PyPDF2 failed: {e}")
+        elif not text_content.strip() and PyPDF2 is None:
+            self.logger.warning("PyPDF2 library not available")
+            if debug_log is not None:
+                debug_log.append("PyPDF2 missing")
 
         return clean_text(text_content)
 
