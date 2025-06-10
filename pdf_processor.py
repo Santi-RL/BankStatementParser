@@ -16,15 +16,16 @@ class PDFProcessor:
         self.logger = logging.getLogger(__name__)
     
     def process_pdf(self, file_path: str, filename: str, debug: bool = False) -> Dict[str, Any]:
-        """
-        Process a PDF file and extract transaction data.
-        
+        """Process a PDF file and extract transaction data.
+
         Args:
-            file_path: Path to the PDF file
-            filename: Original filename for identification
-            
+            file_path: Path to the PDF file.
+            filename: Original filename for identification.
+            debug: When ``True``, a ``steps`` list describing each processing
+                stage is returned for debugging purposes.
+
         Returns:
-            Dictionary containing success status, transactions, and metadata
+            Dictionary containing success status, transactions, and metadata.
         """
         steps: List[str] = []
 
