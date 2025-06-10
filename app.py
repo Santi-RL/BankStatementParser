@@ -67,11 +67,14 @@ def main(debug: bool = False):
         - Transaction Type
         """)
 
-    # Adjust logging level based on checkbox
-    if debug_enabled:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+        # Checkbox para activar o desactivar debug
+        debug_mode = st.checkbox("🐞 Debug Mode", value=False)
+
+        # Ajustar nivel de logging según el estado del checkbox
+        if debug_mode:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
 
     # Main content area
     col1, col2 = st.columns([2, 1])
@@ -101,7 +104,7 @@ def main(debug: bool = False):
                 
                 # Process button
                 if st.button("🔄 Process Statements", type="primary", use_container_width=True):
-                    process_files(uploaded_files)
+                    process_files(uploaded_files, debug=debug_mode)
                     
             else:
                 st.error("❌ File validation failed:")
@@ -116,7 +119,7 @@ def main(debug: bool = False):
         else:
             st.info("Upload PDF files and click 'Process Statements' to begin.")
 
-def process_files(uploaded_files: List[Any]):
+def process_files(uploaded_files: List[Any], debug: bool = False):
     """Process uploaded PDF files and extract transaction data."""
     
     # Initialize progress tracking
@@ -149,7 +152,7 @@ def process_files(uploaded_files: List[Any]):
                     tmp_file_path = tmp_file.name
                 
                 # Process PDF
-                result = pdf_processor.process_pdf(tmp_file_path, uploaded_file.name)
+                result = pdf_processor.process_pdf(tmp_file_path, uploaded_file.name, debug=debug)
                 
                 if result['success']:
                     transactions = result['transactions']
@@ -157,12 +160,17 @@ def process_files(uploaded_files: List[Any]):
                     processing_summary['successful_files'] += 1
                     processing_summary['total_transactions'] += len(transactions)
                     processing_summary['banks_detected'].add(result['bank_detected'])
-                    
+
                     st.success(f"✅ {uploaded_file.name}: {len(transactions)} transactions extracted")
                 else:
                     processing_summary['failed_files'] += 1
                     processing_summary['errors'].append(f"{uploaded_file.name}: {result['error']}")
                     st.error(f"❌ {uploaded_file.name}: {result['error']}")
+
+                if debug and result.get('steps'):
+                    with st.expander(f"Debug Steps for {uploaded_file.name}"):
+                        for step in result['steps']:
+                            st.write(step)
                 
                 # Cleanup temporary file
                 os.unlink(tmp_file_path)

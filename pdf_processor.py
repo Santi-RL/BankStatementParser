@@ -1,8 +1,7 @@
 import pdfplumber
 import PyPDF2
-import re
-from typing import Dict, List, Any, Optional
 import logging
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from bank_parsers import BankParserFactory
@@ -18,101 +17,112 @@ class PDFProcessor:
     def process_pdf(self, file_path: str, filename: str, debug: bool = False) -> Dict[str, Any]:
         """
         Process a PDF file and extract transaction data.
-        
-        Args:
-            file_path: Path to the PDF file
-            filename: Original filename for identification
-            
-        Returns:
-            Dictionary containing success status, transactions, and metadata
-        """
-        try:
-            debug_log = [] if debug else None
 
-            if debug:
+        Args:
+            file_path (str): Path to the PDF file.
+            filename (str): Original filename for identification.
+            debug (bool): When True, returns a debug_log list describing each processing stage.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing success status, transactions, metadata,
+                and debug_log if debug is True.
+        """
+        debug_log: Optional[List[str]] = [] if debug else None
+
+        try:
+            if debug and debug_log is not None:
                 debug_log.append(f"Starting processing for {filename}")
                 debug_log.append("Beginning text extraction")
 
             # Extract text from PDF
             text_content = self._extract_text_from_pdf(file_path, debug_log)
 
-            if debug:
+            if debug and debug_log is not None:
                 debug_log.append("Finished text extraction")
-            
+
             if not text_content:
                 result = {
                     'success': False,
                     'error': 'Could not extract text from PDF. File may be image-based or corrupted.',
                     'transactions': [],
-                    'bank_detected': 'Unknown'
+                    'bank_detected': 'Unknown',
                 }
-                if debug:
-                    debug_log.append("No text extracted from PDF")
+                if debug and debug_log is not None:
+                    debug_log.append("Failed to extract text")
                     result['debug_log'] = debug_log
                 return result
 
-            if debug:
+            if debug and debug_log is not None:
                 debug_log.append("Detecting bank")
+
             # Detect bank and get appropriate parser
             bank_detected = self._detect_bank(text_content)
-            if debug:
+
+            if debug and debug_log is not None:
                 debug_log.append(f"Detected bank: {bank_detected}")
+
             parser = self.parser_factory.get_parser(bank_detected)
-            
             if not parser:
                 result = {
                     'success': False,
                     'error': f'No parser available for detected bank: {bank_detected}',
                     'transactions': [],
-                    'bank_detected': bank_detected
+                    'bank_detected': bank_detected,
                 }
-                if debug:
+                if debug and debug_log is not None:
                     debug_log.append(f"No parser found for bank: {bank_detected}")
                     result['debug_log'] = debug_log
                 return result
 
-            if debug:
+            if debug and debug_log is not None:
                 debug_log.append("Parsing transactions")
-            # Parse transactions
-            transactions = parser.parse_transactions(text_content, filename)
-            if debug:
-                debug_log.append(f"Parsed {len(transactions)} transactions")
 
-            if debug:
+            transactions = parser.parse_transactions(text_content, filename)
+
+            if debug and debug_log is not None:
+                debug_log.append(f"Parsed {len(transactions)} transactions")
                 debug_log.append("Validating transactions")
-            # Validate and clean transactions
+
             valid_transactions = self._validate_transactions(transactions)
-            if debug:
+
+            if debug and debug_log is not None:
                 debug_log.append(f"Validation complete, {len(valid_transactions)} valid transactions")
 
             result = {
                 'success': True,
                 'transactions': valid_transactions,
                 'bank_detected': bank_detected,
-                'total_transactions': len(valid_transactions)
+                'total_transactions': len(valid_transactions),
             }
-            if debug:
+            if debug and debug_log is not None:
                 result['debug_log'] = debug_log
             return result
-            
+
         except Exception as e:
-            self.logger.error(f"Error processing PDF {filename}: {str(e)}")
+            self.logger.error(f"Error processing PDF {filename}: {e}")
             result = {
                 'success': False,
-                'error': f'Processing error: {str(e)}',
+                'error': f'Processing error: {e}',
                 'transactions': [],
-                'bank_detected': 'Unknown'
+                'bank_detected': 'Unknown',
             }
-            if debug:
-                debug_log.append(f"Exception occurred: {str(e)}")
+            if debug and debug_log is not None:
+                debug_log.append(f"Exception occurred: {e}")
                 result['debug_log'] = debug_log
             return result
-    
+
     def _extract_text_from_pdf(self, file_path: str, debug_log: Optional[List[str]] = None) -> str:
-        """Extract text content from PDF file using multiple methods."""
+        """
+        Extract text content from PDF file using multiple methods.
+
+        Args:
+            file_path (str): Path to the PDF file.
+            debug_log (Optional[List[str]]): List to append debug messages to.
+
+        Returns:
+            str: Cleaned extracted text.
+        """
         text_content = ""
-        
-        # Try pdfplumber first (better for complex layouts)
         try:
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
@@ -122,11 +132,10 @@ class PDFProcessor:
             if debug_log is not None:
                 debug_log.append("pdfplumber succeeded")
         except Exception as e:
-            self.logger.warning(f"pdfplumber failed: {str(e)}")
+            self.logger.warning(f"pdfplumber failed: {e}")
             if debug_log is not None:
-                debug_log.append(f"pdfplumber failed: {str(e)}")
-        
-        # Fallback to PyPDF2 if pdfplumber fails
+                debug_log.append(f"pdfplumber failed: {e}")
+
         if not text_content.strip():
             try:
                 with open(file_path, 'rb') as file:
@@ -138,129 +147,106 @@ class PDFProcessor:
                 if debug_log is not None:
                     debug_log.append("PyPDF2 succeeded")
             except Exception as e:
-                self.logger.warning(f"PyPDF2 failed: {str(e)}")
+                self.logger.warning(f"PyPDF2 failed: {e}")
                 if debug_log is not None:
-                    debug_log.append(f"PyPDF2 failed: {str(e)}")
-        
+                    debug_log.append(f"PyPDF2 failed: {e}")
+
         return clean_text(text_content)
-    
+
     def _detect_bank(self, text_content: str) -> str:
         """
         Detect the bank based on text content patterns.
-        
+
         Args:
-            text_content: Extracted text from PDF
-            
+            text_content (str): Extracted text from PDF
+
         Returns:
-            Bank identifier string
+            str: Bank identifier string
         """
         text_lower = text_content.lower()
-        
-        # Spanish banks
-        if any(keyword in text_lower for keyword in ['santander', 'banco santander']):
+        if any(k in text_lower for k in ['santander', 'banco santander']):
             return 'santander'
-        elif any(keyword in text_lower for keyword in ['bbva', 'banco bilbao vizcaya']):
+        elif any(k in text_lower for k in ['bbva', 'banco bilbao vizcaya']):
             return 'bbva'
-        elif any(keyword in text_lower for keyword in ['caixabank', 'la caixa', 'caixa']):
+        elif any(k in text_lower for k in ['caixabank', 'la caixa', 'caixa']):
             return 'caixabank'
-        elif any(keyword in text_lower for keyword in ['bankia', 'banco de valencia']):
+        elif any(k in text_lower for k in ['bankia', 'banco de valencia']):
             return 'bankia'
-        elif any(keyword in text_lower for keyword in ['banco sabadell', 'sabadell']):
+        elif any(k in text_lower for k in ['banco sabadell', 'sabadell']):
             return 'sabadell'
-        elif any(keyword in text_lower for keyword in ['unicaja', 'banco unicaja']):
+        elif any(k in text_lower for k in ['unicaja', 'banco unicaja']):
             return 'unicaja'
-        elif any(keyword in text_lower for keyword in ['kutxabank', 'kutxa']):
+        elif any(k in text_lower for k in ['kutxabank', 'kutxa']):
             return 'kutxabank'
-        elif any(keyword in text_lower for keyword in ['ibercaja']):
+        elif any(k in text_lower for k in ['ibercaja']):
             return 'ibercaja'
-        
-        # International banks
-        elif any(keyword in text_lower for keyword in ['chase', 'jp morgan', 'jpmorgan']):
+        elif any(k in text_lower for k in ['chase', 'jp morgan', 'jpmorgan']):
             return 'chase'
-        elif any(keyword in text_lower for keyword in ['bank of america', 'bofa']):
+        elif any(k in text_lower for k in ['bank of america', 'bofa']):
             return 'bank_of_america'
-        elif any(keyword in text_lower for keyword in ['wells fargo']):
+        elif any(k in text_lower for k in ['wells fargo']):
             return 'wells_fargo'
-        elif any(keyword in text_lower for keyword in ['citibank', 'citi']):
+        elif any(k in text_lower for k in ['citibank', 'citi']):
             return 'citibank'
-        elif any(keyword in text_lower for keyword in ['hsbc']):
+        elif any(k in text_lower for k in ['hsbc']):
             return 'hsbc'
-        elif any(keyword in text_lower for keyword in ['barclays']):
+        elif any(k in text_lower for k in ['barclays']):
             return 'barclays'
-        elif any(keyword in text_lower for keyword in ['deutsche bank']):
+        elif any(k in text_lower for k in ['deutsche bank']):
             return 'deutsche_bank'
-        
-        # Generic patterns
-        elif any(keyword in text_lower for keyword in ['extracto', 'movimientos', 'cuenta corriente']):
+        elif any(k in text_lower for k in ['extracto', 'movimientos', 'cuenta corriente']):
             return 'generic_spanish'
-        elif any(keyword in text_lower for keyword in ['statement', 'account activity', 'transaction history']):
+        elif any(k in text_lower for k in ['statement', 'account activity', 'transaction history']):
             return 'generic_english'
-        
         return 'unknown'
-    
+
     def _validate_transactions(self, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Validate and clean transaction data.
-        
+
         Args:
             transactions: List of transaction dictionaries
-            
+
         Returns:
-            List of validated transactions
+            List[Dict[str, Any]]: List of validated transactions
         """
-        valid_transactions = []
-        
+        valid_transactions: List[Dict[str, Any]] = []
         for transaction in transactions:
-            # Check required fields
             if not all(key in transaction for key in ['date', 'description', 'amount']):
                 continue
-            
-            # Validate date
             if not self._is_valid_date(transaction.get('date')):
                 continue
-            
-            # Validate amount
             try:
                 amount = parse_amount(transaction.get('amount', '0'))
                 transaction['amount'] = amount
             except (ValueError, TypeError):
                 continue
-            
-            # Clean description
             transaction['description'] = clean_text(transaction.get('description', ''))
-            
-            # Ensure all required fields exist
             transaction.setdefault('balance', '')
             transaction.setdefault('transaction_type', self._determine_transaction_type(amount))
             transaction.setdefault('account', '')
             transaction.setdefault('bank', '')
-            
             valid_transactions.append(transaction)
-        
         return valid_transactions
-    
+
     def _is_valid_date(self, date_str: str) -> bool:
         """Check if date string is valid."""
         if not date_str:
             return False
-        
-        # Try common date formats
         date_formats = [
             '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d',
             '%d/%m/%y', '%d-%m-%y', '%y-%m-%d',
             '%d.%m.%Y', '%d.%m.%y',
             '%m/%d/%Y', '%m-%d-%Y'
         ]
-        
         for fmt in date_formats:
             try:
                 datetime.strptime(str(date_str), fmt)
                 return True
             except ValueError:
                 continue
-        
         return False
-    
+
     def _determine_transaction_type(self, amount: float) -> str:
         """Determine transaction type based on amount."""
         if amount > 0:
