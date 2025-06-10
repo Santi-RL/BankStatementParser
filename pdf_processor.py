@@ -15,7 +15,7 @@ class PDFProcessor:
         self.parser_factory = BankParserFactory()
         self.logger = logging.getLogger(__name__)
     
-    def process_pdf(self, file_path: str, filename: str) -> Dict[str, Any]:
+    def process_pdf(self, file_path: str, filename: str, debug: bool = False) -> Dict[str, Any]:
         """
         Process a PDF file and extract transaction data.
         
@@ -26,51 +26,72 @@ class PDFProcessor:
         Returns:
             Dictionary containing success status, transactions, and metadata
         """
+        steps: List[str] = []
         try:
             # Extract text from PDF
             text_content = self._extract_text_from_pdf(file_path)
+            if debug:
+                steps.append("text_extracted")
             
             if not text_content:
-                return {
+                result = {
                     'success': False,
                     'error': 'Could not extract text from PDF. File may be image-based or corrupted.',
                     'transactions': [],
                     'bank_detected': 'Unknown'
                 }
+                if debug:
+                    result['steps'] = steps
+                return result
             
             # Detect bank and get appropriate parser
             bank_detected = self._detect_bank(text_content)
+            if debug:
+                steps.append(f"bank_detected:{bank_detected}")
             parser = self.parser_factory.get_parser(bank_detected)
             
             if not parser:
-                return {
+                result = {
                     'success': False,
                     'error': f'No parser available for detected bank: {bank_detected}',
                     'transactions': [],
                     'bank_detected': bank_detected
                 }
+                if debug:
+                    result['steps'] = steps
+                return result
             
             # Parse transactions
             transactions = parser.parse_transactions(text_content, filename)
+            if debug:
+                steps.append(f"transactions_parsed:{len(transactions)}")
             
             # Validate and clean transactions
             valid_transactions = self._validate_transactions(transactions)
+            if debug:
+                steps.append(f"transactions_validated:{len(valid_transactions)}")
             
-            return {
+            result = {
                 'success': True,
                 'transactions': valid_transactions,
                 'bank_detected': bank_detected,
                 'total_transactions': len(valid_transactions)
             }
+            if debug:
+                result['steps'] = steps
+            return result
             
         except Exception as e:
             self.logger.error(f"Error processing PDF {filename}: {str(e)}")
-            return {
+            result = {
                 'success': False,
                 'error': f'Processing error: {str(e)}',
                 'transactions': [],
                 'bank_detected': 'Unknown'
             }
+            if debug:
+                result['steps'] = steps
+            return result
     
     def _extract_text_from_pdf(self, file_path: str) -> str:
         """Extract text content from PDF file using multiple methods."""

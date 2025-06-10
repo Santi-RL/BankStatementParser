@@ -3,6 +3,9 @@
 Test script to debug Chase PDF parsing
 """
 
+import pytest
+pytest.skip("Debug script not intended as a test", allow_module_level=True)
+
 from pdf_processor import PDFProcessor
 import tempfile
 import os
