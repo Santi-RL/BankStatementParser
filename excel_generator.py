@@ -132,7 +132,8 @@ class ExcelGenerator:
         for column in ws.columns:
             first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
             col_letter = get_column_letter(first.column)
-            max_length = max(len(str(c.value)) for c in column if c.value)
+            lengths = [len(str(c.value)) for c in column if c.value]
+            max_length = max(lengths) if lengths else 0
             ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
     
     def _create_transactions_sheet(self):
@@ -207,7 +208,8 @@ class ExcelGenerator:
         for column in ws.columns:
             first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
             col_letter = get_column_letter(first.column)
-            max_length = max(len(str(c.value)) for c in column if c.value)
+            lengths = [len(str(c.value)) for c in column if c.value]
+            max_length = max(lengths) if lengths else 0
             ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
         
         # Freeze header row
@@ -365,5 +367,6 @@ class ExcelGenerator:
         for column in ws.columns:
             first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
             col_letter = get_column_letter(first.column)
-            max_length = max(len(str(c.value)) for c in column if c.value)
+            lengths = [len(str(c.value)) for c in column if c.value]
+            max_length = max(lengths) if lengths else 0
             ws.column_dimensions[col_letter].width = min(max_length + 2, 20)
