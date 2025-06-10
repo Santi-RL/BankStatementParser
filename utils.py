@@ -29,7 +29,7 @@ def clean_text(text: str, preserve_lines: bool = False) -> str:
         # Normalise CR/LF pairs and remove unwanted characters while
         # preserving ``\n`` for line splitting.
         text = text.replace('\r\n', '\n').replace('\r', '\n')
-        text = re.sub(r'[^\w\s\-.,/()áéíóúüñÁÉÍÓÚÜÑ€$£¥]', ' ', text)
+        text = re.sub(r'[^\w\s\-.,/()áéíóúüñÁÉÍÓÚÜÑ€$£¥!]', ' ', text)
         # Collapse spaces and tabs but keep newlines
         text = re.sub(r'[ \t]+', ' ', text)
         # Collapse multiple blank lines
@@ -40,7 +40,7 @@ def clean_text(text: str, preserve_lines: bool = False) -> str:
 
     # Previous behaviour: replace all whitespace with a single space
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'[^\w\s\-.,/()áéíóúüñÁÉÍÓÚÜÑ€$£¥]', ' ', text)
+    text = re.sub(r'[^\w\s\-.,/()áéíóúüñÁÉÍÓÚÜÑ€$£¥!]', ' ', text)
     text = re.sub(r'\s{2,}', ' ', text)
     return text.strip()
 
