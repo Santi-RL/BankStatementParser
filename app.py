@@ -35,7 +35,7 @@ def main(debug: bool = False):
     
     # Sidebar with instructions and debug toggle
     with st.sidebar:
-        debug_enabled = st.checkbox("Enable debug logging", value=debug, key="debug_logging")
+        debug_enabled = st.checkbox("🐞 Debug Mode", value=debug, key="debug_logging")
         st.header("📋 Instructions")
         st.markdown("""
         **Supported Banks:**
@@ -67,11 +67,8 @@ def main(debug: bool = False):
         - Transaction Type
         """)
 
-        # Checkbox para activar o desactivar debug
-        debug_mode = st.checkbox("🐞 Debug Mode", value=False)
-
         # Ajustar nivel de logging según el estado del checkbox
-        if debug_mode:
+        if debug_enabled:
             logger.setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
@@ -104,7 +101,7 @@ def main(debug: bool = False):
                 
                 # Process button
                 if st.button("🔄 Process Statements", type="primary", use_container_width=True):
-                    process_files(uploaded_files, debug=debug_mode)
+                    process_files(uploaded_files, debug=debug_enabled)
                     
             else:
                 st.error("❌ File validation failed:")
