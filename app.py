@@ -15,8 +15,6 @@ from utils import validate_pdf_files, format_currency, setup_logging
 def main(debug: bool = False):
     setup_logging()
     logger = logging.getLogger()
-    if debug:
-        logger.setLevel(logging.DEBUG)
 
     st.set_page_config(
         page_title="Bank Statement Processor",
