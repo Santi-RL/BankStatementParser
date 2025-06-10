@@ -5,12 +5,19 @@ import zipfile
 from typing import List, Dict, Any
 import tempfile
 import os
+import argparse
+import logging
 
 from pdf_processor import PDFProcessor
 from excel_generator import ExcelGenerator
-from utils import validate_pdf_files, format_currency
+from utils import validate_pdf_files, format_currency, setup_logging
 
-def main():
+def main(debug: bool = False):
+    setup_logging()
+    logger = logging.getLogger()
+    if debug:
+        logger.setLevel(logging.DEBUG)
+
     st.set_page_config(
         page_title="Bank Statement Processor",
         page_icon="🏦",
@@ -26,8 +33,9 @@ def main():
     if 'processing_complete' not in st.session_state:
         st.session_state.processing_complete = False
     
-    # Sidebar with instructions
+    # Sidebar with instructions and debug toggle
     with st.sidebar:
+        debug_enabled = st.checkbox("Enable debug logging", value=debug, key="debug_logging")
         st.header("📋 Instructions")
         st.markdown("""
         **Supported Banks:**
@@ -59,8 +67,15 @@ def main():
         - Transaction Type
         """)
 
+        # Checkbox para activar o desactivar debug
         debug_mode = st.checkbox("🐞 Debug Mode", value=False)
-    
+
+        # Ajustar nivel de logging según el estado del checkbox
+        if debug_mode:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+
     # Main content area
     col1, col2 = st.columns([2, 1])
     
@@ -278,4 +293,7 @@ def display_results():
         st.rerun()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Bank Statement Processor")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    args, _ = parser.parse_known_args()
+    main(debug=args.debug)
