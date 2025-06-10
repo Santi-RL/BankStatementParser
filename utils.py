@@ -4,28 +4,44 @@ from typing import Optional, List, Any
 from datetime import datetime
 import logging
 
-def clean_text(text: str) -> str:
+def clean_text(text: str, preserve_lines: bool = False) -> str:
+    """Clean and normalize text content.
+
+    Parameters
+    ----------
+    text: str
+        Raw text to clean.
+    preserve_lines: bool, optional
+        When ``True`` line breaks are kept so the caller can split the text
+        into lines. The default ``False`` mimics the previous behaviour of
+        collapsing all whitespace.
+
+    Returns
+    -------
+    str
+        Normalised text string.
     """
-    Clean and normalize text content.
-    
-    Args:
-        text: Raw text to clean
-        
-    Returns:
-        Cleaned text
-    """
+
     if not text:
         return ""
-    
-    # Remove extra whitespace and line breaks
+
+    if preserve_lines:
+        # Normalise CR/LF pairs and remove unwanted characters while
+        # preserving ``\n`` for line splitting.
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        text = re.sub(r'[^\w\s\-.,/()áéíóúüñÁÉÍÓÚÜÑ€$£¥]', ' ', text)
+        # Collapse spaces and tabs but keep newlines
+        text = re.sub(r'[ \t]+', ' ', text)
+        # Collapse multiple blank lines
+        text = re.sub(r'\n{2,}', '\n', text)
+        # Trim whitespace around each line
+        text = '\n'.join(line.strip() for line in text.split('\n'))
+        return text.strip()
+
+    # Previous behaviour: replace all whitespace with a single space
     text = re.sub(r'\s+', ' ', text).strip()
-    
-    # Remove common PDF artifacts
     text = re.sub(r'[^\w\s\-.,/()áéíóúüñÁÉÍÓÚÜÑ€$£¥]', ' ', text)
-    
-    # Remove multiple spaces
     text = re.sub(r'\s{2,}', ' ', text)
-    
     return text.strip()
 
 def parse_amount(amount_str: str) -> float:

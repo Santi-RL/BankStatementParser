@@ -169,7 +169,7 @@ class PDFProcessor:
             if debug_log is not None:
                 debug_log.append("PyPDF2 missing")
 
-        return clean_text(text_content)
+        return clean_text(text_content, preserve_lines=True)
 
     def _detect_bank(self, text_content: str) -> str:
         """
