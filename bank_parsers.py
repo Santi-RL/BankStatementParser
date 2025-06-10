@@ -52,6 +52,8 @@ class BaseBankParser:
             account_info['currency'] = 'USD'
         elif any(currency in text_content.upper() for currency in ['GBP', '£', 'POUND']):
             account_info['currency'] = 'GBP'
+        elif any(currency in text_content.upper() for currency in ['ARS', 'AR$', 'PESO']):
+            account_info['currency'] = 'ARS'
         
         return account_info
 

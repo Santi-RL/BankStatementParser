@@ -148,6 +148,8 @@ def format_currency(amount: float, currency: str = 'EUR') -> str:
         return f"${amount:,.2f}"
     elif currency == 'GBP':
         return f"£{amount:,.2f}"
+    elif currency == 'ARS':
+        return f"AR${amount:,.2f}"
     else:
         return f"{amount:,.2f} {currency}"
 
