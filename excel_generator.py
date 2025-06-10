@@ -2,6 +2,8 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.utils import get_column_letter
+from openpyxl.cell.cell import MergedCell
 from openpyxl.chart import BarChart, Reference, LineChart
 import io
 from typing import List, Dict, Any
@@ -128,16 +130,10 @@ class ExcelGenerator:
         
         # Auto-adjust column widths
         for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column_letter].width = adjusted_width
+            first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
+            col_letter = get_column_letter(first.column)
+            max_length = max(len(str(c.value)) for c in column if c.value)
+            ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
     
     def _create_transactions_sheet(self):
         """Create main transactions sheet."""
@@ -209,16 +205,10 @@ class ExcelGenerator:
         
         # Auto-adjust column widths
         for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column_letter].width = adjusted_width
+            first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
+            col_letter = get_column_letter(first.column)
+            max_length = max(len(str(c.value)) for c in column if c.value)
+            ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
         
         # Freeze header row
         ws.freeze_panes = 'A2'
@@ -373,13 +363,7 @@ class ExcelGenerator:
         
         # Auto-adjust column widths
         for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 20)
-            ws.column_dimensions[column_letter].width = adjusted_width
+            first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
+            col_letter = get_column_letter(first.column)
+            max_length = max(len(str(c.value)) for c in column if c.value)
+            ws.column_dimensions[col_letter].width = min(max_length + 2, 20)
