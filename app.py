@@ -167,9 +167,9 @@ def process_files(uploaded_files: List[Any], debug: bool = False):
                     processing_summary['errors'].append(f"{uploaded_file.name}: {result['error']}")
                     st.error(f"❌ {uploaded_file.name}: {result['error']}")
 
-                if debug and result.get('steps'):
-                    with st.expander(f"Debug Steps for {uploaded_file.name}"):
-                        for step in result['steps']:
+                if debug and result.get('debug_log'):
+                    with st.expander(f"Debug Log for {uploaded_file.name}"):
+                        for step in result['debug_log']:
                             st.write(step)
                 
                 # Cleanup temporary file
