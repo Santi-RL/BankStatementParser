@@ -236,7 +236,7 @@ def process_files(uploaded_files: List[Any], debug: bool = False):
                     all_transactions.extend(transactions)
                     processing_summary['successful_files'] += 1
                     processing_summary['total_transactions'] += len(transactions)
-                    processing_summary['banks_detected'].add(result['bank_detected'])
+                    processing_summary['banks_detected'].add(result.get('bank_name', result['bank_detected']))
 
                     st.success(tr("transactions_extracted", name=uploaded_file.name, count=len(transactions)))
                 else:

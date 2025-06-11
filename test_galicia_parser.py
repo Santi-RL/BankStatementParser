@@ -31,7 +31,7 @@ sample_text_multiline = "\n".join([
 
 def test_detect_bank_galicia():
     processor = PDFProcessor()
-    assert processor._detect_bank("Banco de Galicia y Buenos Aires S.A.U.") == 'galicia'
+    assert processor._detect_bank("Banco de Galicia y Buenos Aires S.A.U.") == 'galicia_ar'
 
 def test_galicia_parser():
     parser = GaliciaParser()
