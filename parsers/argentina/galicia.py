@@ -7,11 +7,11 @@ from utils import clean_text, parse_amount, parse_date
 class GaliciaParser(ArgentinianBankParser):
     """Parser para Banco Galicia de Argentina."""
 
-    bank_id = 'galicia'
+    bank_id = 'galicia_ar'
     aliases = ['galicia']
 
     def _get_bank_name(self) -> str:
-        return "Banco Galicia"
+        return "Banco Galicia (Arg.)"
 
     def parse_transactions(self, text_content: str, filename: str) -> List[Dict[str, Any]]:
         transactions: List[Dict[str, Any]] = []

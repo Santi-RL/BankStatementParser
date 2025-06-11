@@ -55,6 +55,7 @@ class PDFProcessor:
                     'error': 'Could not extract text from PDF. File may be image-based or corrupted.',
                     'transactions': [],
                     'bank_detected': 'Unknown',
+                    'bank_name': '',
                 }
                 if debug and debug_log is not None:
                     debug_log.append("Failed to extract text")
@@ -76,6 +77,7 @@ class PDFProcessor:
                     'error': f'No parser available for detected bank: {bank_detected}',
                     'transactions': [],
                     'bank_detected': bank_detected,
+                    'bank_name': '',
                 }
                 if debug and debug_log is not None:
                     debug_log.append(f"No parser found for bank: {bank_detected}")
@@ -101,6 +103,7 @@ class PDFProcessor:
                 'success': True,
                 'transactions': valid_transactions,
                 'bank_detected': bank_detected,
+                'bank_name': parser._get_bank_name(),
                 'total_transactions': len(valid_transactions),
             }
             if debug and debug_log is not None:
@@ -114,6 +117,7 @@ class PDFProcessor:
                 'error': f'Processing error: {e}',
                 'transactions': [],
                 'bank_detected': 'Unknown',
+                'bank_name': '',
             }
             if debug and debug_log is not None:
                 debug_log.append(f"Exception occurred: {e}")
@@ -207,7 +211,7 @@ class PDFProcessor:
             'santander': 'santander',
             'bbva': 'bbva',
             'caixabank': 'caixabank',
-            'galicia': 'galicia',
+            'galicia': 'galicia_ar',
             'bankia': 'bankia',
             'sabadell': 'sabadell',
             'unicaja': 'unicaja',

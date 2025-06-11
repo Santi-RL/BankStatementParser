@@ -13,6 +13,9 @@ class GenericEnglishParser(BaseBankParser):
         'hsbc', 'barclays', 'deutsche_bank'
     ]
 
+    def _get_bank_name(self) -> str:
+        return "English Bank"
+
     def parse_transactions(self, text_content: str, filename: str) -> List[Dict[str, Any]]:
         transactions: List[Dict[str, Any]] = []
         account_info = self._extract_account_info(text_content)
@@ -55,7 +58,7 @@ class GenericEnglishParser(BaseBankParser):
                             'amount': amount,
                             'balance': balance if balance is not None else '',
                             'account': account_info['account_number'],
-                            'bank': "English Bank",
+                            'bank': self._get_bank_name(),
                             'currency': account_info['currency'],
                             'transaction_type': 'Credit' if amount > 0 else 'Debit'
                         })
