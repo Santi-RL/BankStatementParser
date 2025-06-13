@@ -207,6 +207,9 @@ class PDFProcessor:
         """
         text_lower = text_content.lower()
 
+        if re.search(r"CBU\s*:?\s*247\d{19}", text_content):
+            return "roela_ar"
+
         keywords = {
             'santander': 'santander',
             'bbva': 'bbva',

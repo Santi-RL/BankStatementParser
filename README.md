@@ -2,6 +2,13 @@
 
 Esta aplicación convierte extractos bancarios en PDF a archivos Excel mediante la interfaz de Streamlit.
 
+## Bancos compatibles
+
+Actualmente se incluyen parsers para:
+- Banco Galicia (Argentina)
+- Banco Roela (Argentina)
+- Varios bancos españoles e ingleses mediante parsers genéricos.
+
 ## Instalacion de Dependencias
 
 Antes de ejecutar la aplicación instala las dependencias con pip:
