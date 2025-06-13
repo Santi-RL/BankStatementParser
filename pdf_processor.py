@@ -207,7 +207,9 @@ class PDFProcessor:
         """
         text_lower = text_content.lower()
 
-        if re.search(r"CBU\s*:?\s*247\d{19}", text_content):
+        # Banco Roela detection - look for C.B.U. or CBU followed by the prefix
+        # 247 and 19 additional digits (total 22 digits)
+        if re.search(r"C\.?B\.?U\.?\s*:?\s*247\d{19}", text_content, re.IGNORECASE):
             return "roela_ar"
 
         keywords = {
