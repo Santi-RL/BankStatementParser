@@ -282,5 +282,54 @@ def extract_account_number(text: str) -> Optional[str]:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             return match.group(1).strip().replace(' ', '').replace('-', '')
-    
+
     return None
+
+
+def get_supported_banks() -> List[str]:
+    """Return a sorted list of human friendly bank names currently supported."""
+
+    from parsers import PARSER_REGISTRY
+
+    display_map = {
+        "bbva": "BBVA",
+        "hsbc": "HSBC",
+        "bank_of_america": "Bank of America",
+        "wells_fargo": "Wells Fargo",
+        "deutsche_bank": "Deutsche Bank",
+        "citibank": "Citibank",
+        "barclays": "Barclays",
+        "bankia": "Bankia",
+        "sabadell": "Sabadell",
+        "kutxabank": "Kutxabank",
+        "ibercaja": "Ibercaja",
+        "unicaja": "Unicaja",
+        "caixabank": "CaixaBank",
+        "chase": "Chase",
+    }
+
+    generic_aliases = {
+        "generic_spanish",
+        "generic_english",
+        "generic_argentinian",
+        "argentina",
+    }
+
+    specialized = {
+        "SantanderParser",
+        "BBVAParser",
+        "CaixaBankParser",
+        "GaliciaParser",
+    }
+
+    banks = set()
+    for alias, cls in PARSER_REGISTRY.items():
+        if alias in generic_aliases:
+            continue
+
+        if cls.__name__ in specialized:
+            banks.add(cls()._get_bank_name())
+        else:
+            banks.add(display_map.get(alias, alias.replace("_", " ").title()))
+
+    return sorted(banks)

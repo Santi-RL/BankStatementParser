@@ -24,6 +24,27 @@ streamlit run app.py -- --debug
 
 El flag de la CLI solo controla el estado inicial; la casilla de la barra lateral es la fuente de verdad después del arranque.
 
+## Bancos Soportados
+
+La aplicación incluye parsers específicos para los siguientes bancos (además de parsers genéricos para formatos en español e inglés):
+
+- Banco Santander
+- BBVA
+- CaixaBank
+- Banco Galicia (Argentina)
+- Bankia
+- Sabadell
+- Unicaja
+- Kutxabank
+- Ibercaja
+- Chase
+- Bank of America
+- Wells Fargo
+- Citibank
+- HSBC
+- Barclays
+- Deutsche Bank
+
 ## Agregar nuevos parsers
 
 Para soportar un banco adicional basta con crear un nuevo módulo dentro del

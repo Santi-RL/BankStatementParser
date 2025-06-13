@@ -10,7 +10,7 @@ import logging
 
 from pdf_processor import PDFProcessor
 from excel_generator import ExcelGenerator
-from utils import validate_pdf_files, format_currency, setup_logging
+from utils import validate_pdf_files, format_currency, setup_logging, get_supported_banks
 
 # Internacionalización sencilla
 LANG = "es"
@@ -30,9 +30,10 @@ TRANSLATIONS = {
     "debug_mode": {"en": "\U0001f41e Debug Mode", "es": "\U0001f41e Modo Depuraci\u00F3n"},
     "instructions_header": {"en": "\U0001f4cb Instructions", "es": "\U0001f4cb Instrucciones"},
     "instructions_text": {
-        "en": """\n        **Supported Banks:**\n        - Most common banks (PDF text format)\n        - Spanish banks (Santander, BBVA, CaixaBank, etc.)\n        - International banks with standard formats\n\n        **File Requirements:**\n        - PDF format only\n        - Text-based PDFs (not scanned images)\n        - Maximum 10 files per upload\n        - Maximum 50MB per file\n\n        **Output:**\n        - Structured Excel file\n        - Standardized transaction format\n        - Summary statistics\n        """,
-        "es": """\n        **Bancos Soportados:**\n        - La mayor\u00EDa de bancos comunes (formato PDF de texto)\n        - Bancos espa\u00F1oles (Santander, BBVA, CaixaBank, etc.)\n        - Bancos internacionales con formatos est\u00E1ndar\n\n        **Requisitos de Archivo:**\n        - Solo formato PDF\n        - PDFs basados en texto (no im\u00E1genes escaneadas)\n        - M\u00E1ximo 10 archivos por carga\n        - M\u00E1ximo 50MB por archivo\n\n        **Salida:**\n        - Archivo Excel estructurado\n        - Formato de transacciones estandarizado\n        - Estad\u00EDsticas resumidas\n        """,
+        "en": """\n        **File Requirements:**\n        - PDF format only\n        - Text-based PDFs (not scanned images)\n        - Maximum 10 files per upload\n        - Maximum 50MB per file\n\n        **Output:**\n        - Structured Excel file\n        - Standardized transaction format\n        - Summary statistics\n        """,
+        "es": """\n        **Requisitos de Archivo:**\n        - Solo formato PDF\n        - PDFs basados en texto (no im\u00E1genes escaneadas)\n        - M\u00E1ximo 10 archivos por carga\n        - M\u00E1ximo 50MB por archivo\n\n        **Salida:**\n        - Archivo Excel estructurado\n        - Formato de transacciones estandarizado\n        - Estad\u00EDsticas resumidas\n        """,
     },
+    "supported_banks_header": {"en": "\U0001f3e6 Supported Banks", "es": "\U0001f3e6 Bancos Soportados"},
     "sample_header": {"en": "\U0001f4ca Sample Output Structure", "es": "\U0001f4ca Ejemplo de Estructura de Salida"},
     "sample_text": {
         "en": """\n        **Columns in Excel:**\n        - Date\n        - Description\n        - Amount\n        - Balance\n        - Bank\n        - Account\n        - Transaction Type\n        """,
@@ -143,6 +144,10 @@ def main(debug: bool = False, lang: str = LANG):
         debug_enabled = st.checkbox(tr("debug_mode"), value=debug, key="debug_logging")
         st.header(tr("instructions_header"))
         st.markdown(tr("instructions_text"))
+
+        st.header(tr("supported_banks_header"))
+        for bank in get_supported_banks():
+            st.markdown(f"- {bank}")
 
         st.header(tr("sample_header"))
         st.markdown(tr("sample_text"))
