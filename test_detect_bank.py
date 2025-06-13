@@ -12,3 +12,9 @@ def test_detect_bank_roela():
     processor = PDFProcessor()
     sample_text = "Cuenta corriente CBU: 2470001810000002253782"
     assert processor._detect_bank(sample_text) == 'roela_ar'
+
+
+def test_detect_bank_roela_with_dots():
+    processor = PDFProcessor()
+    sample_text = "C.B.U. 2470001810000002253782"
+    assert processor._detect_bank(sample_text) == 'roela_ar'
