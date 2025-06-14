@@ -27,11 +27,13 @@ class RoelaParser(ArgentinianBankParser):
                     extracted = ""
                     for page in pdf.pages:
                         # --- Nuevo método: usar crop() como en el script probado ---
-                        left_text = page.crop((0, 0, page.width / 2, page.height)).extract_text()
-                        right_text = page.crop((page.width / 2, 0, page.width, page.height)).extract_text()
+                        left_text = page.crop((0, 0, page.width / 2, page.height))
+                        right_text = page.crop((page.width / 2, 0, page.width, page.height))
 
-                        # Concatenar primero la izquierda y luego la derecha
-                        for page_text in (left_text, right_text):
+                        for section in (left_text, right_text):
+                            if section is None:
+                                continue
+                            page_text = section.extract_text(x_tolerance=1, y_tolerance=2)
                             if page_text:
                                 extracted += page_text + "\n"
             except Exception:
