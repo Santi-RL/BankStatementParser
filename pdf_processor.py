@@ -87,7 +87,7 @@ class PDFProcessor:
             # Parsear transacciones
             if debug and debug_log is not None:
                 debug_log.append("Parsing transactions")
-            transactions = parser.parse_transactions(text_content, filename)
+            transactions = parser.parse_transactions(text_content, file_path)
             if debug and debug_log is not None:
                 debug_log.append(f"Parsed {len(transactions)} transactions")
 
