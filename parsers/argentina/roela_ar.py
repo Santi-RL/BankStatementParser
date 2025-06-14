@@ -36,27 +36,38 @@ class RoelaParser(ArgentinianBankParser):
         transactions: List[Dict[str, Any]] = []
         account_info = self._extract_account_info(extracted)
 
-        pattern = re.compile(
-            r"^(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([+-]?\d{1,3}(?:\.\d{3})*,\d{2})"
+        # Normalizar el texto insertando saltos de línea antes de cada fecha
+        extracted = re.sub(r"(\d{2}/\d{2}/\d{4})", r"\n\1", extracted)
+
+        # Dividir en segmentos "fecha + contenido" para procesar múltiples
+        # movimientos que comparten la misma fecha
+        parts = re.split(r"(\d{2}/\d{2}/\d{4})", extracted)
+
+        tx_pattern = re.compile(
+            r"(?:[A-Z0-9]{5}\s+\d+\s+)?([^\d\n]+?)\s+"
+            r"([+-]?\d{1,3}(?:,\d{3})*\.\d{2}|[+-]?\d{1,3}(?:\.\d{3})*,\d{2})"
         )
 
-        for line in extracted.split("\n"):
-            line = line.strip()
-            if not line or "SALDO AL" in line:
-                if "SALDO AL" in line:
-                    break
+        for i in range(1, len(parts), 2):
+            date_str = parts[i]
+            body = parts[i + 1]
+
+            if "SALDO" in body.upper() or "RESUMEN" in body.upper():
                 continue
 
-            match = pattern.search(line)
-            if match:
-                date_str, desc, amount_str = match.groups()
-                parsed_date = parse_date(date_str)
-                if not parsed_date:
+            parsed_date = parse_date(date_str)
+            if not parsed_date:
+                continue
+
+            for match in tx_pattern.finditer(body):
+                desc, amount_str = match.groups()
+                desc = clean_text(desc)
+                if len(desc) < 3:
                     continue
                 amount = parse_amount(amount_str)
                 transactions.append({
                     "date": parsed_date,
-                    "description": clean_text(desc),
+                    "description": desc,
                     "amount": amount,
                     "balance": "",
                     "account": account_info["account_number"],
@@ -67,4 +78,5 @@ class RoelaParser(ArgentinianBankParser):
 
         if not transactions:
             transactions = super().parse_transactions(extracted, filename)
+
         return transactions
