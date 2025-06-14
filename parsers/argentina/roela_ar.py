@@ -26,9 +26,18 @@ class RoelaParser(ArgentinianBankParser):
                 with pdfplumber.open(filename) as pdf:
                     extracted = ""
                     for page in pdf.pages:
-                        page_text = page.extract_text(x_tolerance=1, y_tolerance=3)
-                        if page_text:
-                            extracted += page_text + "\n"
+                        # Dividir la página en dos mitades para preservar
+                        # correctamente el orden de lectura de izquierda a
+                        # derecha.
+                        left = page.within_bbox((0, 0, page.width / 2, page.height))
+                        right = page.within_bbox((page.width / 2, 0, page.width, page.height))
+
+                        for section in (left, right):
+                            if section is None:
+                                continue
+                            page_text = section.extract_text(x_tolerance=1, y_tolerance=3)
+                            if page_text:
+                                extracted += page_text + "\n"
             except Exception:
                 # Si falla la lectura del PDF, usar el texto proporcionado
                 extracted = text_content
