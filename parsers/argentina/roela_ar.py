@@ -26,16 +26,12 @@ class RoelaParser(ArgentinianBankParser):
                 with pdfplumber.open(filename) as pdf:
                     extracted = ""
                     for page in pdf.pages:
-                        # Dividir la página en dos mitades para preservar
-                        # correctamente el orden de lectura de izquierda a
-                        # derecha.
-                        left = page.within_bbox((0, 0, page.width / 2, page.height))
-                        right = page.within_bbox((page.width / 2, 0, page.width, page.height))
+                        # --- Nuevo método: usar crop() como en el script probado ---
+                        left_text = page.crop((0, 0, page.width / 2, page.height)).extract_text()
+                        right_text = page.crop((page.width / 2, 0, page.width, page.height)).extract_text()
 
-                        for section in (left, right):
-                            if section is None:
-                                continue
-                            page_text = section.extract_text(x_tolerance=1, y_tolerance=3)
+                        # Concatenar primero la izquierda y luego la derecha
+                        for page_text in (left_text, right_text):
                             if page_text:
                                 extracted += page_text + "\n"
             except Exception:
