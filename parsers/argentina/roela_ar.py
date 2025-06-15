@@ -1,6 +1,19 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+"""
+roela_ar.py – Parser para extractos del **Banco Roela (Argentina)**
+=================================================================
+Versión v16 (17 jun 2025)
+------------------------
+* Base: v14 (salto de pie «Fecha de Impresión…» → «CODIGO»).
+* **Fix columnas**: el salto de pie se aplica **dentro de cada columna**
+  antes de concatenar. Así se preservan las filas válidas de la columna
+  derecha, que antes quedaban descartadas.
+"""
+
 import re
 from decimal import Decimal, InvalidOperation
+from typing import List, Dict, Any
 
 try:
     import pdfplumber
@@ -10,120 +23,130 @@ except Exception:  # pragma: no cover – optional dependency
 from .base import ArgentinianBankParser
 from utils import clean_text, parse_date
 
+# ───────────────────── Configuración de corte de columnas ──────────────────────
+SPLIT_RATIO: float = 0.515   # 51.5 % a la izquierda, 48.5 % a la derecha
+MARGIN_PT: int = 0           # sin margen extra
 
-# ---------- Conversión de importes 1,000.00 → Decimal -----------------------
+# ───────────────────── Regex y helpers ─────────────────────────────────────────
+AMOUNT_RE = re.compile(r"-?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}")
+CODE_LINE_RE = re.compile(r"^[A-Z0-9]{1,6}\s+[0-9]{1,15}\b", re.ASCII)
+FOOTER_START_RE = re.compile(r"FECHA\s+DE\s+IMPRES", re.I)  # dentro de línea
+HEADER_CODIGO_RE = re.compile(r"^CODIGO\b", re.I)
+
+_DEBIT_HINTS = (
+    "IMPUESTO",
+    "COM.",
+    "IVA",
+    "DEBITO",
+    "DÉBITO",
+)
+
+
 def _importe_roela(amount_str: str) -> Decimal:
-    num = amount_str.replace(",", "").strip()
+    s = amount_str.replace("\u202f", "").replace("\u00a0", "").replace(" ", "")
+    if "," in s and "." in s:
+        if s.find(",") < s.find("."):
+            s = s.replace(",", "")
+        else:
+            s = s.replace(".", "").replace(",", ".")
+    elif "," in s:
+        s = s.replace(".", "").replace(",", ".")
+    else:
+        s = s.replace(",", "")
     try:
-        return Decimal(num)
+        return Decimal(s).quantize(Decimal("0.01"))
     except InvalidOperation:
         return Decimal("0.00")
 
 
-# ---------- Palabras/códigos que indican débito -----------------------------
-DEBIT_WORDS = ("COM.", "IMPUESTO", "I.V.A", "IVA")
-
 def _es_debito(desc: str) -> bool:
-    desc_up = desc.upper()
-    return desc_up.startswith(DEBIT_WORDS) or re.match(r"^\d{3}\s", desc_up)
+    up = desc.upper()
+    return any(tok in up for tok in _DEBIT_HINTS)
 
 
-# ---------- Parámetros para recorte y extracción ----------------------------
-SPLIT_RATIO = 0.50   # % del ancho para la columna izquierda
-MARGIN      = 3      # puntos: se suma a izq. y se resta a der.
-CHAR_MARGIN = 4      # agrupa caracteres separados ≤ 4 pt
+def _strip_footer(col_text: str) -> str:
+    """Retorna sólo la parte de la columna antes de 'Fecha de Impresión'."""
+    m = FOOTER_START_RE.search(col_text)
+    return col_text[: m.start()] if m else col_text
 
 
 class RoelaParser(ArgentinianBankParser):
-    """Parser para Banco Roela de Argentina."""
-
     bank_id = "roela_ar"
     aliases = ["roela"]
 
-    # --------------------------------------------------------------------- #
-    def _get_bank_name(self) -> str:
-        return "Banco Roela (Arg.)"
-
-    # --------------------------------------------------------------------- #
     def parse_transactions(
-        self, text_content: str, filename: str
+        self, text: str, filename: str | None = None, **_
     ) -> List[Dict[str, Any]]:
-        extracted = text_content
-        # Extraer datos de cuenta/moneda antes de recortar
-        account_info = self._extract_account_info(text_content)
 
-        # ---------------- Recorte de columnas -----------------------------
-        if pdfplumber is not None and filename:
-            try:
-                with pdfplumber.open(filename) as pdf:
-                    extracted = ""
-                    for page in pdf.pages:
-                        split_x = page.width * SPLIT_RATIO
+        # 1. Recortar columnas si tenemos PDF
+        if filename and pdfplumber:
+            parts: List[str] = []
+            with pdfplumber.open(filename) as pdf:
+                for page in pdf.pages:
+                    w, h = page.width, page.height
+                    split_x = w * SPLIT_RATIO
+                    left_box = (0, 0, split_x - MARGIN_PT, h)
+                    right_box = (split_x + MARGIN_PT, 0, w, h)
+                    left = page.within_bbox(left_box).extract_text(x_tolerance=4, y_tolerance=2) or ""
+                    right = page.within_bbox(right_box).extract_text(x_tolerance=4, y_tolerance=2) or ""
+                    parts.append(_strip_footer(left) + "\n" + _strip_footer(right))
+            text = "\n".join(parts)
 
-                        left_page  = page.crop((0,               0,
-                                                split_x + MARGIN, page.height))
-                        right_page = page.crop((split_x - MARGIN, 0,
-                                                page.width,      page.height))
+        # 2. Procesar línea a línea
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        txs: List[Dict[str, Any]] = []
+        current_date = None
 
-                        for section in (left_page, right_page):
-                            text = section.extract_text(
-                                char_margin=CHAR_MARGIN
-                            )
-                            if text:
-                                extracted += text + "\n"
-            except Exception:
-                extracted = text_content
+        for raw in lines:
+            raw = raw.strip()
+            up_raw = raw.upper()
 
-        # ---------------- Parseo de movimientos ---------------------------
-        transactions: List[Dict[str, Any]] = []
-
-        # Insertar salto antes de cada fecha
-        extracted = re.sub(r"(\d{2}/\d{2}/\d{4})", r"\n\1", extracted)
-        parts = re.split(r"(\d{2}/\d{2}/\d{4})", extracted)
-
-        tx_pattern = re.compile(
-            r"(?:\d{3}|[A-Z0-9]{5,6})\s+\d+\s+"          # prefijo flexible
-            r"(.+?)\s+"                                  # descripción
-            r"([+-]?\d{1,3}(?:,\d{3})*\.\d{2})"          # importe 1,000.00
-            r"(?:\s|$)",
-            re.MULTILINE,
-        )
-
-        for i in range(1, len(parts), 2):
-            date_str = parts[i]
-            body = parts[i + 1]
-
-            if "SALDO" in body.upper() or "RESUMEN" in body.upper():
-                continue
-
-            parsed_date = parse_date(date_str)
-            if not parsed_date:
-                continue
-
-            for match in tx_pattern.finditer(body):
-                desc, amount_str = match.groups()
-                desc = clean_text(desc)
-                if len(desc) < 3:
+            # — Cortar cualquier resto de pie dentro de la misma línea —
+            idx_footer = up_raw.find("FECHA DE IMPRES")
+            if idx_footer != -1:
+                if idx_footer == 0:
+                    continue  # la línea ES pie → descartar
+                raw = raw[:idx_footer].rstrip()
+                up_raw = raw.upper()
+                if not raw:
                     continue
 
-                amount   = _importe_roela(amount_str)
-                is_debit = _es_debito(desc)
-                if is_debit:
-                    amount = -amount
+            # 2.a Línea que es sólo fecha
+            maybe_date = parse_date(raw.split()[0])
+            if maybe_date:
+                current_date = maybe_date
+                continue
 
-                transactions.append({
-                    "date": parsed_date,
-                    "description": desc,
+            # 2.b Buscar importe
+            m = AMOUNT_RE.search(raw)
+            if not m or current_date is None:
+                if txs:
+                    txs[-1]["description"] += " " + clean_text(raw)
+                continue
+
+            amount_raw = m.group(0)
+            desc_part = raw[: m.start()].rstrip()
+
+            # 2.c Validar fila válida
+            if not CODE_LINE_RE.match(desc_part):
+                if txs:
+                    txs[-1]["description"] += " " + clean_text(raw)
+                continue
+
+            amount = float(_importe_roela(amount_raw))
+            if _es_debito(desc_part):
+                amount = -amount
+
+            txs.append(
+                {
+                    "date": current_date,
+                    "description": clean_text(desc_part),
                     "amount": amount,
-                    "balance": "",
-                    "account": account_info.get("account_number", ""),
-                    "bank": self._get_bank_name(),
-                    "currency": account_info.get("currency", ""),
-                    "transaction_type": "Debit" if is_debit else "Credit",
-                })
+                    "currency": "ARS",
+                    "bank": "Banco Roela (Arg.)",
+                    "account": "",
+                    "raw": raw,
+                }
+            )
 
-        # Fallback genérico si no se encontró nada
-        if not transactions:
-            transactions = super().parse_transactions(extracted, filename)
-
-        return transactions
+        return txs
