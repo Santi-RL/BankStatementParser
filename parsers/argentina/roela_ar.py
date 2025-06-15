@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 """
-roela_ar.py – Parser para extractos del Banco Roela (Argentina)
+roela_ar.py – Parser para extractos del **Banco Roela (Argentina)**
 =================================================================
-Versión v21 (Jul 2025)
+Versión v24 (jul‑2025)
 -----------------------------------------------------------------
-* **Soluciona el error de bounding box**: los recortes de columnas ahora se
-  hacen directamente sobre la página usando coordenadas absolutas, evitando
-  el uso anidado de `within_bbox`.
-* Mantiene el recorte vertical fijo (`HEADER_HEIGHT`/`FOOTER_HEIGHT`).
+* **Corrección de filtrado**: se descartan líneas de saldo/balance
+  (ej. "SALDO AL 02/09/2024 ...") y, en general, cualquier línea cuyo primer
+  token no sea un código de transacción válido según `_CODE_RE`.
+* Mantiene el algoritmo de signos basado en códigos (v23).
 """
+
 import re
 from decimal import Decimal, InvalidOperation
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 try:
     import pdfplumber
@@ -22,27 +23,69 @@ except Exception:  # pragma: no cover – optional dependency
 from .base import ArgentinianBankParser
 from utils import clean_text, parse_date
 
-# ───────────────────── Recorte vertical fijo ──────────────────────
-HEADER_HEIGHT: float = 260   # puntos desde el bottom‑left hacia arriba
-FOOTER_HEIGHT: float = 30    # puntos desde el bottom‑left hacia abajo
-SPLIT_RATIO: float = 0.515   # 51,5 % columna izquierda
-MARGIN_PT: float = 4         # margen entre columnas
+# ───────────────────── Configuración de recorte ──────────────────────
+HEADER_CUT: float = 260.0     # puntos desde el BOTTOM (pie de página)
+FOOTER_CUT: float = 30.0      # puntos desde el TOP    (cabecera)
+SPLIT_RATIO: float = 0.515    # 51,5 % a la izquierda, resto derecha
+MARGIN_PT: float = 0        # tolerancia entre columnas
 
-# ───────────────────── Expresiones regulares ──────────────────────
+# ───────────────────── Reglas de signos por código ────────────────────
+# 1) Excepciones explícitas 100 % débito / crédito
+_DEBIT_EXPLICIT = {
+    "309", "313", "314", "317", "318", "319", "320", "321", "322", "323",
+    "386", "396", "300100", "700100", "710100", "750100", "760100", "810100",
+    "860100", "880100", "F30100",
+}
+
+_CREDIT_EXPLICIT = {
+    "305", "310", "324", "325", "332", "333", "334", "335",
+    "720100", "740100", "770100", "F40001",
+}
+
+# 2) Prefijos con regla general + excepciones
+_PREFIX_RULES: Dict[str, Dict[str, Any]] = {
+    "1": {"default": "D"},
+    "2": {"default": "D", "credit": {"290", "291", "296", "200001", "240001", "290001"}},
+    "4": {"default": "C", "debit": {"400101", "400111"}},
+    "5": {"default": "C", "debit": {"557", "583", "585", "586", "593", "594", "500131"}},
+}
+
+_CODE_RE = re.compile(r"^[A-Za-z]?\d+$")  # p.e. "F40001", "148"
+
+
+def _is_debit(code: str) -> bool:
+    """Devuelve *True* si el movimiento es débito (importe negativo)."""
+    code = code.strip()
+    if code in _DEBIT_EXPLICIT:
+        return True
+    if code in _CREDIT_EXPLICIT:
+        return False
+
+    if not _CODE_RE.match(code):
+        # Código inesperado → asumimos débito
+        return True
+
+    num_part = code.lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+    prefix = num_part[0]
+    rules = _PREFIX_RULES.get(prefix)
+    if not rules:
+        return True  # prefijo desconocido → débito
+
+    if "credit" in rules and num_part in rules["credit"]:
+        return False
+    if "debit" in rules and num_part in rules["debit"]:
+        return True
+
+    return rules["default"] == "D"
+
+# ───────────────────── RegEx auxiliares ───────────────────────────────
 AMOUNT_RE = re.compile(r"-?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}")
-CODE_LINE_RE = re.compile(r"^[A-Z0-9]{1,6}\s+[0-9]{1,15}\b", re.ASCII)
+DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
 
-_DEBIT_HINTS = (
-    "IMPUESTO",
-    "COM.",
-    "IVA",
-    "DEBITO",
-    "DÉBITO",
-)
+# ───────────────────── Utilidades propias ─────────────────────────────
 
-# ───────────────────── Utilidades ──────────────────────
-
-def _importe_roela(amount_str: str) -> Decimal:
+def _parse_amount(amount_str: str) -> Decimal:
+    """Normaliza el importe → Decimal(2) manteniendo signo."""
     s = amount_str.replace("\u202f", "").replace("\u00a0", "").replace(" ", "")
     if "," in s and "." in s:
         if s.find(",") < s.find("."):
@@ -58,72 +101,103 @@ def _importe_roela(amount_str: str) -> Decimal:
     except InvalidOperation:
         return Decimal("0.00")
 
-def _es_debito(description: str) -> bool:
-    return any(token in description.upper() for token in _DEBIT_HINTS)
+# ───────────────────── Parser principal ───────────────────────────────
 
-# ───────────────────── Clase principal ──────────────────────
+
 class RoelaParser(ArgentinianBankParser):
+    """Parser específico para Banco Roela (ARS)."""
+
     bank_id = "roela_ar"
     aliases = ["roela"]
 
-    def parse_transactions(self, text: str, filename: str | None = None, **_) -> List[Dict[str, Any]]:
-        """Extrae transacciones; si se pasa `filename`, lee directamente del PDF."""
+    def _get_bank_name(self) -> str:
+        return "Banco Roela (Arg.)"
+
+    # ------------------------------------------------------------------
+    # Extracción de texto
+    # ------------------------------------------------------------------
+    def _extract_page_text(self, page) -> str:
+        """Intenta recortar columnas y, si falla, extrae la página completa."""
+        try:
+            y0 = HEADER_CUT
+            y1 = page.height - FOOTER_CUT
+            split_x = page.width * SPLIT_RATIO
+            left_bbox = (0, y0, split_x - MARGIN_PT, y1)
+            right_bbox = (split_x + MARGIN_PT, y0, page.width, y1)
+
+            left_text = page.within_bbox(left_bbox).extract_text(x_tolerance=4, y_tolerance=2) or ""
+            right_text = page.within_bbox(right_bbox).extract_text(x_tolerance=4, y_tolerance=2) or ""
+            merged = (left_text + "\n" + right_text).strip()
+            if merged:
+                return merged
+        except Exception:
+            pass
+        return page.extract_text() or ""
+
+    # ------------------------------------------------------------------
+    # Entrada pública
+    # ------------------------------------------------------------------
+    def parse_transactions(self, text: str, filename: Optional[str] = None, **_) -> List[Dict[str, Any]]:
+        # 1) Re‑extraemos texto desde el PDF si lo tenemos
         if filename and pdfplumber:
-            extracted_pages: List[str] = []
+            pages_text: List[str] = []
             with pdfplumber.open(filename) as pdf:
                 for page in pdf.pages:
-                    # ▸ delimitamos zona vertical válida
-                    y0 = HEADER_HEIGHT
-                    y1 = page.height - FOOTER_HEIGHT
+                    pages_text.append(self._extract_page_text(page))
+            text = "\n".join(pages_text)
 
-                    # ▸ delimitamos columnas en coordenadas absolutas
-                    split_x = page.width * SPLIT_RATIO
-                    left_bbox = (0, y0, split_x - MARGIN_PT, y1)
-                    right_bbox = (split_x + MARGIN_PT, y0, page.width, y1)
-
-                    left_text = page.within_bbox(left_bbox).extract_text(x_tolerance=4, y_tolerance=2) or ""
-                    right_text = page.within_bbox(right_bbox).extract_text(x_tolerance=4, y_tolerance=2) or ""
-                    extracted_pages.append(left_text + "\n" + right_text)
-            text = "\n".join(extracted_pages)
-
-        # ------------------------------------------------------------------
-        # PARSER DE LÍNEAS (heredado de v16)
-        # ------------------------------------------------------------------
+        # 2) Normalizamos y dividimos en líneas
         lines = [ln for ln in text.splitlines() if ln.strip()]
+
         transactions: List[Dict[str, Any]] = []
-        current_date = None
+        current_date: Optional[str] = None
 
         for raw in lines:
             raw = raw.strip()
-
-            maybe_date = parse_date(raw.split()[0])
-            if maybe_date:
-                current_date = maybe_date
+            tokens = raw.split()
+            if not tokens:
                 continue
 
+            # (a) Línea de fecha
+            if DATE_RE.match(tokens[0]):
+                parsed = parse_date(tokens[0])
+                if parsed:
+                    current_date = parsed
+                continue
+
+            # (b) Balance/saldo → omitir
+            if tokens[0].upper() == "SALDO":
+                continue
+
+            # (c) Localizamos importe
             m_amt = AMOUNT_RE.search(raw)
             if not m_amt or current_date is None:
+                # Continuación de descripción
                 if transactions:
                     transactions[-1]["description"] += " " + clean_text(raw)
                 continue
 
             amount_raw = m_amt.group(0)
-            desc_part = raw[: m_amt.start()].rstrip()
+            amount_dec = _parse_amount(amount_raw)
 
-            if not CODE_LINE_RE.match(desc_part):
-                if transactions:
-                    transactions[-1]["description"] += " " + clean_text(raw)
+            # Parte descriptiva antes del importe
+            desc_part = raw[: m_amt.start()].rstrip()
+            desc_part_clean = clean_text(desc_part)
+
+            # Primer token: código
+            code = desc_part_clean.split(" ")[0]
+
+            # Verificación de código válido; si no lo es, omitimos (ej. SALDOS)
+            if not _CODE_RE.match(code):
                 continue
 
-            amt = float(_importe_roela(amount_raw))
-            if _es_debito(desc_part):
-                amt = -amt
+            sign = -1 if _is_debit(code) else 1
 
             transactions.append(
                 {
                     "date": current_date,
-                    "description": clean_text(desc_part),
-                    "amount": amt,
+                    "description": desc_part_clean,
+                    "amount": float(amount_dec) * sign,
                     "currency": "ARS",
                     "bank": "Banco Roela (Arg.)",
                     "account": "",
