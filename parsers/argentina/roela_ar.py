@@ -81,6 +81,7 @@ def _is_debit(code: str) -> bool:
 # ───────────────────── RegEx auxiliares ───────────────────────────────
 AMOUNT_RE = re.compile(r"-?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}")
 DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+ACCOUNT_RE = re.compile(r"Cuenta\s*:\s*(\d+/\d+)")  # Para capturar "22537/8"
 
 # ───────────────────── Utilidades propias ─────────────────────────────
 
@@ -148,11 +149,21 @@ class RoelaParser(ArgentinianBankParser):
     # Entrada pública
     # ------------------------------------------------------------------
     def parse_transactions(self, text: str, filename: Optional[str] = None, **_) -> List[Dict[str, Any]]:
+        account_number = ""
+        
         # 1) Re‑extraemos texto desde el PDF si lo tenemos
         if filename and pdfplumber:
             pages_text: List[str] = []
             try:
                 with pdfplumber.open(filename) as pdf:
+                    # Extraemos el número de cuenta de la primera página
+                    if pdf.pages:
+                        first_page_text = pdf.pages[0].extract_text() or ""
+                        account_match = ACCOUNT_RE.search(first_page_text)
+                        if account_match:
+                            account_number = account_match.group(1)
+                    
+                    # Continuamos con la extracción normal de páginas
                     for page in pdf.pages:
                         pages_text.append(self._extract_page_text(page))
             except EndOfRelevantPagesError:
@@ -213,7 +224,7 @@ class RoelaParser(ArgentinianBankParser):
                     "amount": float(amount_dec) * sign,
                     "currency": "ARS",
                     "bank": "Banco Roela (Arg.)",
-                    "account": "",
+                    "account": account_number,
                     "raw": raw,
                 }
             )
