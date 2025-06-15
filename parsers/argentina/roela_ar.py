@@ -101,6 +101,11 @@ def _parse_amount(amount_str: str) -> Decimal:
     except InvalidOperation:
         return Decimal("0.00")
 
+# ───────────────────── Excepciones ─────────────────────────────────
+class EndOfRelevantPagesError(Exception):
+    """Señaliza que se alcanzó la sección no relevante del extracto."""
+    pass
+
 # ───────────────────── Parser principal ───────────────────────────────
 
 
@@ -118,6 +123,11 @@ class RoelaParser(ArgentinianBankParser):
     # ------------------------------------------------------------------
     def _extract_page_text(self, page) -> str:
         """Intenta recortar columnas y, si falla, extrae la página completa."""
+        # Primero extraemos el texto completo de la página para verificar si contiene el texto a excluir
+        full_text = page.extract_text() or ""
+        if "DE INTERES PARA USTED" in full_text.upper():
+            raise EndOfRelevantPagesError()
+            
         try:
             y0 = HEADER_CUT
             y1 = page.height - FOOTER_CUT
@@ -132,7 +142,7 @@ class RoelaParser(ArgentinianBankParser):
                 return merged
         except Exception:
             pass
-        return page.extract_text() or ""
+        return full_text
 
     # ------------------------------------------------------------------
     # Entrada pública
@@ -141,9 +151,12 @@ class RoelaParser(ArgentinianBankParser):
         # 1) Re‑extraemos texto desde el PDF si lo tenemos
         if filename and pdfplumber:
             pages_text: List[str] = []
-            with pdfplumber.open(filename) as pdf:
-                for page in pdf.pages:
-                    pages_text.append(self._extract_page_text(page))
+            try:
+                with pdfplumber.open(filename) as pdf:
+                    for page in pdf.pages:
+                        pages_text.append(self._extract_page_text(page))
+            except EndOfRelevantPagesError:
+                pass  # Detenemos el procesamiento pero continuamos con las páginas ya extraídas
             text = "\n".join(pages_text)
 
         # 2) Normalizamos y dividimos en líneas
