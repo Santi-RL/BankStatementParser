@@ -308,6 +308,10 @@ class FormatSpec:
             extracted = self._extract_roela_columns_text(file_path)
             if extracted:
                 return extracted
+        if self.pdf_text_strategy == "x_band_table" and file_path:
+            extracted = self._extract_x_band_table_text(file_path, text)
+            if extracted:
+                return extracted
         return text
 
     def evaluate(self, text: str) -> SpecMatch:
@@ -776,6 +780,128 @@ class FormatSpec:
             return ""
 
         return clean_text("\n".join(pages_text), preserve_lines=True)
+
+    def _extract_x_band_table_text(self, file_path: str, original_text: str = "") -> str:
+        if pdfplumber is None:
+            return ""
+
+        row_merge_tolerance = float(self.pdf_text_options.get("row_merge_tolerance", 1.5))
+        block_gap = float(self.pdf_text_options.get("block_gap", 10.0))
+        date_max_x = float(self.pdf_text_options.get("date_max_x", 75.0))
+        description_min_x = float(self.pdf_text_options.get("description_min_x", 75.0))
+        description_max_x = float(self.pdf_text_options.get("description_max_x", 210.0))
+        operation_min_x = float(self.pdf_text_options.get("operation_min_x", 210.0))
+        operation_max_x = float(self.pdf_text_options.get("operation_max_x", 290.0))
+        amount_min_x = float(self.pdf_text_options.get("amount_min_x", 290.0))
+        amount_max_x = float(self.pdf_text_options.get("amount_max_x", 360.0))
+        balance_min_x = float(self.pdf_text_options.get("balance_min_x", 360.0))
+        balance_max_x = float(self.pdf_text_options.get("balance_max_x", 430.0))
+        date_pattern = re.compile(str(self.pdf_text_options.get("date_pattern", r"^\d{2}-\d{2}-\d{4}$")))
+        trailing_operation_pattern = re.compile(
+            str(self.pdf_text_options.get("trailing_operation_pattern", r"^(?P<description>.+?)\s*(?P<operation_id>\d{9,15})$"))
+        )
+        keep_text_patterns = [
+            re.compile(pattern, re.IGNORECASE)
+            for pattern in self.pdf_text_options.get("keep_text_patterns", [])
+        ]
+        ignore_text_patterns = [
+            re.compile(pattern, re.IGNORECASE)
+            for pattern in self.pdf_text_options.get("ignore_text_patterns", [])
+        ]
+
+        def parse_row(words: List[Dict[str, Any]]) -> Dict[str, str]:
+            bands = {
+                "date": [],
+                "description": [],
+                "operation": [],
+                "amount": [],
+                "balance": [],
+            }
+            for word in sorted(words, key=lambda item: item["x0"]):
+                x0 = float(word["x0"])
+                if x0 < date_max_x:
+                    bands["date"].append(word["text"])
+                elif description_min_x <= x0 < description_max_x:
+                    bands["description"].append(word["text"])
+                elif operation_min_x <= x0 < operation_max_x:
+                    bands["operation"].append(word["text"])
+                elif amount_min_x <= x0 < amount_max_x:
+                    bands["amount"].append(word["text"])
+                elif balance_min_x <= x0 < balance_max_x:
+                    bands["balance"].append(word["text"])
+
+            return {key: clean_text(" ".join(values)) for key, values in bands.items()}
+
+        def flush_block(block_rows: List[Dict[str, Any]]) -> str:
+            parsed_rows = [parse_row(row["words"]) for row in block_rows]
+            anchor = next((row for row in parsed_rows if date_pattern.match(row["date"])), None)
+            if anchor is None:
+                return ""
+
+            description = clean_text(" ".join(row["description"] for row in parsed_rows if row["description"]))
+            if not description:
+                return ""
+
+            operation = anchor["operation"]
+            trailing_match = trailing_operation_pattern.match(description)
+            if trailing_match and not operation:
+                description = clean_text(trailing_match.group("description"))
+                operation = trailing_match.group("operation_id")
+
+            amount = clean_text(anchor["amount"].replace("$", " "))
+            balance = clean_text(anchor["balance"].replace("$", " "))
+            if not anchor["date"] or not description or not operation or not amount or not balance:
+                return ""
+
+            return clean_text(
+                f"{anchor['date']} {description} {operation} {amount} {balance}",
+                preserve_lines=False,
+            )
+
+        prepared_lines: List[str] = []
+        seen_lines: set[str] = set()
+        if original_text and keep_text_patterns:
+            for line in original_text.splitlines():
+                cleaned_line = clean_text(line)
+                if not cleaned_line:
+                    continue
+                if any(pattern.search(cleaned_line) for pattern in keep_text_patterns):
+                    if cleaned_line not in seen_lines:
+                        prepared_lines.append(cleaned_line)
+                        seen_lines.add(cleaned_line)
+
+        try:
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    words = page.extract_words(use_text_flow=False, keep_blank_chars=False) or []
+                    if not words:
+                        continue
+
+                    grouped_rows: List[Dict[str, Any]] = []
+                    for word in sorted(words, key=lambda item: (item["top"], item["x0"])):
+                        if grouped_rows and abs(float(word["top"]) - grouped_rows[-1]["top"]) <= row_merge_tolerance:
+                            grouped_rows[-1]["words"].append(word)
+                        else:
+                            grouped_rows.append({"top": float(word["top"]), "words": [word]})
+
+                    current_block: List[Dict[str, Any]] = []
+                    for row in grouped_rows:
+                        if current_block and abs(row["top"] - current_block[-1]["top"]) > block_gap:
+                            line = flush_block(current_block)
+                            if line and not any(pattern.search(line) for pattern in ignore_text_patterns):
+                                prepared_lines.append(line)
+                            current_block = []
+                        current_block.append(row)
+
+                    if current_block:
+                        line = flush_block(current_block)
+                        if line and not any(pattern.search(line) for pattern in ignore_text_patterns):
+                            prepared_lines.append(line)
+        except Exception as exc:
+            self.logger.warning("x-band table extraction failed for %s: %s", self.source_path, exc)
+            return ""
+
+        return clean_text("\n".join(prepared_lines), preserve_lines=True)
 
 
 class FormatRegistry:

@@ -18,6 +18,12 @@ def test_detect_bank_chase():
     assert processor._detect_bank("This is a statement from JPMorgan Chase Bank.") == "chase"
 
 
+def test_detect_bank_mercado_pago():
+    processor = PDFProcessor()
+    text = "Resumen de cuenta Mercado Pago con CVU 0000003100043499119011 y mercadopago.com.ar"
+    assert processor._detect_bank(text) == "mercado_pago"
+
+
 def test_process_pdf_debug():
     text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
     proc = DummyProcessor(text)

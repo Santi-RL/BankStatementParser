@@ -80,6 +80,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `roela_ar/default`
 - `bbva/default`
 - `bbva/account_summary`
+- `mercado_pago/default`
 
 ## Pendiente
 

@@ -112,6 +112,37 @@ def test_bbva_account_summary_pdf_uses_new_single_scope_spec():
     assert all(transaction["scope_label"] == "CA $ 354-428727/2" for transaction in result["transactions"])
 
 
+def test_mercado_pago_pdf_uses_new_wallet_spec():
+    processor = PDFProcessor()
+    analysis = processor.analyze_pdf(
+        "attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf",
+        "Resumen de cuenta Mercado Pago 02-2023.pdf",
+    )
+    result = processor.process_pdf(
+        "attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf",
+        "Resumen de cuenta Mercado Pago 02-2023.pdf",
+    )
+
+    assert analysis["success"] is True
+    assert analysis["bank_detected"] == "mercado_pago"
+    assert analysis["format_id"] == "default"
+    assert analysis["multi_scope"] is False
+    assert len(analysis["available_scopes"]) == 1
+    assert analysis["available_scopes"][0]["label"] == "CVU 0000003100043499119011"
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["bank_detected"] == "mercado_pago"
+    assert result["format_id"] == "default"
+    assert result["format_version"] == 1
+    assert result["total_transactions"] == 232
+    assert result["transactions"][0]["date"] == "2023-02-01"
+    assert result["transactions"][0]["description"] == "Transferencia enviada Totoreño"
+    assert result["transactions"][0]["account"] == "0000003100043499119011"
+    assert result["transactions"][111]["amount"] == 7830.0
+    assert result["transactions"][-1]["description"] == "Rendimientos"
+
+
 @pytest.mark.skipif(not BBVA_MULTI_SCOPE_PDF.exists(), reason="BBVA consolidated sample is not available in this workspace")
 def test_bbva_pdf_can_extract_only_bank_accounts():
     processor = PDFProcessor()

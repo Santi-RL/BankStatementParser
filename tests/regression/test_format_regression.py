@@ -7,7 +7,7 @@ def test_published_spec_regression_suite_is_green():
     result = regress_published_specs()
 
     assert result["success"] is True
-    assert result["processed"] >= 5
+    assert result["processed"] >= 6
 
 
 def test_changed_galicia_fixture_would_fail_spec_thresholds():
@@ -94,6 +94,30 @@ def test_changed_bbva_account_summary_fixture_would_fail_spec_thresholds():
             "Movimientos en cuentas",
             "FECHA ORIGEN CONCEPTO DÉBITO CRÉDITO SALDO",
             "2023-09-20 MOVIMIENTO NUEVO 10,00",
+        ]
+    )
+
+    from format_engine import FormatSpec
+    import tomllib
+
+    with spec_path.open("rb") as handle:
+        spec = FormatSpec(spec_path, tomllib.load(handle))
+
+    result = spec.parse_transactions(changed_text)
+
+    assert result.passes_change_detection is False
+    assert result.diagnostics["transactions_found"] == 0
+
+
+def test_changed_mercado_pago_fixture_would_fail_spec_thresholds():
+    spec_path = Path("parser_specs/mercado_pago/default/spec.toml")
+    changed_text = "\n".join(
+        [
+            "RESUMEN DE CUENTA",
+            "CVU 0000003100000000000001 CUIT/ CUIL 20000000001",
+            "DETALLE DE MOVIMIENTOS",
+            "Fecha Descripción Valor Saldo",
+            "2023/02/01 Movimiento nuevo 10,00 10,00",
         ]
     )
 

@@ -495,6 +495,11 @@ class PDFProcessor:
         keywords = {
             'santander': 'santander',
             'bbva': 'bbva',
+            'mercado pago': 'mercado_pago',
+            'mercadopago': 'mercado_pago',
+            'mercado libre s.r.l.': 'mercado_pago',
+            'mercado libre s.r.l': 'mercado_pago',
+            'mercado libre srl': 'mercado_pago',
             'caixabank': 'caixabank',
             'galicia': 'galicia_ar',
             'bankia': 'bankia',

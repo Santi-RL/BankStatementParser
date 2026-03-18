@@ -35,6 +35,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `parser_specs/roela_ar/default/spec.toml` | Formato publicado de Roela | Vigente |
 | `parser_specs/bbva/default/spec.toml` | Formato publicado de BBVA consolidado | Vigente |
 | `parser_specs/bbva/account_summary/spec.toml` | Formato publicado de BBVA para resumen simple de cuenta | Vigente |
+| `parser_specs/mercado_pago/default/spec.toml` | Formato publicado de Mercado Pago para resumen de cuenta wallet | Vigente |
 | `parser_specs/*/*/fixtures/sample_text.txt` | Fixture sanitizada de texto | Vigente |
 | `parser_specs/*/*/fixtures/expected_transactions.json` | Salida esperada sanitizada | Vigente |
 
@@ -62,6 +63,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `attached_assets/TestGalicia.png` | Captura visual de Galicia | Soporte visual |
 | `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | Muestra real de BBVA consolidado | Se procesa con 5 scopes y 192 transacciones |
 | `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | Muestra real de BBVA resumen simple | Se procesa con 1 scope y 12 transacciones |
+| `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | Muestra real de Mercado Pago | Se procesa con 1 scope y 232 transacciones |
 
 ## Artefactos locales no versionados
 
