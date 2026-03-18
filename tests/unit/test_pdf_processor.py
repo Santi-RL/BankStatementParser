@@ -1,8 +1,5 @@
-from pdf_processor import PDFProcessor
+from pdf_processor import DETECTION_HEADER_MAX_LINES, PDFProcessor
 from pathlib import Path
-
-
-DETECTION_HEADER_LINE_COUNT = 12
 
 
 class DummyProcessor(PDFProcessor):
@@ -42,7 +39,7 @@ def test_detect_bank_mercado_pago_is_not_confused_by_bbva_in_transaction_detail(
 def test_detect_bank_weighted_keyword_requires_header_signal():
     processor = PDFProcessor()
     text = "\n".join(
-        [f"Línea de resumen {index}" for index in range(1, DETECTION_HEADER_LINE_COUNT + 1)]
+        [f"Línea de resumen {line_number}" for line_number in range(1, DETECTION_HEADER_MAX_LINES + 1)]
         + [
             "07-06-2023 Ingreso de dinero Cuenta BBVA Banco Frances 59084863410 3.000,00 7.448,16",
             "Tarjetas de Crédito",
@@ -54,8 +51,21 @@ def test_detect_bank_weighted_keyword_requires_header_signal():
 def test_detect_bank_simple_keyword_requires_header_signal():
     processor = PDFProcessor()
     text = "\n".join(
-        [f"Línea de resumen {index}" for index in range(1, DETECTION_HEADER_LINE_COUNT + 1)]
+        [f"Línea de resumen {line_number}" for line_number in range(1, DETECTION_HEADER_MAX_LINES + 1)]
         + [
+            "07/06/2023 Transferencia enviada a cuenta Santander 100,00",
+        ]
+    )
+    assert processor._detect_bank(text) == "unknown"
+
+
+def test_detect_bank_simple_keyword_requires_header_signal_even_with_short_header():
+    processor = PDFProcessor()
+    text = "\n".join(
+        [
+            "Resumen de cuenta",
+            "Saldo inicial",
+            "Movimientos del período",
             "07/06/2023 Transferencia enviada a cuenta Santander 100,00",
         ]
     )

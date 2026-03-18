@@ -19,6 +19,11 @@ from utils import clean_text, parse_amount
 
 DETECTION_HEADER_MAX_LINES = 12
 DETECTION_HEADER_MAX_CHARS = 1200
+DETECTION_TRANSACTION_LINE_PATTERNS = (
+    re.compile(r"^\d{2}[/-]\d{2}(?:[/-]\d{2,4})?\s+"),
+    re.compile(r"^\d{4}-\d{2}-\d{2}\s+"),
+    re.compile(r"^\d{2}-[A-Za-z]{3}-\d{2}\s+"),
+)
 
 
 @dataclass
@@ -495,6 +500,8 @@ class PDFProcessor:
             line = raw_line.strip()
             if not line:
                 continue
+            if any(pattern.match(line) for pattern in DETECTION_TRANSACTION_LINE_PATTERNS):
+                break
             remaining_chars = DETECTION_HEADER_MAX_CHARS - header_chars
             if remaining_chars <= 0 or len(header_lines) >= DETECTION_HEADER_MAX_LINES:
                 break
