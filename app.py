@@ -260,6 +260,58 @@ def _is_production_test(mode: str) -> bool:
     return mode == "production-test"
 
 
+def _analysis_bank_label(analysis: Dict[str, Any]) -> str:
+    bank_name = str(analysis.get("bank_name") or "").strip()
+    if bank_name:
+        return bank_name
+
+    bank_detected = str(analysis.get("bank_detected") or "").strip()
+    if not bank_detected or bank_detected.lower() == "unknown":
+        return ""
+
+    return bank_detected.replace("_", " ").strip().title()
+
+
+def _analysis_title(file_name: str, analysis: Dict[str, Any]) -> str:
+    bank_label = _analysis_bank_label(analysis)
+    if bank_label:
+        return f"{file_name} · {bank_label}"
+    return f"{file_name} · sin detección de banco"
+
+
+def _render_analysis_technical_details(entry: Dict[str, Any], analysis: Dict[str, Any], debug: bool, mode: str):
+    if not debug or _is_production_test(mode):
+        return
+
+    with st.expander("Detalles técnicos (depuración)", expanded=False):
+        bank_detected = analysis.get("bank_detected")
+        if bank_detected:
+            st.write(f"Banco interno: `{bank_detected}`")
+
+        format_id = analysis.get("format_id")
+        if format_id:
+            st.write(f"Formato: `{format_id}`")
+
+        format_version = analysis.get("format_version")
+        if format_version:
+            st.write(f"Versión: `{format_version}`")
+
+        parse_status = analysis.get("parse_status")
+        if parse_status:
+            st.write(f"Estado de parseo: `{parse_status}`")
+
+        if analysis.get("available_scopes"):
+            st.json({"available_scopes": analysis["available_scopes"]})
+
+        if analysis.get("diagnostics"):
+            st.json({"diagnostics": analysis["diagnostics"]})
+
+        if analysis.get("debug_log"):
+            st.caption(f"Debug log de {entry['file_name']}")
+            for step in analysis["debug_log"]:
+                st.write(step)
+
+
 def _report_analysis_exception(exc: Exception, mode: str):
     logging.getLogger(__name__).exception("Unhandled error during PDF analysis")
     if _is_production_test(mode):
@@ -455,15 +507,18 @@ def render_analysis_results(analysis_results: List[Dict[str, Any]], debug: bool 
     st.subheader("Análisis previo")
     for entry in analysis_results:
         analysis = entry["analysis"]
-        title = f"{entry['file_name']} · {analysis.get('bank_detected', 'unknown')}"
+        title = _analysis_title(entry["file_name"], analysis)
         with st.expander(title, expanded=True):
+            bank_label = _analysis_bank_label(analysis)
             if analysis.get("success"):
-                format_label = analysis.get("format_id") or "sin formato"
-                st.write(f"Banco detectado: **{analysis.get('bank_name') or analysis.get('bank_detected')}**")
-                st.write(f"Formato: `{format_label}`")
+                if bank_label:
+                    st.success(f"Banco detectado: **{bank_label}**")
+                else:
+                    st.warning("No se pudo identificar el banco automáticamente.")
+
                 if analysis.get("multi_scope"):
                     scopes = analysis.get("available_scopes", [])
-                    st.info(f"Se detectaron {len(scopes)} entidades extraíbles en este PDF.")
+                    st.info(f"Se detectaron {len(scopes)} cuentas o tarjetas extraíbles en este PDF. Elegí cuáles querés procesar.")
                     preset_col1, preset_col2, preset_col3, preset_col4 = st.columns(4)
                     with preset_col1:
                         if st.button("Todo", key=f"preset_all_{entry['file_id']}", use_container_width=True):
@@ -492,16 +547,15 @@ def render_analysis_results(analysis_results: List[Dict[str, Any]], debug: bool 
                 else:
                     st.success("Documento simple: se procesará completo sin selección adicional.")
             else:
+                if bank_label:
+                    st.warning(f"Se detectó el banco **{bank_label}**, pero este archivo necesita revisión.")
+                else:
+                    st.warning("No se pudo detectar el banco o el formato del archivo.")
                 st.error(analysis.get("error", "No se pudo analizar el archivo."))
                 if not _is_production_test(mode) and analysis.get('parse_status') in {'unknown_format', 'format_changed'}:
                     st.info("Este fallo quedó sembrado en la pestaña 'Aprender Formatos'.")
 
-            if analysis.get("available_scopes"):
-                st.json({"available_scopes": analysis["available_scopes"]})
-            if debug and not _is_production_test(mode) and analysis.get("debug_log"):
-                with st.expander(f"Debug Log for {entry['file_name']}"):
-                    for step in analysis['debug_log']:
-                        st.write(step)
+            _render_analysis_technical_details(entry, analysis, debug=debug, mode=mode)
 
 
 def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, Any]], debug: bool = False, mode: str = "local"):
