@@ -83,3 +83,48 @@ def test_multi_scope_document_requires_selection_before_processing():
     assert len(analysis["available_scopes"]) == 5
     assert result["success"] is False
     assert result["parse_status"] == "validation_failed"
+
+
+def test_bbva_account_summary_with_four_valid_transactions_is_not_rejected_as_format_changed():
+    text = "\n".join(
+        [
+            "110243804202310261DIGITAL",
+            "Resumen",
+            "Cuentas y paquetes",
+            "PERSONA",
+            "Cuentas",
+            "CONSOLIDADO",
+            "CA $ 354-428727/2 (Caja de Ahorros) Saldo Consolidado",
+            "CBU 01703540 40000042872724 Sucursal gestora 0354 $ 0,00",
+            "Intervinientes",
+            "PERSONA",
+            "DETALLE",
+            "Movimientos en cuentas",
+            "CA $ 354-428727/2 (Caja de Ahorros) - A Consumidor Final",
+            "FECHA ORIGEN CONCEPTO DÉBITO CRÉDITO SALDO",
+            "SALDO ANTERIOR 0,00",
+            "17/10 MOVIM. ENTRE CUENTAS CCP354 560404 1 144.645,66 144.645,66",
+            "17/10 CUENTA VISA NRO. XXXXXXXXXXXXXX -144.645,66 0,00",
+            "17/10 MOVIM. ENTRE CUENTAS CCP354 560404 1 2.572,98 2.572,98",
+            "17/10 CUENTA VISA NRO. XXXXXXXXXXXXXX -2.572,98 0,00",
+            "SALDO AL 26 DE OCTUBRE 0,00",
+            "TOTAL MOVIMIENTOS -147.218,64 147.218,64",
+            "Legales y avisos",
+        ]
+    )
+    proc = DummyProcessor(text)
+
+    analysis = proc.analyze_pdf("dummy.pdf", "Resumen caja de ahorro BBVA 10-2023.pdf")
+    result = proc.process_pdf("dummy.pdf", "Resumen caja de ahorro BBVA 10-2023.pdf")
+
+    assert analysis["success"] is True
+    assert analysis["format_id"] == "account_summary"
+    assert analysis["parse_status"] == "ok"
+    assert len(analysis["available_scopes"]) == 1
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["format_id"] == "account_summary"
+    assert result["total_transactions"] == 4
+    assert result["transactions"][0]["amount"] == 144645.66
+    assert result["transactions"][-1]["amount"] == -2572.98

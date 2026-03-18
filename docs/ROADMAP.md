@@ -96,8 +96,9 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 
 ### Prioridad 3: ampliar cobertura real
 - Priorizar bancos nuevos según impacto y disponibilidad de muestras.
-- Añadir convenciones de naming y validación para specs nuevas.
-- Definir criterio explícito de “banco soportado”.
+- ~~Añadir convenciones de naming y validación para specs nuevas.~~ → resuelto en `CONTRIBUTING.md`.
+- ~~Definir criterio explícito de "banco soportado".~~ → resuelto en `CONTRIBUTING.md`.
+- Publicar `CONTRIBUTING.md` como guía oficial para PRs de bancos nuevos. ✅
 
 ### Prioridad 4: producto y mantenimiento
 - Mantener el roadmap y el estado del proyecto sincronizados con cada bloque grande.

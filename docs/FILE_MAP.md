@@ -9,6 +9,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | --- | --- | --- |
 | `.gitignore` | Exclusiones locales | Cubre cachés, `.env*`, logs y artefactos locales de pruebas |
 | `AGENTS.md` | Guía breve para futuros agentes | Contexto operativo rápido |
+| `CONTRIBUTING.md` | Guía de contribución para colaboradores externos | Procedimiento para agregar bancos nuevos vía PR |
 | `app.py` | Entrada principal Streamlit | Código productivo; soporta `local` y `production-test` |
 | `excel_generator.py` | Generación de Excel | Código productivo |
 | `format_cli.py` | CLI para train/validate/publish/regress | Código productivo |

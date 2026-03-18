@@ -75,5 +75,5 @@ statement_month_pattern = '20\d{2}(?P<month>0[1-9]|1[0-2])\d{3}DIGITAL'
 "U$S" = "USD"
 
 [change_detection]
-min_transactions = 5
+min_transactions = 4
 min_match_ratio = 0.8

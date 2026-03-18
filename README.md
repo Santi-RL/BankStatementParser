@@ -97,16 +97,11 @@ El smoke E2E con navegador queda documentado en `docs/E2E_PLAYWRIGHT.md`.
 
 ## Agregar nuevos formatos
 
-Para soportar un banco adicional hay que crear un nuevo formato declarativo en:
+Para soportar un banco adicional solo hace falta crear un nuevo formato declarativo en `parser_specs/`. No es necesario escribir código Python.
 
-```text
-parser_specs/<bank_id>/<format_id>/
-  spec.toml
-  fixtures/
-    sample_text.txt
-    expected_transactions.json
-```
-
-La app y la CLI ya incluyen el flujo para crear borradores, validarlos y publicarlos sin tocar el runtime.
-
-Los formatos que necesiten separar varias cuentas o tarjetas dentro del mismo PDF pueden declararlo en la spec sin agregar parsers Python nuevos al runtime.
+La guía completa para contribuir un banco nuevo está en [`CONTRIBUTING.md`](CONTRIBUTING.md), incluyendo:
+- Paso a paso con la CLI (`train`, `validate-draft`, `publish`)
+- Checklist para PRs
+- Convenciones de naming
+- Ejemplos de specs mínimas y por secciones
+- Referencia de campos y formatos avanzados
