@@ -1,0 +1,32 @@
+[
+  {
+    "date": "2025-05-05",
+    "description": "DEB. AUTOM. DE SERV. PERSONA NORMAL XXXXXXXXXXX_XXX XXXXXXXXXXX",
+    "amount": -48829.05,
+    "balance": 123267.71,
+    "account": "N XXXX- X XXX-X",
+    "bank": "Banco Galicia (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2025-05-05",
+    "description": "TRANSFERENCIA DE CUENTA PROPIA PERSONA/PERSONA PERSONA PERSONA XXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXX XXXXXXXXXXXXXXXX VARIOS",
+    "amount": 100000.0,
+    "balance": 223267.71,
+    "account": "N XXXX- X XXX-X",
+    "bank": "Banco Galicia (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2025-05-05",
+    "description": "DEB. AUTOM. DE SERV. PERSONA SA CUOTAS 1 FAC XXXXXXXXXX XXXXXXXX",
+    "amount": -166046.59,
+    "balance": 57221.12,
+    "account": "N XXXX- X XXX-X",
+    "bank": "Banco Galicia (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  }
+]

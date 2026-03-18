@@ -1,0 +1,34 @@
+Resumen de Caja de Ahorro en Pesos
+PERSONA PERSONA PERSONA PERSONA
+IVA Consumidor Final
+Cantidad de cotitulares 0
+Datos de la cuenta Período de movimientos Saldos
+Tipo de cuenta
+Caja de Ahorro en Pesos
+$172.096,76
+Número de cuenta
+N XXXX- X XXX-X
+$849.456,43
+CBU 25/04/2025 30/05/2025
+XXXXXXXXXXXXXXXXXXXXXXX
+Disponés de 30 días desde la recepción para cuestionar este resumen.
+Movimientos
+Fecha Descripción Origen Crédito Débito Saldo
+05/05/25 DEB. AUTOM. DE SERV. -48.829,05 123.267,71
+PERSONA
+NORMAL
+XXXXXXXXXXX_XXX
+XXXXXXXXXXX
+05/05/25 TRANSFERENCIA DE CUENTA 100.000,00 223.267,71
+PROPIA
+PERSONA/PERSONA PERSONA PERSONA
+XXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXX
+XXXXXXXXXXXXXXXX
+VARIOS
+05/05/25 DEB. AUTOM. DE SERV. -166.046,59 57.221,12
+PERSONA SA
+CUOTAS 1
+FAC XXXXXXXXXX
+XXXXXXXX

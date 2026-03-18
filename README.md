@@ -2,12 +2,25 @@
 
 Esta aplicación convierte extractos bancarios en PDF a archivos Excel mediante la interfaz de Streamlit.
 
+## Documentación interna
+
+Si vas a retomar el proyecto o a trabajar con agentes, empieza por estos archivos:
+
+- `AGENTS.md`
+- `docs/PROJECT_CONTEXT.md`
+- `docs/PROJECT_STATUS.md`
+- `docs/ROADMAP.md`
+- `docs/FILE_MAP.md`
+
 ## Bancos compatibles
 
-Actualmente se incluyen parsers para:
+Actualmente hay formatos declarativos publicados para:
 - Banco Galicia (Argentina)
 - Banco Roela (Argentina)
-- Varios bancos españoles e ingleses mediante parsers genéricos.
+- Chase / JPMorgan Chase
+- BBVA (extracto consolidado con múltiples tarjetas y cuentas)
+
+Si el banco es detectado pero no tiene una spec publicada, el resultado esperado es `unknown_format`.
 
 ## Instalacion de Dependencias
 
@@ -19,44 +32,81 @@ pip install -r requirements.txt
 
 ## Ejecución de la Aplicación
 
-Usa `streamlit run app.py` para iniciar la aplicación. Un flag opcional `--debug` controla el nivel de registro por defecto.
+El comando oficial del repo es:
 
 ```bash
-streamlit run app.py -- --debug
+venv\Scripts\python.exe scripts/run_app.py --mode local
 ```
 
-- Cuando se proporciona `--debug`, la casilla 🐞 **Modo Depuración** de la barra lateral aparece marcada y el registro comienza en nivel `DEBUG`.
-- Sin `--debug`, la casilla inicia desmarcada y el registro se establece en `INFO`.
-- Cambiar la casilla mientras la aplicación está en ejecución ajustará el nivel de registro inmediatamente y la configuración se mantiene entre recargas.
+Opciones útiles:
 
-El flag de la CLI solo controla el estado inicial; la casilla de la barra lateral es la fuente de verdad después del arranque.
+```bash
+venv\Scripts\python.exe scripts/run_app.py --mode local --debug
+venv\Scripts\python.exe scripts/run_app.py --mode production-test
+```
 
-## Bancos Soportados
+- `local`: deja visible el backoffice `Aprender Formatos` y permite activar debug desde la barra lateral.
+- `production-test`: oculta el backoffice, desactiva el debug interactivo y sanitiza los errores mostrados al usuario.
+- Los logs rotan en `logs/app.log`.
 
-La aplicación incluye parsers específicos para los siguientes bancos (además de parsers genéricos para formatos en español e inglés):
+Si prefieres arrancar Streamlit manualmente:
 
-- Banco Santander
-- BBVA
-- CaixaBank
-- Banco Galicia (Argentina)
-- Bankia
-- Sabadell
-- Unicaja
-- Kutxabank
-- Ibercaja
-- Chase
-- Bank of America
-- Wells Fargo
-- Citibank
-- HSBC
-- Barclays
-- Deutsche Bank
+```bash
+venv\Scripts\streamlit.exe run app.py -- --mode local
+```
 
-## Agregar nuevos parsers
+## Motor Declarativo de Formatos
 
-Para soportar un banco adicional basta con crear un nuevo módulo dentro del
-directorio `parsers/` (o cualquiera de sus subpaquetes) que contenga una clase
-heredada de `BaseBankParser`. Define el atributo `bank_id` y, opcionalmente,
-`aliases` con otros identificadores reconocibles. Al importar el paquete
-`parsers` las clases se registran automáticamente y `BankParserFactory` podrá
-instanciarlas sin pasos extra.
+El proyecto ahora incorpora un registro declarativo de parsers en `parser_specs/`.
+
+- Los formatos publicados son la única vía de parsing en runtime.
+- La app incluye un backoffice `Aprender Formatos` para crear borradores y publicarlos.
+- Existe un modo endurecido `production-test` para primeras pruebas controladas.
+- La UI productiva separa el flujo en `Analizar Extractos` y `Procesar Extractos`.
+- Cuando un PDF contiene múltiples entidades extraíbles, la app exige una selección previa por cuenta o tarjeta antes de procesar.
+- La salida mantiene un CSV consolidado y genera hojas/tabs separadas por entidad cuando corresponde.
+- La CLI interna está disponible con:
+
+```bash
+venv\Scripts\python.exe format_cli.py train ...
+venv\Scripts\python.exe format_cli.py validate-draft ...
+venv\Scripts\python.exe format_cli.py publish ...
+venv\Scripts\python.exe format_cli.py regress
+```
+
+## Tests
+
+El runner oficial de tests es:
+
+```bash
+venv\Scripts\python.exe -m pytest -q
+```
+
+Hay tres capas:
+- unit tests,
+- integration tests con PDFs reales ya presentes en el repo,
+- regression tests para specs declarativas.
+
+El smoke E2E con navegador queda documentado en `docs/E2E_PLAYWRIGHT.md`.
+
+## Primera prueba en producción
+
+- Formatos hoy soportados: Galicia Argentina, Roela Argentina, Chase y BBVA consolidado.
+- El modo recomendado para la primera prueba controlada es `production-test`.
+- El runbook operativo breve está en `docs/PRODUCTION_TEST_RUNBOOK.md`.
+
+## Agregar nuevos formatos
+
+Para soportar un banco adicional hay que crear un nuevo formato declarativo en:
+
+```text
+parser_specs/<bank_id>/<format_id>/
+  spec.toml
+  fixtures/
+    sample_text.txt
+    expected_transactions.json
+```
+
+La app y la CLI ya incluyen el flujo para crear borradores, validarlos y publicarlos sin tocar el runtime.
+
+Los formatos que necesiten separar varias cuentas o tarjetas dentro del mismo PDF pueden declararlo en la spec sin agregar parsers Python nuevos al runtime.

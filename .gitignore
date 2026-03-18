@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+.env
+.env.*
+logs/
+*.log
+htmlcov/
+playwright-report/
+test-results/

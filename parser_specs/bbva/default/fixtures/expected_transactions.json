@@ -1,0 +1,81 @@
+[
+  {
+    "date": "2022-12-19",
+    "description": "SU PAGO EN PESOS",
+    "amount": 51410.18,
+    "balance": "",
+    "account": "XXXXXXXXXX",
+    "bank": "BBVA Argentina",
+    "currency": "ARS",
+    "transaction_type": "Credit",
+    "scope_id": "credit_card:0837946968",
+    "scope_label": "Tarjeta crédito 0837946968",
+    "product_type": "credit_card"
+  },
+  {
+    "date": "2022-08-29",
+    "description": "SIMMONS SIMMONS C.05/18",
+    "amount": -5845.54,
+    "balance": "",
+    "account": "XXXXXXXXXX",
+    "bank": "BBVA Argentina",
+    "currency": "ARS",
+    "transaction_type": "Debit",
+    "scope_id": "credit_card:0837946968",
+    "scope_label": "Tarjeta crédito 0837946968",
+    "product_type": "credit_card"
+  },
+  {
+    "date": "2023-01-05",
+    "description": "IMPUESTO DE SELLOS $",
+    "amount": -555.87,
+    "balance": "",
+    "account": "XXXXXXXXXX",
+    "bank": "BBVA Argentina",
+    "currency": "ARS",
+    "transaction_type": "Debit",
+    "scope_id": "credit_card:0837946968",
+    "scope_label": "Tarjeta crédito 0837946968",
+    "product_type": "credit_card"
+  },
+  {
+    "date": "2022-12-15",
+    "description": "OLACLARA",
+    "amount": -47340.0,
+    "balance": "",
+    "account": "0429",
+    "bank": "BBVA Argentina",
+    "currency": "ARS",
+    "transaction_type": "Debit",
+    "scope_id": "debit_card:0429",
+    "scope_label": "Visa Débito 0429",
+    "product_type": "debit_card",
+    "linked_account": "CC $ 354-560404/1"
+  },
+  {
+    "date": "2022-12-19",
+    "description": "MOVIM. ENTRE CUENTAS XXXXXX XXXXXX 1",
+    "amount": 51410.12,
+    "balance": 51410.18,
+    "account": "CA $ 354-XXXXXX/2",
+    "bank": "BBVA Argentina",
+    "currency": "ARS",
+    "transaction_type": "Credit",
+    "scope_id": "bank_account:CA_$_354-428727/2",
+    "scope_label": "CA $ 354-428727/2",
+    "product_type": "bank_account"
+  },
+  {
+    "date": "2022-12-07",
+    "description": "IMP.LEY XXXXX 07/12/22 XXXXX",
+    "amount": -4.74,
+    "balance": 315782.02,
+    "account": "CC $ 354-XXXXXX/1",
+    "bank": "BBVA Argentina",
+    "currency": "ARS",
+    "transaction_type": "Debit",
+    "scope_id": "bank_account:CC_$_354-560404/1",
+    "scope_label": "CC $ 354-560404/1",
+    "product_type": "bank_account"
+  }
+]

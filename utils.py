@@ -1,8 +1,12 @@
-import re
-import locale
-from typing import Optional, List, Any
-from datetime import datetime
 import logging
+import os
+import re
+import tempfile
+from contextlib import contextmanager
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Any, Iterator, List, Optional
 
 def clean_text(text: str, preserve_lines: bool = False) -> str:
     """Clean and normalize text content.
@@ -131,7 +135,7 @@ def parse_date(date_str: str) -> Optional[str]:
     
     return None
 
-def format_currency(amount: float, currency: str = 'EUR') -> str:
+def format_currency(amount: float, currency: Optional[str] = None) -> str:
     """
     Format currency amount for display.
     
@@ -142,16 +146,19 @@ def format_currency(amount: float, currency: str = 'EUR') -> str:
     Returns:
         Formatted currency string
     """
-    if currency == 'EUR':
+    normalized_currency = (currency or "").upper()
+
+    if normalized_currency == 'EUR':
         return f"{amount:,.2f} €"
-    elif currency == 'USD':
+    elif normalized_currency == 'USD':
         return f"${amount:,.2f}"
-    elif currency == 'GBP':
+    elif normalized_currency == 'GBP':
         return f"£{amount:,.2f}"
-    elif currency == 'ARS':
+    elif normalized_currency == 'ARS':
         return f"AR${amount:,.2f}"
-    else:
-        return f"{amount:,.2f} {currency}"
+    elif normalized_currency:
+        return f"{amount:,.2f} {normalized_currency}"
+    return f"{amount:,.2f}"
 
 def validate_pdf_files(uploaded_files: List[Any]) -> dict:
     """
@@ -191,145 +198,91 @@ def validate_pdf_files(uploaded_files: List[Any]) -> dict:
         'errors': errors
     }
 
-def setup_logging():
-    """Setup logging configuration."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+def get_transaction_currencies(transactions: List[dict[str, Any]]) -> List[str]:
+    """Return the distinct non-empty currencies found in the transaction list."""
 
-def get_transaction_category(description: str) -> str:
-    """
-    Categorize transaction based on description.
-    
-    Args:
-        description: Transaction description
-        
-    Returns:
-        Category string
-    """
-    description_lower = description.lower()
-    
-    # Food and dining
-    if any(keyword in description_lower for keyword in [
-        'restaurante', 'restaurant', 'cafe', 'bar', 'comida', 'food',
-        'mercadona', 'carrefour', 'supermercado', 'grocery', 'market'
-    ]):
-        return 'Food & Dining'
-    
-    # Transportation
-    elif any(keyword in description_lower for keyword in [
-        'gasolina', 'gas', 'taxi', 'uber', 'metro', 'bus', 'train',
-        'parking', 'aparcamiento', 'peaje', 'toll'
-    ]):
-        return 'Transportation'
-    
-    # Shopping
-    elif any(keyword in description_lower for keyword in [
-        'amazon', 'ebay', 'tienda', 'shop', 'store', 'compra', 'purchase',
-        'zara', 'h&m', 'corte ingles'
-    ]):
-        return 'Shopping'
-    
-    # Bills and utilities
-    elif any(keyword in description_lower for keyword in [
-        'luz', 'agua', 'gas', 'telefono', 'internet', 'electric', 'water',
-        'phone', 'utility', 'bill', 'factura', 'recibo'
-    ]):
-        return 'Bills & Utilities'
-    
-    # Banking
-    elif any(keyword in description_lower for keyword in [
-        'comision', 'fee', 'interes', 'interest', 'transferencia', 'transfer',
-        'cajero', 'atm', 'banco', 'bank'
-    ]):
-        return 'Banking & Fees'
-    
-    # Income
-    elif any(keyword in description_lower for keyword in [
-        'nomina', 'salary', 'sueldo', 'pago', 'payment', 'ingreso', 'income'
-    ]):
-        return 'Income'
-    
-    # Healthcare
-    elif any(keyword in description_lower for keyword in [
-        'farmacia', 'pharmacy', 'medico', 'doctor', 'hospital', 'clinic',
-        'seguro', 'insurance', 'salud', 'health'
-    ]):
-        return 'Healthcare'
-    
-    else:
-        return 'Other'
+    currencies = {
+        str(transaction.get("currency", "") or "").strip().upper()
+        for transaction in transactions
+        if str(transaction.get("currency", "") or "").strip()
+    }
+    return sorted(currencies)
 
-def extract_account_number(text: str) -> Optional[str]:
-    """
-    Extract account number from text using common patterns.
-    
-    Args:
-        text: Text content to search
-        
-    Returns:
-        Account number if found, None otherwise
-    """
-    patterns = [
-        r'IBAN[:\s]+([A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}[A-Z0-9]{1,3})',
-        r'N[úu]mero de cuenta[:\s]+([0-9\-\s]{10,30})',
-        r'Account number[:\s]+([0-9\-\s]{8,20})',
-        r'Cuenta[:\s]+([0-9\-\s]{8,20})'
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            return match.group(1).strip().replace(' ', '').replace('-', '')
 
+def resolve_single_currency(transactions: List[dict[str, Any]]) -> Optional[str]:
+    """Return the currency code only when all transactions share the same one."""
+
+    currencies = get_transaction_currencies(transactions)
+    if len(currencies) == 1:
+        return currencies[0]
     return None
 
 
+@contextmanager
+def temporary_pdf_copy(payload: bytes, suffix: str = ".pdf") -> Iterator[str]:
+    """Persist PDF bytes to a temporary path and ensure cleanup on exit."""
+
+    temp_path: Optional[str] = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            tmp_file.write(payload)
+            temp_path = tmp_file.name
+        yield temp_path
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+
+
+def setup_logging(mode: str = "local", debug: bool = False) -> logging.Logger:
+    """Configure root logging for Streamlit and CLI entrypoints."""
+
+    log_dir = Path("logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "app.log"
+
+    level = logging.DEBUG if mode == "local" and debug else logging.INFO
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    root_logger = logging.getLogger()
+    for handler in list(root_logger.handlers):
+        root_logger.removeHandler(handler)
+        handler.close()
+
+    root_logger.setLevel(level)
+    root_logger.propagate = False
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    console_handler.setFormatter(formatter)
+
+    file_handler = RotatingFileHandler(
+        log_path,
+        maxBytes=1_000_000,
+        backupCount=3,
+        encoding="utf-8",
+    )
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+    return root_logger
+
+
+def set_logging_level(level: int) -> logging.Logger:
+    """Update the root logger and all attached handlers to the same level."""
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    for handler in root_logger.handlers:
+        handler.setLevel(level)
+    return root_logger
+
+
 def get_supported_banks() -> List[str]:
-    """Return a sorted list of human friendly bank names currently supported."""
+    """Return a sorted list of published declarative formats currently supported."""
 
-    from parsers import PARSER_REGISTRY
+    from format_engine import FormatRegistry
 
-    display_map = {
-        "bbva": "BBVA",
-        "hsbc": "HSBC",
-        "bank_of_america": "Bank of America",
-        "wells_fargo": "Wells Fargo",
-        "deutsche_bank": "Deutsche Bank",
-        "citibank": "Citibank",
-        "barclays": "Barclays",
-        "bankia": "Bankia",
-        "sabadell": "Sabadell",
-        "kutxabank": "Kutxabank",
-        "ibercaja": "Ibercaja",
-        "unicaja": "Unicaja",
-        "caixabank": "CaixaBank",
-        "chase": "Chase",
-    }
-
-    generic_aliases = {
-        "generic_spanish",
-        "generic_english",
-        "generic_argentinian",
-        "argentina",
-    }
-
-    specialized = {
-        "SantanderParser",
-        "BBVAParser",
-        "CaixaBankParser",
-        "GaliciaParser",
-    }
-
-    banks = set()
-    for alias, cls in PARSER_REGISTRY.items():
-        if alias in generic_aliases:
-            continue
-
-        if cls.__name__ in specialized:
-            banks.add(cls()._get_bank_name())
-        else:
-            banks.add(display_map.get(alias, alias.replace("_", " ").title()))
-
-    return sorted(banks)
+    registry = FormatRegistry()
+    return sorted({spec.display_name for spec in registry.specs_by_status("published")})

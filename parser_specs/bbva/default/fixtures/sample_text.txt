@@ -1,0 +1,34 @@
+Banco BBVA Argentina S.A.
+110087254202301077DIGITAL
+Tarjetas de Crédito
+Visa Gold CONSOLIDADO
+cuenta 0837946968 (incluida en el paquete Cuenta Plus Gold)
+Sus pagos y ajustes realizados
+FECHA DESCRIPCIÓN NRO. CUPÓN PESOS DÓLARES
+19-Dic-22 SU PAGO EN PESOS -51.410,18
+Consumos Andres L Prozzi
+FECHA DESCRIPCIÓN NRO. CUPÓN PESOS DÓLARES
+29-Ago-22 SIMMONS SIMMONS C.05/18 001580 5.845,54
+TOTAL CONSUMOS DE PERSONA 5.845,54
+Impuestos, cargos e intereses
+FECHA DESCRIPCIÓN PESOS DÓLARES
+05-Ene-23 IMPUESTO DE SELLOS $ 555,87
+SALDO ACTUAL 46.878,66 2,00
+Tarjetas de Débito
+Compras Visa Débito 0429
+CUENTA DÉBITO CC $ 354-560404/1
+15/12/2022 0429 OLACLARA 566275 $ -47.340,00
+Cuenta Plus Gold
+Cuentas
+CONSOLIDADO
+CA $ 354-428727/2 (Caja de Ahorros) Saldo Consolidado
+CC $ 354-560404/1 (Cta.Cte.Bancaria - incluida en el paquete Cuenta Plus Gold) Saldo Consolidado
+CA U$S 354-412259/7 (Caja de Ahorros - incluida en el paquete Cuenta Plus Gold) Saldo Consolidado
+Movimientos en cuentas
+CA $ 354-428727/2 (Caja de Ahorros) - A Consumidor Final
+FECHA ORIGEN CONCEPTO DÉBITO CRÉDITO SALDO
+19/12 MOVIM. ENTRE CUENTAS CCP354 560404 1 51.410,12 51.410,18
+CC $ 354-560404/1 (Cta.Cte.Bancaria) - A consumidor final
+FECHA ORIGEN CONCEPTO DÉBITO CRÉDITO SALDO
+07/12 IMP.LEY 25413 07/12/22 00004 -4,74 315.782,02
+Impuesto a los débitos y créditos

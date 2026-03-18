@@ -1,0 +1,55 @@
+[meta]
+bank_id = "galicia_ar"
+format_id = "default"
+version = 1
+status = "published"
+country = "AR"
+currency_default = "ARS"
+display_name = "Banco Galicia (Arg.)"
+
+[detect]
+required_keywords = [
+  "Resumen de Caja de Ahorro en Pesos",
+  "Movimientos",
+  "Fecha Descripción",
+]
+excluded_keywords = []
+min_score = 0.66
+
+[extract]
+strategy = "line_regex"
+line_pattern = '^(?P<date>\d{2}/\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>[+-]?\d{1,3}(?:\.\d{3})*,\d{2})\s+(?P<balance>[+-]?\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}/\d{2}'
+section_start_patterns = ['^Movimientos$', '^Fecha\s+Descripción']
+ignore_patterns = [
+  '^Resumen de Caja',
+  '^Datos de la cuenta',
+  '^Tipo de cuenta',
+  '^Caja de Ahorro en Pesos$',
+  '^Número de cuenta$',
+  '^CBU ',
+  '^Disponés de',
+]
+stop_patterns = [
+  '^Consolidado de retención',
+  '^Los depósitos en pesos',
+  '^Canales de atención',
+  '^Usted puede consultar',
+  '^Josefina M\. Quevedo',
+  '^Banco de Galicia y Buenos Aires',
+]
+multiline = true
+
+[fields]
+date = "date"
+description = "description"
+amount = "amount"
+balance = "balance"
+account_pattern = 'Número de cuenta\s*\n([A-Z0-9\-\s]+)'
+
+[normalize]
+date_formats = ['%d/%m/%y']
+
+[change_detection]
+min_transactions = 3
+min_match_ratio = 0.7

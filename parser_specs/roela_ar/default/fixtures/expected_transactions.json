@@ -1,0 +1,552 @@
+[
+  {
+    "date": "2024-09-02",
+    "description": "127 0 COM.MANT.DE CUENTA MENSUAL",
+    "amount": -9435.29,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "130 0 I.V.A.",
+    "amount": -1981.41,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 0 IMPUESTO LEY XXXXX",
+    "amount": -11.89,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 0 IMPUESTO LEY XXXXX",
+    "amount": -56.61,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "130 0 I.V.A.",
+    "amount": -60.46,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 0 IMPUESTO LEY XXXXX",
+    "amount": -289.99,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "276 0 COM. ONLINE. ID. COBRANZAS XXXXXX XXXXXXXX CREDIN- Crédito 11,800.00 PERSONA titular- XXXXXXXXXXX-LURDE MABEL RUIZ PENAYO",
+    "amount": -287.88,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "130 0 I.V.A.",
+    "amount": -14.87,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 0 IMPUESTO LEY XXXXX",
+    "amount": -71.32,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "276 0 COM. ONLINE. ID. COBRANZAS",
+    "amount": -70.8,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -SILVIA NOEMI LOPEZ INTERVANET",
+    "amount": 13759.38,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX",
+    "amount": -82.56,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -HECTOR LEGUIZA INTERVANET",
+    "amount": 17035.42,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 1,180.00 PERSONA titular- XXXXXXXXXXX-LURDE MABEL RUIZ PENAYO XXXXXX XXXXXXXX CREDIN- Crédito 11,218.00 PERSONA titular- XXXXXXXXXXX-KARINA BEATRIZ ZUNINO",
+    "amount": -102.21,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX - BENJAMIN ANTONIO GENER INTERVANET",
+    "amount": 17035.42,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX",
+    "amount": -102.21,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -JULIO CESAR URSINO INTERVANET",
+    "amount": 15725.0,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 6,930.00 PASTORINO, YAMILA MARI TRANSF",
+    "amount": -94.35,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 1,608.00 PERSONA titular- XXXXXXXXXXX-KARINA BEATRIZ ZUNINO XXXXXX XXXXXXXX CREDIN- Crédito 29,400.00 PERSONA titular- XXXXXXXXXXX-DIEGO LEONEL VALENZISI XXXXXX XXXXXXXX CREDIN- Crédito 8,250.00 PERSONA titular- XXXXXXXXXXX-MARIA CECILIA AGUILAR HERMOZA XXXXXX XXXXXXXX CREDIN- Crédito 11,330.00 PERSONA titular- XXXXXXXXXXX-PEDRO VICTORINO LUNA XXXXXX XXXXXXXX CREDIN- Crédito 13,000.00 PERSONA titular- XXXXXXXXXXX-SANDRA CONCEPCION CAMPUZANO BENITEZ XXXXXX XXXXXXXX CREDIN- Crédito 13,200.00 PERSONA titular- XXXXXXXXXXX-ROXANA ELIZABETH VILLAGRA XXXXXX XXXXXXXX CREDIN- Crédito 17,160.00 PERSONA titular- XXXXXXXXXXX-EDMUNDO JORGE KLACZYNSKI XXXXXX XXXXXXXX CREDIN- Crédito 15,840.00 PERSONA titular- XXXXXXXXXXX-SONIA ROSSANA VERONICA DIAZ XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 17,160.00 LUCAS SALVADOR COSTANZ",
+    "amount": -41.58,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 8,250.00 RIQUELME, CLAUDIA BEAT PAGO",
+    "amount": -102.96,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 12,980.00 PERSONA titular- XXXXXXXXXXX-NELSON MATIAS CORSI XXXXXX XXXXXXXX CREDIN- Crédito 15,840.00 PERSONA titular- XXXXXXXXXXX-GRACIELA NOEMI ZAPATA XXXXXX XXXXXXXX CREDIN- Crédito 8,250.00 PERSONA titular- XXXXXXXXXXX-MELANIE PATRICIA ELIZONDO XXXXXX XXXXXXXX CREDIN- Crédito 12,980.00 PERSONA titular- XXXXXXXXXXX-FERNANDA ROMINA LO PIZZO XXXXXX XXXXXXXX CREDIN- Crédito 10,560.00 PERSONA titular- XXXXXXXXXXX-ANGEL DAMIAN PEINADO XXXXXX XXXXXXXX CREDIN- Crédito 17,160.00 PERSONA titular- XXXXXXXXXXX-CARLA NERINA RACEDO XXXXXX XXXXXXXX CREDIN- Crédito 6,930.00 PERSONA titular- XXXXXXXXXXX-ELIO ROQUE JESUS ELIZONDO",
+    "amount": -49.5,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX - JENNIFER ELIZABETH ROL INTERVANET",
+    "amount": 10483.33,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX",
+    "amount": -62.9,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX - FEDERICO DAMIAN ALVARE INTERVANET",
+    "amount": 8190.1,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 11,330.00 PINTINI, SILVIA CRISTI INTERNET",
+    "amount": -49.14,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 15,840.00 VIACAVA, MARCELA TRANSF",
+    "amount": -67.98,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 10,560.00 RICO, MAURO ROBERTO PAGO",
+    "amount": -95.04,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 6,930.00 PERSONA titular- XXXXXXXXXXX-LAURA ALICIA LOFIEGO XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 24,640.00 RIVERO,/IRIS PATRIC",
+    "amount": -63.36,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 30,968.75 LOPEZ, FELIPE SEBASTIA TRANSF",
+    "amount": -147.84,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 10,560.00 PERSONA titular- XXXXXXXXXXX-CESAR JAVIER GUTIERREZ",
+    "amount": -185.81,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "172 XXXXXX TR.INTERB.MISMO TIT.- XXXXXXXXXXX-BOGADO ROA HIRAN",
+    "amount": -200000.0,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -SERGIO ARIEL CENTURION INTERVANET",
+    "amount": 8190.1,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 30,000.00 DIAZ, MAGALI ELIZABETH H",
+    "amount": -49.14,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 16,500.00 FALIERO/ANALIA VERONIC IGLESIASFAL",
+    "amount": -180.0,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 10,560.00 ANGELINI, MONICA SU",
+    "amount": -99.0,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 8,250.00 PERSONA titular- XXXXXXXXXXX-RAMONA MARIANA MARTINEZ",
+    "amount": -63.36,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -BEATRIZ NOEMI OLIVERA INTERVANET",
+    "amount": 17035.42,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 17,160.00 CRUZ LUIS MIGUEL",
+    "amount": -102.21,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 8,250.00 SOSTO/SERGIO L VARVarios",
+    "amount": -102.96,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX CREDIN- Crédito 10,560.00 PERSONA titular- XXXXXXXXXXX-VIVIANA MOLINA XXXXXX XXXXXXXX TRA D T-XXXXXXXXXXX- 10,560.00 CANTARIN/ HERNAN Cliente 375",
+    "amount": -49.5,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX",
+    "amount": -63.36,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -ROCIO AYELEN COMEZANA INTERVANET",
+    "amount": 10483.33,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 8,250.00",
+    "amount": -62.9,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 10,560.00",
+    "amount": -49.5,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 19,800.00",
+    "amount": -63.36,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 17,160.00",
+    "amount": -118.8,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 10,200.00",
+    "amount": -102.96,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 8,250.00",
+    "amount": -61.2,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX XXXXXX XXXXXXXX TRA D T 37,500.00",
+    "amount": -49.5,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 XXXXXXXX IMPUESTO LEY XXXXX",
+    "amount": -225.0,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "130 0 I.V.A.",
+    "amount": -792.88,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "148 0 IMPUESTO LEY XXXXX",
+    "amount": -1486.61,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "276 0 COM. ONLINE. ID. COBRANZAS",
+    "amount": -3441.69,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "288 0 COM.PAGOSQR",
+    "amount": -333.48,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-09-02",
+    "description": "580 XXXXXXXXXXXX CREDITO POR COBRO QR CON TRANSF. DIST. TIT.-XXXXXXXX -FERRER BENTANCOR ES INTERVANET",
+    "amount": 24461.11,
+    "balance": "",
+    "account": "",
+    "bank": "Banco Roela (Arg.)",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  }
+]

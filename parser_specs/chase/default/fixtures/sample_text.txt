@@ -1,0 +1,103 @@
+XXXXXXXXXXXXXXX
+CUSTOMER SERVICE INFORMATION
+XXXXXXXXXXXXXXXXXXXX
+December 30, 2023throughJanuary 31, 2024
+JPMorgan Chase Bank, N.A.
+Account Number
+P O Box XXXXXX
+Columbus, OH XXXXX-2051
+Web site Chase.com
+Service Center 1-800-242-7338
+XXXXXXXXXXX 021 210 XXXXX NNNNNNNNNNN 1 XXXXXXXXX XXXXXX PERSONA 1-888-622-4273
+COFESCAN LLC PERSONA 1-713-262-1679
+3955 NW 75TH TER We accept operator relay calls
+LAUDERHILL XXXXXXX-3934
+start summary
+Chase Business Complete Checking
+CHECKING SUMMARY
+INSTANCES AMOUNT
+Beginning Balance $1,043.30
+Deposits and Additions 4 4,210.00
+Electronic Withdrawals 7 -3,227.83
+Fees 1 -15.00
+Ending Balance 12 $2,010.47
+end summary
+start post summary message1
+Your Monthly Service Fee was $15 this statement period.
+How to Avoid the Monthly Service Fee (MSF) SM
+If you meet any of the following qualifying activities for this Chase Business Complete Checking account in a statement
+period, we will waive the $15 MSF.
+Here s the business activity we used to determine if you qualified for the MSF waiver
+$2,000 Minimum Daily Ending BalSaMnce Your lowest daily ending balance was $743.30.
+$2,000 Chase Payment Solutions Activity $0.00 was deposited into this account.
+
+$2,000 Chase Ink Business Card Activity $0.00 was your total Ink activity.
+You can also avoid the MSF if you SM
+Maintain a linked Chase Private Client Checking account OR
+Meet Chase Military Banking requirements
+For complete details on all requirements to avoid the MSF, please review the Additional Banking Services and Fees for
+end posBt summary mesusage1siness Accounts at chase.com/business/disclosures or visit a Chase branch.
+start deposits and additions
+DEPOSITS AND ADDITIONS
+DATE DESCRIPTION AMOUNT
+01/02 Deposit XXXXXXXXXX $300.00
+01/02 Zelle Payment From Dave Adden Pinnock XXXXXXXXXXX 1,800.00
+01/18 Deposit XXXXXXXXXX 2,000.00
+01/26 Zelle Payment From Osvaldo Mario Mastino XXXXXXXXXXX 110.00
+Total Deposits and Additions $4,210.00
+end deposits and additions
+Page of
+1 2
+December 30, 2023throughJanuary 31, 2024
+Account Number
+XXXXXXXXXXXXXXX
+start electronic withdrawal
+ELECTRONIC WITHDRAWALS
+DATE DESCRIPTION AMOUNT
+01/03 Zelle Payment To Ugarte Martin Jpm99A7Fueo0 $500.00
+01/04 Zelle Payment To Herby 1 Jpm99A7Hl7Mx 400.00
+01/08 Zelle Payment To Laura Coll XXXXXXXXXXX 700.00
+01/16 01/16 Online Transfer To Chk ...8672 Transaction XXXXXXXXXXX 800.00
+01/18 Zelle Payment To Laura Coll XXXXXXXXXXX 200.00
+01/25 01/25 Online Payment XXXXXXXXXXX PERSONA 362.83
+01/26 01/26 Online Payment XXXXXXXXXXX PERSONA 265.00
+Total Electronic Withdrawals $3,227.83
+end electronic withdrawal
+start fees section
+FEES
+DATE DESCRIPTION AMOUNT
+01/31 Monthly Service Fee $15.00
+Total Fees $15.00
+end fees section
+start daily ending balance3
+DAILY ENDING BALANCE
+DATE AMOUNT
+01/02 $3,143.30
+01/03 2,643.30
+01/04 2,243.30
+01/08 1,543.30
+01/16 743.30
+01/18 2,543.30
+01/25 2,180.47
+01/26 2,025.47
+end daily e0nding balanc1e3 /31 2,010.47
+start dre portrait disclosure message area
+IN CASE OF ERRORS OR QUESTIONS ABOUT YOUR ELECTRONIC FUNDS TRANSFERS
+Call us at 1-866-564-2262 or write us at the address on the front of this statement immediately if you think your statement or receipt is incorrect or if
+you need more information about a transfer listed on the statement or receipt.
+For personal accounts only We must hear from you no later than 60 days after we sent you the FIRST statement on which the problem or error
+appeared. Be prepared to give us the following information
+Your name and account number
+A description of the error or the transaction you are unsure about, and why you think it is an error or want more information and
+The amount of the suspected error.
+We will investigate your complaint and will correct any error promptly. If we take more than 10 business days (or 20 business days for new
+accounts) to do this, we will credit your account for the amount you think is in error so that you will have use of the money during the time it takes
+us to complete our investigation.
+For business accounts, see your deposit account agreement or other applicable agreements that govern your account for details.
+IN CASE OF ERRORS OR QUESTIONS ABOUT NON-ELECTRONIC FUNDS TRANSFERS Contact us immediately if your statement is
+incorrect or if you need more information about any non-electronic funds transfers on this statement. For more details, see your deposit account
+agreement or other applicable agreements that govern your account.
+JPMorgan Chase Bank, N.A. Member FDIC
+end dre portrait disclosure message area
+Page of
+2 2

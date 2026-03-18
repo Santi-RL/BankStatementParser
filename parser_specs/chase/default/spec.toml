@@ -1,0 +1,62 @@
+[meta]
+bank_id = "chase"
+format_id = "default"
+version = 1
+status = "published"
+country = "US"
+currency_default = "USD"
+display_name = "JPMorgan Chase"
+
+[detect]
+required_keywords = [
+  "JPMorgan Chase Bank, N.A.",
+  "DEPOSITS AND ADDITIONS",
+  "ELECTRONIC WITHDRAWALS",
+]
+excluded_keywords = []
+min_score = 0.66
+
+[extract]
+strategy = "line_regex"
+
+[[extract.sections]]
+name = "deposits"
+start_patterns = ['^DEPOSITS AND ADDITIONS$']
+stop_patterns = ['^Total Deposits and Additions']
+line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>\$?[\d,]+\.\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}\s+'
+multiline = false
+amount_sign = "positive"
+
+[[extract.sections]]
+name = "withdrawals"
+start_patterns = ['^ELECTRONIC WITHDRAWALS$']
+stop_patterns = ['^Total Electronic Withdrawals']
+line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>\$?[\d,]+\.\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}\s+'
+multiline = false
+amount_sign = "negative"
+
+[[extract.sections]]
+name = "fees"
+start_patterns = ['^FEES$']
+stop_patterns = ['^Total Fees']
+line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>\$?[\d,]+\.\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}\s+'
+multiline = false
+amount_sign = "negative"
+
+[fields]
+date = "date"
+description = "description"
+amount = "amount"
+balance = ""
+account_pattern = '(?m)^(\d{15})$'
+
+[normalize]
+date_formats = ['%m/%d']
+statement_year_pattern = 'through.*?(?P<year>20\d{2})'
+
+[change_detection]
+min_transactions = 5
+min_match_ratio = 0.9

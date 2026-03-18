@@ -1,16 +1,28 @@
 import streamlit as st
 import pandas as pd
-import io
-import zipfile
+from contextlib import nullcontext
 from typing import List, Dict, Any
-import tempfile
-import os
 import argparse
 import logging
+import hashlib
+from pathlib import Path
+import re
+import toml
 
+from format_engine import FormatRegistry, FormatSpec
+from format_training import build_initial_spec, extract_text_from_pdf, publish_spec, save_draft
 from pdf_processor import PDFProcessor
 from excel_generator import ExcelGenerator
-from utils import validate_pdf_files, format_currency, setup_logging, get_supported_banks
+from utils import (
+    format_currency,
+    get_supported_banks,
+    get_transaction_currencies,
+    resolve_single_currency,
+    set_logging_level,
+    setup_logging,
+    temporary_pdf_copy,
+    validate_pdf_files,
+)
 
 # Internacionalización sencilla
 LANG = "es"
@@ -86,11 +98,24 @@ TRANSLATIONS = {
         "en": "\u274c An error occurred during processing: {error}",
         "es": "\u274c Ocurri\u00F3 un error durante el procesamiento: {error}",
     },
+    "analysis_error_safe": {
+        "en": "\u274c Could not analyze the uploaded files. Check logs/app.log.",
+        "es": "\u274c No se pudieron analizar los archivos cargados. Revis\u00E1 logs/app.log.",
+    },
+    "processing_error_safe": {
+        "en": "\u274c Could not complete processing. Check logs/app.log.",
+        "es": "\u274c No se pudo completar el procesamiento. Revis\u00E1 logs/app.log.",
+    },
+    "error_processing_file_safe": {
+        "en": "\u274c Error processing {name}. Check logs/app.log.",
+        "es": "\u274c Error procesando {name}. Revis\u00E1 logs/app.log.",
+    },
     "summary_header": {"en": "\U0001f4ca Processing Summary", "es": "\U0001f4ca Resumen del Proceso"},
     "metric_files": {"en": "Files Processed", "es": "Archivos Procesados"},
     "metric_transactions": {"en": "Total Transactions", "es": "Transacciones Totales"},
     "metric_banks": {"en": "Banks Detected", "es": "Bancos Detectados"},
     "metric_amount": {"en": "Total Amount", "es": "Monto Total"},
+    "metric_amount_multiple_currencies": {"en": "N/A (multiple currencies)", "es": "N/A (m\u00FAltiples monedas)"},
     "banks_detected_header": {"en": "\U0001f3db\ufe0f Banks Detected", "es": "\U0001f3db\ufe0f Bancos Detectados"},
     "processing_errors": {"en": "\u26a0\ufe0f Processing Errors", "es": "\u26a0\ufe0f Errores de Proceso"},
     "preview_header": {"en": "\U0001f4cb Transaction Preview", "es": "\U0001f4cb Vista Previa de Transacciones"},
@@ -107,6 +132,7 @@ TRANSLATIONS = {
         "es": "Procesador de Extractos Bancarios",
     },
     "argparse_debug": {"en": "Enable debug logging", "es": "Activar registro de depuraci\u00F3n"},
+    "argparse_mode": {"en": "Execution mode", "es": "Modo de ejecuci\u00F3n"},
 }
 
 def tr(key: str, **kwargs) -> str:
@@ -116,13 +142,162 @@ def tr(key: str, **kwargs) -> str:
         return text.format(**kwargs)
     return text
 
-def main(debug: bool = False, lang: str = LANG):
+
+def _suggest_format_id(name: str) -> str:
+    base = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+    return base or "draft"
+
+
+def _multiline_text_to_list(value: str) -> List[str]:
+    return [line.strip() for line in value.splitlines() if line.strip()]
+
+
+def _registry_summary(registry: FormatRegistry) -> Dict[str, List[FormatSpec]]:
+    return {
+        "published": registry.specs_by_status("published"),
+        "drafts": registry.list_drafts(),
+    }
+
+
+def _uploaded_file_id(uploaded_file: Any) -> str:
+    payload = uploaded_file.getvalue()
+    uploaded_file.seek(0)
+    return hashlib.sha256(payload).hexdigest()[:12]
+
+
+def _uploaded_files_signature(uploaded_files: List[Any]) -> tuple[str, ...]:
+    return tuple(f"{uploaded_file.name}:{len(uploaded_file.getvalue())}:{_uploaded_file_id(uploaded_file)}" for uploaded_file in uploaded_files)
+
+
+def _clear_scope_selection_state():
+    for key in list(st.session_state.keys()):
+        if key.startswith("scope_select_"):
+            del st.session_state[key]
+
+
+def _scope_checkbox_key(file_id: str, scope_id: str) -> str:
+    return f"scope_select_{file_id}_{scope_id}"
+
+
+def _selected_scope_ids(file_id: str, scopes: List[Dict[str, Any]]) -> List[str]:
+    selected: List[str] = []
+    for scope in scopes:
+        if st.session_state.get(_scope_checkbox_key(file_id, scope["id"]), False):
+            selected.append(scope["id"])
+    return selected
+
+
+def _apply_scope_preset(file_id: str, scopes: List[Dict[str, Any]], allowed_product_types: set[str] | None = None):
+    for scope in scopes:
+        selected = allowed_product_types is None or scope.get("product_type") in allowed_product_types
+        st.session_state[_scope_checkbox_key(file_id, scope["id"])] = selected
+
+
+def _build_scope_groups(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    grouped: Dict[str, Dict[str, Any]] = {}
+    for transaction in transactions:
+        scope_id = str(transaction.get("scope_id", "") or "").strip()
+        scope_label = str(transaction.get("scope_label", "") or "").strip()
+        if not scope_id or not scope_label:
+            continue
+        group_key = f"{transaction.get('bank', '')}::{scope_id}"
+        if group_key not in grouped:
+            grouped[group_key] = {
+                "group_key": group_key,
+                "scope_id": scope_id,
+                "scope_label": scope_label,
+                "bank": transaction.get("bank", ""),
+                "product_type": transaction.get("product_type", ""),
+                "transactions": [],
+            }
+        grouped[group_key]["transactions"].append(transaction)
+    return sorted(grouped.values(), key=lambda item: (item["bank"], item["scope_label"]))
+
+
+def _analysis_selection_summary(analysis_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    selected_map: Dict[str, Dict[str, Any]] = {}
+    for entry in analysis_results:
+        analysis = entry["analysis"]
+        if not analysis.get("success") or not analysis.get("multi_scope"):
+            continue
+        for scope in analysis.get("available_scopes", []):
+            if scope["id"] not in _selected_scope_ids(entry["file_id"], analysis.get("available_scopes", [])):
+                continue
+            key = f"{analysis.get('bank_detected', '')}::{scope['id']}"
+            if key not in selected_map:
+                selected_map[key] = {
+                    "group_key": key,
+                    "bank_detected": analysis.get("bank_detected", ""),
+                    **scope,
+                }
+    return sorted(selected_map.values(), key=lambda item: (item.get("bank_detected", ""), item.get("label", "")))
+
+
+def _selection_ready(analysis_results: List[Dict[str, Any]]) -> bool:
+    ready = False
+    for entry in analysis_results:
+        analysis = entry["analysis"]
+        if not analysis.get("success"):
+            continue
+        ready = True
+        if analysis.get("multi_scope") and not _selected_scope_ids(entry["file_id"], analysis.get("available_scopes", [])):
+            return False
+    return ready
+
+
+def _scope_chip(scope: Dict[str, Any]) -> str:
+    product_type = scope.get("product_type", "")
+    product_label = {
+        "credit_card": "tarjeta de crédito",
+        "debit_card": "tarjeta de débito",
+        "bank_account": "cuenta bancaria",
+    }.get(product_type, product_type or "scope")
+    linked = f" -> {scope['linked_account']}" if scope.get("linked_account") else ""
+    return f"{scope.get('label', scope.get('id', 'scope'))} ({product_label}){linked}"
+
+
+def _is_production_test(mode: str) -> bool:
+    return mode == "production-test"
+
+
+def _report_analysis_exception(exc: Exception, mode: str):
+    logging.getLogger(__name__).exception("Unhandled error during PDF analysis")
+    if _is_production_test(mode):
+        st.error(tr("analysis_error_safe"))
+        return
+    st.error(f"Error durante el análisis: {exc}")
+
+
+def _report_processing_exception(exc: Exception, mode: str):
+    logging.getLogger(__name__).exception("Unhandled error during statement processing")
+    if _is_production_test(mode):
+        st.error(tr("processing_error_safe"))
+        return
+    st.error(tr("processing_error", error=str(exc)))
+
+
+def _report_file_processing_exception(name: str, exc: Exception, mode: str):
+    logging.getLogger(__name__).exception("Unhandled error while processing %s", name)
+    if _is_production_test(mode):
+        st.error(tr("error_processing_file_safe", name=name))
+        return
+    st.error(tr("error_processing_file", name=name, error=str(exc)))
+
+
+def _display_total_amount(transactions: List[Dict[str, Any]]) -> str:
+    currencies = get_transaction_currencies(transactions)
+    if len(currencies) > 1:
+        return tr("metric_amount_multiple_currencies")
+
+    total_amount = sum(float(transaction.get('amount', 0)) for transaction in transactions if transaction.get('amount'))
+    return format_currency(total_amount, resolve_single_currency(transactions))
+
+def main(debug: bool = False, lang: str = LANG, mode: str = "local"):
     """Launch the Streamlit application."""
     global LANG
     LANG = lang
 
-    setup_logging()
-    logger = logging.getLogger()
+    setup_logging(mode=mode, debug=debug if not _is_production_test(mode) else False)
 
     st.set_page_config(
         page_title=tr("page_title"),
@@ -138,10 +313,20 @@ def main(debug: bool = False, lang: str = LANG):
         st.session_state.processed_data = None
     if 'processing_complete' not in st.session_state:
         st.session_state.processing_complete = False
+    if 'training_seed' not in st.session_state:
+        st.session_state.training_seed = None
+    if 'analysis_results' not in st.session_state:
+        st.session_state.analysis_results = None
+    if 'upload_signature' not in st.session_state:
+        st.session_state.upload_signature = None
     
     # Sidebar with instructions and debug toggle
     with st.sidebar:
-        debug_enabled = st.checkbox(tr("debug_mode"), value=debug, key="debug_logging")
+        debug_enabled = False
+        if not _is_production_test(mode):
+            debug_enabled = st.checkbox(tr("debug_mode"), value=debug, key="debug_logging")
+            set_logging_level(logging.DEBUG if debug_enabled else logging.INFO)
+
         st.header(tr("instructions_header"))
         st.markdown(tr("instructions_text"))
 
@@ -152,56 +337,174 @@ def main(debug: bool = False, lang: str = LANG):
         st.header(tr("sample_header"))
         st.markdown(tr("sample_text"))
 
-        # Ajustar nivel de logging según el estado del checkbox
-        if debug_enabled:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
+    if _is_production_test(mode):
+        process_tab = st.container()
+        backoffice_tab = None
+    else:
+        process_tab, backoffice_tab = st.tabs(["Procesar Extractos", "Aprender Formatos"])
 
-    # Main content area
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.header(tr("upload_header"))
+    with process_tab:
+        # Main content area
+        col1, col2 = st.columns([2, 1])
         
-        uploaded_files = st.file_uploader(
-            tr("file_uploader_label"),
-            type=['pdf'],
-            accept_multiple_files=True,
-            help="Upload multiple bank statement PDF files. Maximum 10 files, 50MB each."
-        )
-        
-        if uploaded_files:
-            # Validate files
-            validation_results = validate_pdf_files(uploaded_files)
+        with col1:
+            st.header(tr("upload_header"))
             
-            if validation_results['valid']:
-                st.success(tr("valid_files", n=len(uploaded_files)))
+            uploaded_files = st.file_uploader(
+                tr("file_uploader_label"),
+                type=['pdf'],
+                accept_multiple_files=True,
+                help=tr("file_uploader_help"),
+            )
+            
+            if uploaded_files:
+                # Validate files
+                validation_results = validate_pdf_files(uploaded_files)
                 
-                # Display file information
-                with st.expander(tr("file_details"), expanded=True):
-                    for i, file in enumerate(uploaded_files):
-                        file_size = len(file.getvalue()) / (1024 * 1024)  # MB
-                        st.write(f"**{i+1}.** {file.name} - {file_size:.2f} MB")
-                
-                # Process button
-                if st.button(tr("process_button"), type="primary", use_container_width=True):
-                    process_files(uploaded_files, debug=debug_enabled)
-                    
-            else:
-                st.error(tr("validation_failed"))
-                for error in validation_results['errors']:
-                    st.error(f"• {error}")
-    
-    with col2:
-        st.header(tr("processing_status_header"))
-        
-        if st.session_state.processing_complete and st.session_state.processed_data:
-            display_results()
-        else:
-            st.info(tr("upload_and_click"))
+                if validation_results['valid']:
+                    current_signature = _uploaded_files_signature(uploaded_files)
+                    if st.session_state.upload_signature != current_signature:
+                        st.session_state.upload_signature = current_signature
+                        st.session_state.analysis_results = None
+                        st.session_state.processed_data = None
+                        st.session_state.processing_complete = False
+                        _clear_scope_selection_state()
 
-def process_files(uploaded_files: List[Any], debug: bool = False):
+                    st.success(tr("valid_files", n=len(uploaded_files)))
+                    
+                    # Display file information
+                    with st.expander(tr("file_details"), expanded=True):
+                        for i, file in enumerate(uploaded_files):
+                            file_size = len(file.getvalue()) / (1024 * 1024)  # MB
+                            st.write(f"**{i+1}.** {file.name} - {file_size:.2f} MB")
+
+                    if st.button("Analizar Extractos", type="primary", use_container_width=True):
+                        analyze_files(uploaded_files, debug=debug_enabled, mode=mode)
+
+                    if st.session_state.analysis_results:
+                        render_analysis_results(st.session_state.analysis_results, debug=debug_enabled, mode=mode)
+                        process_disabled = not _selection_ready(st.session_state.analysis_results)
+                        if process_disabled:
+                            st.info("Selecciona al menos una cuenta o tarjeta en cada PDF consolidado antes de procesar.")
+                        if st.button(tr("process_button"), type="primary", use_container_width=True, disabled=process_disabled):
+                            process_files(uploaded_files, st.session_state.analysis_results, debug=debug_enabled, mode=mode)
+                        
+                else:
+                    st.error(tr("validation_failed"))
+                    for error in validation_results['errors']:
+                        st.error(f"• {error}")
+        
+        with col2:
+            st.header(tr("processing_status_header"))
+            
+            if st.session_state.processing_complete and st.session_state.processed_data:
+                display_results(mode=mode)
+            else:
+                st.info(tr("upload_and_click"))
+
+    if backoffice_tab is not None:
+        with backoffice_tab:
+            render_format_backoffice(mode=mode)
+
+def analyze_files(uploaded_files: List[Any], debug: bool = False, mode: str = "local"):
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    pdf_processor = PDFProcessor()
+    analysis_results: List[Dict[str, Any]] = []
+
+    try:
+        for i, uploaded_file in enumerate(uploaded_files):
+            progress = (i + 1) / len(uploaded_files)
+            progress_bar.progress(progress)
+            status_text.text(f"Analizando {uploaded_file.name}... ({i+1}/{len(uploaded_files)})")
+
+            with temporary_pdf_copy(uploaded_file.getvalue()) as tmp_file_path:
+                result = pdf_processor.analyze_pdf(tmp_file_path, uploaded_file.name, debug=debug)
+                file_id = _uploaded_file_id(uploaded_file)
+                analysis_entry = {
+                    "file_id": file_id,
+                    "file_name": uploaded_file.name,
+                    "analysis": result,
+                }
+                analysis_results.append(analysis_entry)
+
+                if result.get("success") and result.get("multi_scope"):
+                    for scope in result.get("available_scopes", []):
+                        st.session_state.setdefault(_scope_checkbox_key(file_id, scope["id"]), False)
+
+                if not result.get("success") and result.get('parse_status') in {'unknown_format', 'format_changed'}:
+                    st.session_state.training_seed = {
+                        'file_name': uploaded_file.name,
+                        'bank_detected': result.get('bank_detected', 'unknown'),
+                        'bank_name': result.get('bank_name', ''),
+                        'extracted_text': result.get('extracted_text', ''),
+                        'diagnostics': result.get('diagnostics', {}),
+                        'suggested_format_id': _suggest_format_id(uploaded_file.name),
+                    }
+
+        st.session_state.analysis_results = analysis_results
+        progress_bar.progress(1.0)
+        status_text.text("Análisis completado.")
+    except Exception as exc:
+        _report_analysis_exception(exc, mode)
+        progress_bar.empty()
+        status_text.empty()
+
+
+def render_analysis_results(analysis_results: List[Dict[str, Any]], debug: bool = False, mode: str = "local"):
+    st.subheader("Análisis previo")
+    for entry in analysis_results:
+        analysis = entry["analysis"]
+        title = f"{entry['file_name']} · {analysis.get('bank_detected', 'unknown')}"
+        with st.expander(title, expanded=True):
+            if analysis.get("success"):
+                format_label = analysis.get("format_id") or "sin formato"
+                st.write(f"Banco detectado: **{analysis.get('bank_name') or analysis.get('bank_detected')}**")
+                st.write(f"Formato: `{format_label}`")
+                if analysis.get("multi_scope"):
+                    scopes = analysis.get("available_scopes", [])
+                    st.info(f"Se detectaron {len(scopes)} entidades extraíbles en este PDF.")
+                    preset_col1, preset_col2, preset_col3, preset_col4 = st.columns(4)
+                    with preset_col1:
+                        if st.button("Todo", key=f"preset_all_{entry['file_id']}", use_container_width=True):
+                            _apply_scope_preset(entry["file_id"], scopes)
+                            st.rerun()
+                    with preset_col2:
+                        if st.button("Solo crédito", key=f"preset_credit_{entry['file_id']}", use_container_width=True):
+                            _apply_scope_preset(entry["file_id"], scopes, {"credit_card"})
+                            st.rerun()
+                    with preset_col3:
+                        if st.button("Solo débito", key=f"preset_debit_{entry['file_id']}", use_container_width=True):
+                            _apply_scope_preset(entry["file_id"], scopes, {"debit_card"})
+                            st.rerun()
+                    with preset_col4:
+                        if st.button("Solo cuentas", key=f"preset_accounts_{entry['file_id']}", use_container_width=True):
+                            _apply_scope_preset(entry["file_id"], scopes, {"bank_account"})
+                            st.rerun()
+
+                    for scope in scopes:
+                        st.checkbox(
+                            _scope_chip(scope),
+                            key=_scope_checkbox_key(entry["file_id"], scope["id"]),
+                        )
+                    selected = _selected_scope_ids(entry["file_id"], scopes)
+                    st.caption(f"Seleccionadas: {len(selected)} de {len(scopes)}")
+                else:
+                    st.success("Documento simple: se procesará completo sin selección adicional.")
+            else:
+                st.error(analysis.get("error", "No se pudo analizar el archivo."))
+                if not _is_production_test(mode) and analysis.get('parse_status') in {'unknown_format', 'format_changed'}:
+                    st.info("Este fallo quedó sembrado en la pestaña 'Aprender Formatos'.")
+
+            if analysis.get("available_scopes"):
+                st.json({"available_scopes": analysis["available_scopes"]})
+            if debug and not _is_production_test(mode) and analysis.get("debug_log"):
+                with st.expander(f"Debug Log for {entry['file_name']}"):
+                    for step in analysis['debug_log']:
+                        st.write(step)
+
+
+def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, Any]], debug: bool = False, mode: str = "local"):
     """Process uploaded PDF files and extract transaction data."""
     
     # Initialize progress tracking
@@ -212,13 +515,19 @@ def process_files(uploaded_files: List[Any], debug: bool = False):
         # Initialize processor
         pdf_processor = PDFProcessor()
         all_transactions = []
+        analysis_map = {entry["file_id"]: entry for entry in analysis_results}
+        selected_scope_map = {
+            entry["file_id"]: _selected_scope_ids(entry["file_id"], entry["analysis"].get("available_scopes", []))
+            for entry in analysis_results
+        }
         processing_summary = {
             'total_files': len(uploaded_files),
             'successful_files': 0,
             'failed_files': 0,
             'total_transactions': 0,
             'banks_detected': set(),
-            'errors': []
+            'errors': [],
+            'selected_scopes': _analysis_selection_summary(analysis_results),
         }
         
         # Process each file
@@ -228,13 +537,22 @@ def process_files(uploaded_files: List[Any], debug: bool = False):
             status_text.text(tr("processing_file", name=uploaded_file.name, i=i+1, total=len(uploaded_files)))
             
             try:
-                # Save uploaded file temporarily
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                    tmp_file.write(uploaded_file.getvalue())
-                    tmp_file_path = tmp_file.name
-                
-                # Process PDF
-                result = pdf_processor.process_pdf(tmp_file_path, uploaded_file.name, debug=debug)
+                file_id = _uploaded_file_id(uploaded_file)
+                analysis_entry = analysis_map.get(file_id)
+                analysis = analysis_entry["analysis"] if analysis_entry else None
+                if analysis and not analysis.get("success"):
+                    processing_summary['failed_files'] += 1
+                    processing_summary['errors'].append(f"{uploaded_file.name}: {analysis['error']}")
+                    st.error(tr("file_error", name=uploaded_file.name, error=analysis['error']))
+                    continue
+
+                with temporary_pdf_copy(uploaded_file.getvalue()) as tmp_file_path:
+                    result = pdf_processor.process_pdf(
+                        tmp_file_path,
+                        uploaded_file.name,
+                        debug=debug,
+                        selected_scope_ids=selected_scope_map.get(file_id) or None,
+                    )
                 
                 if result['success']:
                     transactions = result['transactions']
@@ -248,19 +566,27 @@ def process_files(uploaded_files: List[Any], debug: bool = False):
                     processing_summary['failed_files'] += 1
                     processing_summary['errors'].append(f"{uploaded_file.name}: {result['error']}")
                     st.error(tr("file_error", name=uploaded_file.name, error=result['error']))
+                    if result.get('parse_status') in {'unknown_format', 'format_changed'}:
+                        st.session_state.training_seed = {
+                            'file_name': uploaded_file.name,
+                            'bank_detected': result.get('bank_detected', 'unknown'),
+                            'bank_name': result.get('bank_name', ''),
+                            'extracted_text': result.get('extracted_text', ''),
+                            'diagnostics': result.get('diagnostics', {}),
+                            'suggested_format_id': _suggest_format_id(uploaded_file.name),
+                        }
+                        if not _is_production_test(mode):
+                            st.info("Se guardó el último fallo de formato en la pestaña 'Aprender Formatos'.")
 
-                if debug and result.get('debug_log'):
+                if debug and not _is_production_test(mode) and result.get('debug_log'):
                     with st.expander(f"Debug Log for {uploaded_file.name}"):
                         for step in result['debug_log']:
                             st.write(step)
                 
-                # Cleanup temporary file
-                os.unlink(tmp_file_path)
-                
             except Exception as e:
                 processing_summary['failed_files'] += 1
                 processing_summary['errors'].append(f"{uploaded_file.name}: {str(e)}")
-                st.error(tr("error_processing_file", name=uploaded_file.name, error=str(e)))
+                _report_file_processing_exception(uploaded_file.name, e, mode)
         
         # Complete processing
         progress_bar.progress(1.0)
@@ -285,16 +611,17 @@ def process_files(uploaded_files: List[Any], debug: bool = False):
             st.error(tr("no_transactions"))
             
     except Exception as e:
-        st.error(tr("processing_error", error=str(e)))
+        _report_processing_exception(e, mode)
         progress_bar.empty()
         status_text.empty()
 
-def display_results():
+def display_results(mode: str = "local"):
     """Display processing results and download options."""
     
     data = st.session_state.processed_data
     summary = data['summary']
     transactions = data['transactions']
+    scope_groups = _build_scope_groups(transactions)
     
     # Summary metrics
     st.header(tr("summary_header"))
@@ -307,14 +634,18 @@ def display_results():
     with col3:
         st.metric(tr("metric_banks"), len(summary['banks_detected']))
     with col4:
-        total_amount = sum(float(t.get('amount', 0)) for t in transactions if t.get('amount'))
-        st.metric(tr("metric_amount"), format_currency(total_amount))
+        st.metric(tr("metric_amount"), _display_total_amount(transactions))
     
     # Banks detected
     if summary['banks_detected']:
         st.subheader(tr("banks_detected_header"))
         banks_text = ", ".join(sorted(summary['banks_detected']))
         st.write(banks_text)
+
+    if summary.get("selected_scopes"):
+        st.subheader("Scopes seleccionados")
+        for scope in summary["selected_scopes"]:
+            st.write(f"- {_scope_chip(scope)}")
     
     # Errors if any
     if summary['errors']:
@@ -325,17 +656,20 @@ def display_results():
     # Transaction preview
     if transactions:
         st.subheader(tr("preview_header"))
-        
-        # Convert to DataFrame for display
         df = pd.DataFrame(transactions)
-        
-        # Display first 10 transactions
-        st.dataframe(
-            df.head(10),
-            use_container_width=True,
-            hide_index=True
-        )
-        
+        if scope_groups:
+            tab_labels = ["Todo"] + [f"{group['bank']} · {group['scope_label']}" for group in scope_groups]
+            tabs = st.tabs(tab_labels)
+            with tabs[0]:
+                st.dataframe(df.head(10), use_container_width=True, hide_index=True)
+            for index, group in enumerate(scope_groups, start=1):
+                with tabs[index]:
+                    scope_df = pd.DataFrame(group["transactions"])
+                    st.caption(f"{group['bank']} · {group['product_type'] or 'scope'}")
+                    st.dataframe(scope_df.head(10), use_container_width=True, hide_index=True)
+        else:
+            st.dataframe(df.head(10), use_container_width=True, hide_index=True)
+
         if len(transactions) > 10:
             st.info(tr("showing_transactions", total=len(transactions)))
     
@@ -372,11 +706,218 @@ def display_results():
     if st.button(tr("process_new"), use_container_width=True):
         st.session_state.processed_data = None
         st.session_state.processing_complete = False
+        st.session_state.analysis_results = None
+        st.session_state.upload_signature = None
+        _clear_scope_selection_state()
         st.rerun()
 
+
+def render_format_backoffice(mode: str = "local"):
+    st.header("Backoffice de Formatos")
+    st.caption("Entrena, valida y publica parsers declarativos sin tocar el resto del sistema.")
+
+    registry = FormatRegistry()
+    summary = _registry_summary(registry)
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.subheader("Aprender un formato")
+        seed = st.session_state.training_seed
+        training_file = st.file_uploader(
+            "PDF de ejemplo para entrenamiento",
+            type=["pdf"],
+            key="training_pdf_uploader",
+            help="No se guardará el PDF crudo en el repositorio; solo se usa temporalmente para extraer texto.",
+        )
+
+        extracted_text = ""
+        bank_hint = "unknown_bank"
+        display_name = ""
+        suggested_format_id = "draft"
+
+        training_context = temporary_pdf_copy(training_file.getvalue()) if training_file is not None else nullcontext(None)
+        with training_context as training_tmp_path:
+            if training_file is not None and training_tmp_path is not None:
+                extracted_text = extract_text_from_pdf(training_tmp_path)
+                display_name = training_file.name
+                suggested_format_id = _suggest_format_id(training_file.name)
+            elif seed:
+                extracted_text = seed.get("extracted_text", "")
+                bank_hint = seed.get("bank_detected", "unknown_bank") or "unknown_bank"
+                display_name = seed.get("bank_name", "") or seed.get("file_name", "Nuevo Formato")
+                suggested_format_id = seed.get("suggested_format_id", "draft")
+                st.info(f"Seed cargada desde el último fallo de formato: {seed.get('file_name')}")
+                if seed.get("diagnostics"):
+                    st.json(seed["diagnostics"])
+
+            if extracted_text:
+                initial_spec = build_initial_spec(
+                    bank_id=bank_hint if bank_hint != "Unknown" else "unknown_bank",
+                    format_id=suggested_format_id,
+                    display_name=display_name or bank_hint,
+                    extracted_text=extracted_text,
+                )
+
+                bank_id = st.text_input("bank_id", value=initial_spec["meta"]["bank_id"], key="train_bank_id")
+                format_id = st.text_input("format_id", value=initial_spec["meta"]["format_id"], key="train_format_id")
+                display_name_input = st.text_input("display_name", value=initial_spec["meta"]["display_name"], key="train_display_name")
+                country = st.text_input("country", value=initial_spec["meta"]["country"], key="train_country")
+                currency = st.text_input("currency_default", value=initial_spec["meta"]["currency_default"], key="train_currency")
+
+                required_keywords = st.text_area(
+                    "required_keywords (uno por línea)",
+                    value="\n".join(initial_spec["detect"]["required_keywords"]),
+                    height=120,
+                    key="train_required_keywords",
+                )
+                excluded_keywords = st.text_area(
+                    "excluded_keywords (uno por línea)",
+                    value="\n".join(initial_spec["detect"].get("excluded_keywords", [])),
+                    height=80,
+                    key="train_excluded_keywords",
+                )
+                line_pattern = st.text_area(
+                    "line_pattern (regex con grupos nombrados)",
+                    value=initial_spec["extract"]["line_pattern"],
+                    height=120,
+                    key="train_line_pattern",
+                )
+                candidate_pattern = st.text_input(
+                    "candidate_pattern",
+                    value=initial_spec["extract"]["candidate_pattern"],
+                    key="train_candidate_pattern",
+                )
+                section_start_patterns = st.text_area(
+                    "section_start_patterns (una por línea)",
+                    value="\n".join(initial_spec["extract"].get("section_start_patterns", [])),
+                    height=80,
+                    key="train_section_start_patterns",
+                )
+                ignore_patterns = st.text_area(
+                    "ignore_patterns (una por línea)",
+                    value="\n".join(initial_spec["extract"].get("ignore_patterns", [])),
+                    height=120,
+                    key="train_ignore_patterns",
+                )
+                stop_patterns = st.text_area(
+                    "stop_patterns (una por línea)",
+                    value="\n".join(initial_spec["extract"].get("stop_patterns", [])),
+                    height=120,
+                    key="train_stop_patterns",
+                )
+                account_pattern = st.text_input(
+                    "account_pattern",
+                    value=initial_spec["fields"].get("account_pattern", ""),
+                    key="train_account_pattern",
+                )
+
+                preview_spec = {
+                    "meta": {
+                        "bank_id": bank_id,
+                        "format_id": format_id,
+                        "version": 1,
+                        "status": "draft",
+                        "country": country,
+                        "currency_default": currency,
+                        "display_name": display_name_input,
+                    },
+                    "detect": {
+                        "required_keywords": _multiline_text_to_list(required_keywords),
+                        "excluded_keywords": _multiline_text_to_list(excluded_keywords),
+                        "min_score": initial_spec["detect"].get("min_score", 0.5),
+                    },
+                    "extract": {
+                        "strategy": "line_regex",
+                        "line_pattern": line_pattern,
+                        "candidate_pattern": candidate_pattern,
+                        "section_start_patterns": _multiline_text_to_list(section_start_patterns),
+                        "ignore_patterns": _multiline_text_to_list(ignore_patterns),
+                        "stop_patterns": _multiline_text_to_list(stop_patterns),
+                        "multiline": True,
+                    },
+                    "fields": {
+                        "date": "date",
+                        "description": "description",
+                        "amount": "amount",
+                        "balance": "balance",
+                        "account_pattern": account_pattern,
+                    },
+                    "normalize": initial_spec["normalize"],
+                    "change_detection": initial_spec["change_detection"],
+                }
+                advanced_spec_text = st.text_area(
+                    "Spec TOML avanzada",
+                    value=toml.dumps(preview_spec),
+                    height=320,
+                    key="train_advanced_spec_toml",
+                    help="Edita TOML libremente para definir scopes, sections y context_rules avanzadas.",
+                )
+
+                preview = None
+                effective_spec = preview_spec
+                prepared_preview_text = extracted_text
+                try:
+                    effective_spec = toml.loads(advanced_spec_text)
+                    preview_format = FormatSpec(Path("preview/spec.toml"), effective_spec)
+                    prepared_preview_text = preview_format.prepare_text(extracted_text, training_tmp_path)
+                    preview = preview_format.parse_transactions(prepared_preview_text)
+                except Exception as exc:
+                    st.error(f"Spec TOML inválida: {exc}")
+
+                st.write("Texto extraído")
+                st.text_area("preview_text", prepared_preview_text, height=220, disabled=True, label_visibility="collapsed")
+
+                preview_col, save_col = st.columns(2)
+                with preview_col:
+                    st.metric("Transacciones detectadas", len(preview.transactions) if preview else 0)
+                    if preview:
+                        st.json(preview.diagnostics)
+                with save_col:
+                    if preview and preview.transactions:
+                        st.dataframe(pd.DataFrame(preview.transactions).head(10), use_container_width=True, hide_index=True)
+                    else:
+                        st.warning("La spec actual no detectó transacciones.")
+
+                action_col1, action_col2 = st.columns(2)
+                with action_col1:
+                    if st.button("Guardar borrador", type="primary", use_container_width=True, key="save_draft_button", disabled=preview is None):
+                        spec_path = save_draft(effective_spec, prepared_preview_text, preview.transactions if preview else [])
+                        st.success(f"Borrador guardado en {spec_path}")
+                        st.session_state.training_seed = None
+                        st.rerun()
+                with action_col2:
+                    if st.button("Descartar seed", use_container_width=True, key="discard_seed_button"):
+                        st.session_state.training_seed = None
+                        st.rerun()
+            else:
+                st.info("Carga un PDF o procesa un extracto con error para sembrar este asistente.")
+
+    with col2:
+        st.subheader("Estado del registro")
+        st.write(f"Publicados: {len(summary['published'])}")
+        st.write(f"Borradores: {len(summary['drafts'])}")
+
+        if summary["drafts"]:
+            st.markdown("**Borradores**")
+            for draft in summary["drafts"]:
+                st.write(f"- {draft.bank_id}/{draft.format_id} (v{draft.version})")
+                if st.button(
+                    f"Publicar {draft.bank_id}/{draft.format_id}",
+                    key=f"publish_{draft.bank_id}_{draft.format_id}",
+                    use_container_width=True,
+                ):
+                    publish_spec(draft.source_path)
+                    st.success(f"Publicado {draft.bank_id}/{draft.format_id}")
+                    st.rerun()
+
+        if summary["published"]:
+            st.markdown("**Publicados**")
+            for spec in summary["published"]:
+                st.write(f"- {spec.bank_id}/{spec.format_id} (v{spec.version})")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=tr("argparse_desc"))
     parser.add_argument("--debug", action="store_true", help=tr("argparse_debug"))
     parser.add_argument("--lang", choices=["en", "es"], default=LANG, help="UI language")
+    parser.add_argument("--mode", choices=["local", "production-test"], default="local", help=tr("argparse_mode"))
     args, _ = parser.parse_known_args()
-    main(debug=args.debug, lang=args.lang)
+    main(debug=args.debug, lang=args.lang, mode=args.mode)

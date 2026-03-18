@@ -1,0 +1,122 @@
+[
+  {
+    "date": "2024-01-02",
+    "description": "Deposit XXXXXXXXXX",
+    "amount": 300.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-01-02",
+    "description": "Zelle Payment From Dave Adden Pinnock XXXXXXXXXXX",
+    "amount": 1800.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-01-18",
+    "description": "Deposit XXXXXXXXXX",
+    "amount": 2000.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-01-26",
+    "description": "Zelle Payment From Osvaldo Mario Mastino XXXXXXXXXXX",
+    "amount": 110.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2024-01-03",
+    "description": "Zelle Payment To Ugarte Martin Jpm99A7Fueo0",
+    "amount": -500.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-04",
+    "description": "Zelle Payment To Herby 1 Jpm99A7Hl7Mx",
+    "amount": -400.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-08",
+    "description": "Zelle Payment To Laura Coll XXXXXXXXXXX",
+    "amount": -700.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-16",
+    "description": "01/16 Online Transfer To Chk ...8672 Transaction XXXXXXXXXXX",
+    "amount": -800.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-18",
+    "description": "Zelle Payment To Laura Coll XXXXXXXXXXX",
+    "amount": -200.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-25",
+    "description": "01/25 Online Payment XXXXXXXXXXX PERSONA",
+    "amount": -362.83,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-26",
+    "description": "01/26 Online Payment XXXXXXXXXXX PERSONA",
+    "amount": -265.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2024-01-31",
+    "description": "Monthly Service Fee",
+    "amount": -15.0,
+    "balance": "",
+    "account": "",
+    "bank": "JPMorgan Chase",
+    "currency": "USD",
+    "transaction_type": "Debit"
+  }
+]

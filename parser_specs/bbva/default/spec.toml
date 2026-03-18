@@ -1,0 +1,149 @@
+[meta]
+bank_id = "bbva"
+format_id = "default"
+version = 1
+status = "published"
+country = "AR"
+currency_default = "ARS"
+display_name = "BBVA Argentina"
+
+[detect]
+required_keywords = [
+  "Banco BBVA Argentina S.A.",
+  "Tarjetas de Crédito",
+  "Movimientos en cuentas",
+]
+excluded_keywords = []
+min_score = 0.66
+
+[[scopes]]
+name = "credit_card"
+pattern = '^cuenta\s+(?P<account>\d{10,11})\s+\(incluida en el paquete'
+scope_id_template = 'credit_card:{account}'
+label_template = 'Tarjeta crédito {account}'
+product_type = "credit_card"
+account_template = '{account}'
+currency = "ARS"
+source_sections = ["credit_payments", "credit_consumptions", "credit_taxes"]
+
+[[scopes]]
+name = "debit_card"
+pattern = '^Compras Visa Débito\s+(?P<account>\d{4})$'
+scope_id_template = 'debit_card:{account}'
+label_template = 'Visa Débito {account}'
+product_type = "debit_card"
+account_template = '{account}'
+currency = "ARS"
+source_sections = ["debit_card"]
+
+[[scopes]]
+name = "bank_account"
+pattern = '^(?P<account_type>CA|CC)\s+(?P<currency_token>U\$S|\$)\s+(?P<account_number>\d{3}-\d+/\d)(?:\s+\(.+?\))?\s+Saldo Consolidado$'
+scope_id_template = 'bank_account:{account_type}_{currency_token}_{account_number}'
+label_template = '{account_type} {currency_token} {account_number}'
+product_type = "bank_account"
+account_template = '{account_type} {currency_token} {account_number}'
+currency_template = '{currency_token}'
+source_sections = ["account_movements"]
+
+[extract]
+strategy = "line_regex"
+
+[[extract.sections]]
+name = "credit_payments"
+start_patterns = ['^Sus pagos y ajustes realizados$']
+stop_patterns = ['^Consumos .+$', '^Sobre \(.*Página\s+\d+']
+ignore_patterns = ['^FECHA\s+DESCRIPCIÓN', '^Resumen con$']
+line_pattern = '^(?P<date>\d{2}-[A-Za-z]{3}-\d{2})\s+(?P<description>.+?)\s+(?P<amount>-?\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}-[A-Za-z]{3}-\d{2}\s+'
+multiline = false
+amount_sign = "positive"
+default_scope_product_type = "credit_card"
+
+[[extract.sections]]
+name = "credit_consumptions"
+start_patterns = ['^Consumos .+$']
+stop_patterns = ['^TOTAL CONSUMOS']
+ignore_patterns = ['^FECHA\s+DESCRIPCIÓN']
+line_pattern = '^(?P<date>\d{2}-[A-Za-z]{3}-\d{2})\s+(?P<description>.+?)(?:\s+(?P<currency>USD)\s+\d{1,3}(?:\.\d{3})*,\d{2})?\s+\d{6}\s+(?P<amount>\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}-[A-Za-z]{3}-\d{2}\s+'
+multiline = false
+amount_sign = "negative"
+default_scope_product_type = "credit_card"
+
+[[extract.sections]]
+name = "credit_taxes"
+start_patterns = ['^Impuestos, cargos e intereses$']
+stop_patterns = ['^SALDO ACTUAL']
+ignore_patterns = ['^FECHA\s+DESCRIPCIÓN']
+line_pattern = '^(?P<date>\d{2}-[A-Za-z]{3}-\d{2})\s+(?P<description>.+?)(?:\s+(?P<currency>USD))?\s+(?P<amount>\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}-[A-Za-z]{3}-\d{2}\s+'
+multiline = false
+amount_sign = "negative"
+default_scope_product_type = "credit_card"
+
+[[extract.sections]]
+name = "debit_card"
+start_patterns = ['^Compras Visa Débito\s+\d{4}$']
+stop_patterns = ['^Cuenta Plus Gold$']
+ignore_patterns = ['^-\s+', '^FECHA\s+TARJETA', '^DETALLE$']
+line_pattern = '^(?P<date>\d{2}/\d{2}/\d{4})\s+\d{4}\s+(?P<description>.+?)\s+\d{6}\s+\$\s+(?P<amount>-?\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}/\d{4}\s+\d{4}\s+'
+multiline = false
+default_scope_product_type = "debit_card"
+
+[[extract.sections.context_rules]]
+action = "update_scope"
+pattern = '^CUENTA DÉBITO\s+(?P<linked_account>CC \$ \d{3}-\d+/\d)$'
+linked_account_template = '{linked_account}'
+create_if_missing = false
+
+[[extract.sections]]
+name = "account_movements"
+start_patterns = ['^Movimientos en cuentas$']
+stop_patterns = ['^Impuesto a los débitos y créditos']
+ignore_patterns = [
+  '^FECHA\s+ORIGEN\s+CONCEPTO',
+  '^SALDO ANTERIOR',
+  '^SALDO AL ',
+  '^TOTAL MOVIMIENTOS',
+  '^RETENCIONES ARBA$',
+  '^PERIODO ',
+  '^\( \) Ver Legales',
+]
+line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(?P<balance>-?\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}\s+'
+multiline = false
+
+[[extract.sections.context_rules]]
+action = "activate_scope"
+pattern = '^(?P<account_type>CA|CC)\s+(?P<currency_token>U\$S|\$)\s+(?P<account_number>\d{3}-\d+/\d)(?:\s+\(.+?\))?\s+- A consumidor final$'
+scope_lookup_field = "account"
+scope_lookup_template = '{account_type} {currency_token} {account_number}'
+scope_id_template = 'bank_account:{account_type}_{currency_token}_{account_number}'
+label_template = '{account_type} {currency_token} {account_number}'
+product_type = "bank_account"
+account_template = '{account_type} {currency_token} {account_number}'
+currency_template = '{currency_token}'
+
+[fields]
+date = "date"
+description = "description"
+amount = "amount"
+balance = "balance"
+account_pattern = ''
+currency = "currency"
+
+[normalize]
+date_formats = ['%d-%b-%y', '%d/%m/%Y', '%d/%m']
+statement_year_pattern = '(?P<year>20\d{2})(?P<month>0[1-9]|1[0-2])\d{3}DIGITAL'
+statement_month_pattern = '20\d{2}(?P<month>0[1-9]|1[0-2])\d{3}DIGITAL'
+
+[normalize.currency_map]
+"$" = "ARS"
+"U$S" = "USD"
+"USD" = "USD"
+
+[change_detection]
+min_transactions = 5
+min_match_ratio = 0.4

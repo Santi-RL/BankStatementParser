@@ -4,12 +4,12 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 from openpyxl.cell.cell import MergedCell
-from openpyxl.chart import BarChart, Reference, LineChart
 import io
+import re
 from typing import List, Dict, Any
 from datetime import datetime
 
-from utils import format_currency
+from utils import format_currency, get_transaction_currencies, resolve_single_currency
 
 class ExcelGenerator:
     """Generates structured Excel files from transaction data."""
@@ -42,6 +42,7 @@ class ExcelGenerator:
         # Create sheets
         self._create_summary_sheet(summary)
         self._create_transactions_sheet()
+        self._create_scope_transaction_sheets()
         self._create_analysis_sheet()
         self._create_monthly_summary_sheet()
         
@@ -51,6 +52,22 @@ class ExcelGenerator:
         excel_buffer.seek(0)
         
         return excel_buffer.getvalue()
+
+    def _transaction_currency_list(self) -> List[str]:
+        if self.transactions_df is None or self.transactions_df.empty:
+            return []
+        return get_transaction_currencies(self.transactions_df.to_dict("records"))
+
+    def _single_transaction_currency(self) -> str | None:
+        if self.transactions_df is None or self.transactions_df.empty:
+            return None
+        return resolve_single_currency(self.transactions_df.to_dict("records"))
+
+    def _display_financial_amount(self, amount: float, multiple_currency_label: str) -> str:
+        currencies = self._transaction_currency_list()
+        if len(currencies) > 1:
+            return multiple_currency_label
+        return format_currency(amount, self._single_transaction_currency())
     
     def _create_summary_sheet(self, summary: Dict[str, Any]):
         """Create summary sheet with processing information."""
@@ -91,6 +108,29 @@ class ExcelGenerator:
         
         ws['A13'] = "Bank Names:"
         ws['B13'] = ", ".join(sorted(summary['banks_detected']))
+
+        currencies = self._transaction_currency_list()
+        ws['A14'] = "Currencies Detected:"
+        ws['B14'] = ", ".join(currencies) if currencies else "N/A"
+
+        selected_scopes = summary.get('selected_scopes', [])
+        if selected_scopes:
+            ws['A16'] = "Selected Scopes"
+            ws['A16'].font = Font(bold=True, size=12)
+            ws['A17'] = "Label"
+            ws['B17'] = "Type"
+            ws['C17'] = "Currency"
+            for cell in [ws['A17'], ws['B17'], ws['C17']]:
+                cell.font = Font(bold=True)
+
+            row = 18
+            for scope in selected_scopes:
+                ws[f'A{row}'] = scope.get('label', '')
+                ws[f'B{row}'] = scope.get('product_type', '')
+                ws[f'C{row}'] = scope.get('currency', '')
+                row += 1
+        else:
+            row = 16
         
         # Transaction totals
         if not self.transactions_df.empty:
@@ -98,31 +138,33 @@ class ExcelGenerator:
             total_debits = abs(self.transactions_df[self.transactions_df['amount'] < 0]['amount'].sum())
             net_amount = total_credits - total_debits
             
-            ws['A15'] = "Financial Summary"
-            ws['A15'].font = Font(bold=True, size=12)
+            summary_row = row if selected_scopes else 16
+            ws[f'A{summary_row}'] = "Financial Summary"
+            ws[f'A{summary_row}'].font = Font(bold=True, size=12)
             
-            ws['A16'] = "Total Credits:"
-            ws['B16'] = total_credits
-            ws['B16'].number_format = '#,##0.00'
+            ws[f'A{summary_row + 1}'] = "Total Credits:"
+            ws[f'B{summary_row + 1}'] = self._display_financial_amount(total_credits, "N/A (multiple currencies)")
             
-            ws['A17'] = "Total Debits:"
-            ws['B17'] = total_debits
-            ws['B17'].number_format = '#,##0.00'
+            ws[f'A{summary_row + 2}'] = "Total Debits:"
+            ws[f'B{summary_row + 2}'] = self._display_financial_amount(total_debits, "N/A (multiple currencies)")
             
-            ws['A18'] = "Net Amount:"
-            ws['B18'] = net_amount
-            ws['B18'].number_format = '#,##0.00'
-            if net_amount < 0:
-                ws['B18'].font = Font(color="FF0000")  # Red for negative
+            ws[f'A{summary_row + 3}'] = "Net Amount:"
+            net_display = self._display_financial_amount(net_amount, "N/A (multiple currencies)")
+            ws[f'B{summary_row + 3}'] = net_display
+            if isinstance(net_display, str) and net_display.startswith("N/A"):
+                pass
+            elif net_amount < 0:
+                ws[f'B{summary_row + 3}'].font = Font(color="FF0000")
             else:
-                ws['B18'].font = Font(color="008000")  # Green for positive
+                ws[f'B{summary_row + 3}'].font = Font(color="008000")
         
         # Errors section
         if summary['errors']:
-            ws['A20'] = "Processing Errors"
-            ws['A20'].font = Font(bold=True, size=12, color="FF0000")
+            error_row = max(20, row + 6)
+            ws[f'A{error_row}'] = "Processing Errors"
+            ws[f'A{error_row}'].font = Font(bold=True, size=12, color="FF0000")
             
-            row = 21
+            row = error_row + 1
             for error in summary['errors']:
                 ws[f'A{row}'] = error
                 ws[f'A{row}'].font = Font(color="FF0000")
@@ -153,6 +195,7 @@ class ExcelGenerator:
         
         # Reorder columns for better presentation
         column_order = ['date', 'description', 'amount', 'balance', 'transaction_type', 'bank', 'account', 'currency']
+        column_order.extend(['scope_label', 'product_type', 'linked_account', 'source_file'])
         existing_columns = [col for col in column_order if col in df_excel.columns]
         df_excel = df_excel[existing_columns]
         
@@ -165,7 +208,11 @@ class ExcelGenerator:
             'transaction_type': 'Type',
             'bank': 'Bank',
             'account': 'Account',
-            'currency': 'Currency'
+            'currency': 'Currency',
+            'scope_label': 'Scope',
+            'product_type': 'Product Type',
+            'linked_account': 'Linked Account',
+            'source_file': 'Source File',
         }
         df_excel = df_excel.rename(columns=column_names)
         
@@ -214,6 +261,57 @@ class ExcelGenerator:
         
         # Freeze header row
         ws.freeze_panes = 'A2'
+
+    def _create_scope_transaction_sheets(self):
+        if self.transactions_df is None or self.transactions_df.empty:
+            return
+
+        if 'scope_label' not in self.transactions_df.columns:
+            return
+
+        grouped = self.transactions_df.dropna(subset=['scope_label']).groupby(['bank', 'scope_label'], sort=True)
+        used_titles: set[str] = set(self.workbook.sheetnames)
+        for (bank, scope_label), group in grouped:
+            title = self._unique_sheet_title(f"{bank[:8]} {scope_label}", used_titles)
+            used_titles.add(title)
+            ws = self.workbook.create_sheet(title)
+            df_scope = group.copy()
+            if 'date' in df_scope.columns:
+                df_scope['date'] = pd.to_datetime(df_scope['date'], errors='coerce')
+
+            column_order = ['date', 'description', 'amount', 'balance', 'transaction_type', 'bank', 'account', 'currency', 'scope_label', 'product_type', 'linked_account', 'source_file']
+            existing_columns = [col for col in column_order if col in df_scope.columns]
+            df_scope = df_scope[existing_columns]
+            for r in dataframe_to_rows(df_scope, index=False, header=True):
+                ws.append(r)
+
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            header_font = Font(color="FFFFFF", bold=True)
+            for cell in ws[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center')
+
+            for column in ws.columns:
+                first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
+                col_letter = get_column_letter(first.column)
+                lengths = [len(str(c.value)) for c in column if c.value]
+                max_length = max(lengths) if lengths else 0
+                ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
+            ws.freeze_panes = 'A2'
+
+    def _unique_sheet_title(self, base_title: str, used_titles: set[str]) -> str:
+        cleaned = "".join(" " if character in '[]:*?/\\\\' else character for character in base_title)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip() or "Scope"
+        cleaned = cleaned[:31].rstrip() or "Scope"
+        candidate = cleaned
+        index = 2
+        normalized_used_titles = {title.lower() for title in used_titles}
+        while candidate.lower() in normalized_used_titles:
+            suffix = f" {index}"
+            candidate = f"{cleaned[:31 - len(suffix)]}{suffix}"
+            index += 1
+        return candidate
     
     def _create_analysis_sheet(self):
         """Create analysis sheet with charts and insights."""
@@ -341,17 +439,17 @@ class ExcelGenerator:
         for r in dataframe_to_rows(monthly_df, index=False, header=True):
             ws.append(r)
         
-        # Format header (row 3 since we added a title)
+        # Format header (row 2 since we only added a title row)
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True)
         
-        for cell in ws[3]:  # Header is now in row 3
+        for cell in ws[2]:
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center')
         
         # Format data rows
-        for row in ws.iter_rows(min_row=4):
+        for row in ws.iter_rows(min_row=3):
             for cell in row:
                 # Format monetary columns
                 if cell.column_letter in ['B', 'C', 'D', 'F']:
