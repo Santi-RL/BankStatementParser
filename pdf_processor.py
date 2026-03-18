@@ -17,6 +17,10 @@ import re
 from utils import clean_text, parse_amount
 
 
+DETECTION_HEADER_MAX_LINES = 12
+DETECTION_HEADER_MAX_CHARS = 1200
+
+
 @dataclass
 class _ProcessingContext:
     text_content: str
@@ -491,14 +495,18 @@ class PDFProcessor:
             line = raw_line.strip()
             if not line:
                 continue
-            remaining_chars = 1200 - header_chars
-            if remaining_chars <= 0 or len(header_lines) >= 12:
+            remaining_chars = DETECTION_HEADER_MAX_CHARS - header_chars
+            if remaining_chars <= 0 or len(header_lines) >= DETECTION_HEADER_MAX_LINES:
                 break
             trimmed_line = line[:remaining_chars]
             header_lines.append(trimmed_line)
             header_chars += len(trimmed_line)
 
-        detection_text = "\n".join(header_lines) if header_lines else text_content[:1200]
+        detection_text = (
+            "\n".join(header_lines)
+            if header_lines
+            else text_content[:DETECTION_HEADER_MAX_CHARS]
+        )
         detection_text_lower = detection_text.lower()
 
         published_match = self.spec_registry.match_published(text_content)
