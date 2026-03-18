@@ -83,6 +83,14 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `bbva/account_summary`
 - `mercado_pago/default`
 
+### Fase 7: selección manual de formato bancario
+- La UI muestra un selector de formato después de "Analizar Extractos" para cada archivo subido.
+- El usuario puede elegir cualquier formato publicado en lugar del auto-detectado.
+- Cuando hay un override manual, archivos con detección fallida también pueden procesarse.
+- `PDFProcessor.process_pdf()` acepta `override_bank_id` / `override_format_id` para saltear la detección automática y usar una spec específica con score 1.0.
+- `PDFProcessor.list_available_formats()` expone los formatos publicados para poblar el selector de UI.
+- Hay tests unitarios para `list_available_formats()`, para el override exitoso y para el override inválido.
+
 ## Pendiente
 
 ### Prioridad 1: completar la migración declarativa

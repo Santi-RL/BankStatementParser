@@ -14,7 +14,7 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 18 de marzo de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `38 passed, 4 skipped`
+- `python -m pytest -q` -> `47 passed, 4 skipped`
 - `python format_cli.py regress` -> `success: true` con `processed: 6`
 
 Procesamiento manual comprobado con assets reales:
@@ -55,12 +55,20 @@ Nota operativa:
 - Existe `format_engine.py` con registro de specs TOML.
 - `PDFProcessor` usa exclusivamente specs publicadas.
 - `PDFProcessor` expone `analyze_pdf()` para descubrir scopes antes del parseo final.
+- `PDFProcessor` expone `list_available_formats()` para listar todos los formatos publicados.
 - `process_pdf()` ya devuelve `parse_status`, `format_id`, `format_version` y `diagnostics`.
+- `process_pdf()` acepta `override_bank_id`/`override_format_id` para saltear la auto-detección.
 - Hay detección cerrada de `format_changed` cuando un banco con specs publicadas deja de matchear.
 - El core declarativo ya soporta preextracción específica desde PDF y reglas de signo basadas en códigos para formatos complejos como Roela.
 - El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
 - El core declarativo ya soporta documentos multi-entidad con descubrimiento de scopes y filtrado por selección explícita.
 - El fallback Python legacy fue retirado del runtime.
+
+### Selección manual de formato
+- La UI muestra un selector de formato para cada archivo después de "Analizar Extractos".
+- El usuario puede elegir manualmente cualquier formato publicado si la auto-detección fue incorrecta o no detectó ningún banco.
+- Cuando hay un override manual, los archivos con detección fallida también pueden procesarse.
+- El estado del override se limpia automáticamente cuando cambian los archivos cargados.
 
 ### Aprendizaje asistido
 - Existe backoffice en Streamlit para aprender formatos.

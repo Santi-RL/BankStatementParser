@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from format_engine import FormatRegistry, SpecMatch, SpecParseResult
+from format_engine import FormatRegistry, SpecMatch, SpecParseResult, FormatSpec
 import re
 from utils import clean_text, parse_amount
 
@@ -40,6 +40,25 @@ class PDFProcessor:
     def __init__(self):
         self.spec_registry = FormatRegistry()
         self.logger = logging.getLogger(__name__)
+
+    def list_available_formats(self) -> List[Dict[str, Any]]:
+        """Return metadata for all published format specs.
+
+        Returns:
+            List of dicts with keys: bank_id, format_id, display_name, label.
+        """
+        result = []
+        for spec in self.spec_registry.specs_by_status("published"):
+            label = spec.display_name if spec.format_id == "default" else f"{spec.display_name} – {spec.format_id}"
+            result.append(
+                {
+                    "bank_id": spec.bank_id,
+                    "format_id": spec.format_id,
+                    "display_name": spec.display_name,
+                    "label": label,
+                }
+            )
+        return result
 
     def analyze_pdf(self, file_path: str, filename: str, debug: bool = False) -> Dict[str, Any]:
         """Inspect a PDF and return bank/format metadata plus available scopes."""
@@ -92,6 +111,8 @@ class PDFProcessor:
         filename: str,
         debug: bool = False,
         selected_scope_ids: Optional[List[str]] = None,
+        override_bank_id: Optional[str] = None,
+        override_format_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Process a PDF file and extract transaction data.
@@ -100,6 +121,9 @@ class PDFProcessor:
             file_path (str): Path to the PDF file.
             filename (str): Original filename for identification.
             debug (bool): When True, returns a debug_log list describing each processing stage.
+            selected_scope_ids: Scope IDs to process (for multi-scope documents).
+            override_bank_id: Manually selected bank ID, bypasses auto-detection.
+            override_format_id: Manually selected format ID, used together with override_bank_id.
 
         Returns:
             Dict[str, Any]: Dictionary containing success status, transactions, metadata,
@@ -110,7 +134,11 @@ class PDFProcessor:
             if debug and debug_log is not None:
                 debug_log.append(f"Starting processing for {filename}")
 
-            context = self._prepare_processing_context(file_path, debug_log)
+            context = self._prepare_processing_context(
+                file_path, debug_log,
+                override_bank_id=override_bank_id,
+                override_format_id=override_format_id,
+            )
             if context is None:
                 result = self._build_text_extraction_failure(debug_log)
                 if debug and debug_log is not None:
@@ -230,6 +258,8 @@ class PDFProcessor:
         self,
         file_path: str,
         debug_log: Optional[List[str]] = None,
+        override_bank_id: Optional[str] = None,
+        override_format_id: Optional[str] = None,
     ) -> Optional[_ProcessingContext]:
         if debug_log is not None:
             debug_log.append("Beginning text extraction")
@@ -244,13 +274,32 @@ class PDFProcessor:
                 debug_log.append("Failed to extract text")
             return None
 
-        if debug_log is not None:
-            debug_log.append("Detecting bank")
-        bank_detected = self._detect_bank(text_content)
-        if debug_log is not None:
-            debug_log.append(f"Detected bank: {bank_detected}")
+        if override_bank_id and override_format_id:
+            bank_detected = override_bank_id
+            if debug_log is not None:
+                debug_log.append(f"Manual format override: {override_bank_id}/{override_format_id}")
+            override_spec = self.spec_registry.get_spec(override_bank_id, override_format_id)
+            if override_spec is not None:
+                spec_match = SpecMatch(override_spec, 1.0, [], [], [])
+                if debug_log is not None:
+                    debug_log.append(
+                        f"Loaded override spec: {override_spec.bank_id}/{override_spec.format_id}"
+                    )
+            else:
+                spec_match = None
+                if debug_log is not None:
+                    debug_log.append(
+                        f"Override spec not found: {override_bank_id}/{override_format_id}"
+                    )
+        else:
+            if debug_log is not None:
+                debug_log.append("Detecting bank")
+            bank_detected = self._detect_bank(text_content)
+            if debug_log is not None:
+                debug_log.append(f"Detected bank: {bank_detected}")
 
-        spec_match = self.spec_registry.match_published(text_content, bank_detected)
+            spec_match = self.spec_registry.match_published(text_content, bank_detected)
+
         prepared_text = None
         if spec_match:
             prepared_text = spec_match.spec.prepare_text(text_content, file_path)

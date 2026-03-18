@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from contextlib import nullcontext
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import argparse
 import logging
 import hashlib
@@ -175,6 +175,27 @@ def _clear_scope_selection_state():
             del st.session_state[key]
 
 
+def _clear_format_override_state():
+    for key in list(st.session_state.keys()):
+        if key.startswith("format_override_"):
+            del st.session_state[key]
+
+
+def _format_override_key(file_id: str) -> str:
+    return f"format_override_{file_id}"
+
+
+def _get_format_override(file_id: str) -> Optional[Dict[str, str]]:
+    """Return the manually selected format override for a file, or None for auto-detect."""
+    value = st.session_state.get(_format_override_key(file_id))
+    if not value or value == "auto":
+        return None
+    parts = value.split("/", 1)
+    if len(parts) == 2:
+        return {"bank_id": parts[0], "format_id": parts[1]}
+    return None
+
+
 def _scope_checkbox_key(file_id: str, scope_id: str) -> str:
     return f"scope_select_{file_id}_{scope_id}"
 
@@ -237,10 +258,12 @@ def _selection_ready(analysis_results: List[Dict[str, Any]]) -> bool:
     ready = False
     for entry in analysis_results:
         analysis = entry["analysis"]
-        if not analysis.get("success"):
+        file_id = entry["file_id"]
+        has_override = _get_format_override(file_id) is not None
+        if not analysis.get("success") and not has_override:
             continue
         ready = True
-        if analysis.get("multi_scope") and not _selected_scope_ids(entry["file_id"], analysis.get("available_scopes", [])):
+        if not has_override and analysis.get("multi_scope") and not _selected_scope_ids(file_id, analysis.get("available_scopes", [])):
             return False
     return ready
 
@@ -421,6 +444,7 @@ def main(debug: bool = False, lang: str = LANG, mode: str = "local"):
                         st.session_state.processed_data = None
                         st.session_state.processing_complete = False
                         _clear_scope_selection_state()
+                        _clear_format_override_state()
 
                     st.success(tr("valid_files", n=len(uploaded_files)))
                     
@@ -505,6 +529,18 @@ def analyze_files(uploaded_files: List[Any], debug: bool = False, mode: str = "l
 
 def render_analysis_results(analysis_results: List[Dict[str, Any]], debug: bool = False, mode: str = "local"):
     st.subheader("Análisis previo")
+
+    _processor = PDFProcessor()
+    available_formats = [
+        {
+            "key": f"{fmt['bank_id']}/{fmt['format_id']}",
+            "label": fmt["label"],
+            "bank_id": fmt["bank_id"],
+            "format_id": fmt["format_id"],
+        }
+        for fmt in _processor.list_available_formats()
+    ]
+
     for entry in analysis_results:
         analysis = entry["analysis"]
         title = _analysis_title(entry["file_name"], analysis)
@@ -555,6 +591,36 @@ def render_analysis_results(analysis_results: List[Dict[str, Any]], debug: bool 
                 if not _is_production_test(mode) and analysis.get('parse_status') in {'unknown_format', 'format_changed'}:
                     st.info("Este fallo quedó sembrado en la pestaña 'Aprender Formatos'.")
 
+            # Format override selector (shown for all files)
+            if available_formats:
+                detected_key = (
+                    f"{analysis.get('bank_detected', '')}/{analysis.get('format_id', '')}"
+                    if analysis.get("success") and analysis.get("bank_detected") and analysis.get("format_id")
+                    else "auto"
+                )
+                option_keys = ["auto"] + [fmt["key"] for fmt in available_formats]
+                option_labels: Dict[str, str] = {
+                    "auto": "🔍 Auto-detectado",
+                    **{fmt["key"]: fmt["label"] for fmt in available_formats},
+                }
+                default_value = detected_key if detected_key in option_keys else "auto"
+                override_key = _format_override_key(entry["file_id"])
+                if override_key not in st.session_state:
+                    st.session_state[override_key] = default_value
+
+                selected_format_key = st.selectbox(
+                    "Formato a aplicar",
+                    options=option_keys,
+                    format_func=lambda k: option_labels.get(k, k),
+                    key=override_key,
+                    help="Cambiá el formato si la detección automática fue incorrecta.",
+                )
+                if selected_format_key != "auto" and selected_format_key != detected_key:
+                    st.info(
+                        f"⚠️ Se usará el formato **{option_labels.get(selected_format_key, selected_format_key)}** "
+                        "en lugar del auto-detectado."
+                    )
+
             _render_analysis_technical_details(entry, analysis, debug=debug, mode=mode)
 
 
@@ -594,7 +660,8 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                 file_id = _uploaded_file_id(uploaded_file)
                 analysis_entry = analysis_map.get(file_id)
                 analysis = analysis_entry["analysis"] if analysis_entry else None
-                if analysis and not analysis.get("success"):
+                format_override = _get_format_override(file_id)
+                if analysis and not analysis.get("success") and not format_override:
                     processing_summary['failed_files'] += 1
                     processing_summary['errors'].append(f"{uploaded_file.name}: {analysis['error']}")
                     st.error(tr("file_error", name=uploaded_file.name, error=analysis['error']))
@@ -606,6 +673,8 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                         uploaded_file.name,
                         debug=debug,
                         selected_scope_ids=selected_scope_map.get(file_id) or None,
+                        override_bank_id=format_override["bank_id"] if format_override else None,
+                        override_format_id=format_override["format_id"] if format_override else None,
                     )
                 
                 if result['success']:

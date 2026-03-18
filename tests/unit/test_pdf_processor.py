@@ -188,3 +188,58 @@ def test_bbva_account_summary_with_four_valid_transactions_is_not_rejected_as_fo
     assert result["total_transactions"] == 4
     assert result["transactions"][0]["amount"] == 144645.66
     assert result["transactions"][-1]["amount"] == -2572.98
+
+
+def test_list_available_formats_returns_published_specs():
+    processor = PDFProcessor()
+    formats = processor.list_available_formats()
+    assert len(formats) > 0
+    for fmt in formats:
+        assert "bank_id" in fmt
+        assert "format_id" in fmt
+        assert "display_name" in fmt
+        assert "label" in fmt
+    bank_ids = [fmt["bank_id"] for fmt in formats]
+    assert "galicia_ar" in bank_ids
+    assert "chase" in bank_ids
+
+
+def test_process_pdf_with_format_override_bypasses_detection():
+    """When override is provided, the specified format is used even when auto-detection fails."""
+    text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+
+    # Build a long header of unrelated lines so that no published spec matches
+    # (galicia required_keywords are not present in these lines).
+    _NOISE_LINE_COUNT = 200
+    noisy_text = "\n".join(f"Línea de ruido {n}" for n in range(1, _NOISE_LINE_COUNT + 1))
+
+    # Without override: fails because no spec matches
+    proc_noise = DummyProcessor(noisy_text)
+    result_no_override = proc_noise.process_pdf("dummy.pdf", "dummy.pdf")
+    assert result_no_override["success"] is False
+    assert result_no_override["parse_status"] == "unknown_format"
+
+    # With the galicia text and override pointing to galicia: succeeds
+    proc_galicia = DummyProcessor(text)
+    result_override = proc_galicia.process_pdf(
+        "dummy.pdf", "dummy.pdf",
+        override_bank_id="galicia_ar",
+        override_format_id="default",
+    )
+    assert result_override["success"] is True
+    assert result_override["bank_detected"] == "galicia_ar"
+    assert result_override["format_id"] == "default"
+
+
+def test_process_pdf_with_invalid_override_returns_unmatched():
+    """When override points to a non-existent spec, processing fails gracefully."""
+    text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    proc = DummyProcessor(text)
+
+    result = proc.process_pdf(
+        "dummy.pdf", "dummy.pdf",
+        override_bank_id="nonexistent_bank",
+        override_format_id="default",
+    )
+    assert result["success"] is False
+    assert result["parse_status"] == "unknown_format"
