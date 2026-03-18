@@ -73,6 +73,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `process_pdf()` ya no duplica extracción, matching y preparación de texto.
 - El fallback PDF secundario ya usa `pypdf`.
 - El repo dejó de depender de artefactos históricos de Replit y del lockfile legacy de `uv`.
+- La detección de banco ahora prioriza el match de specs publicadas y señales estructurales antes que menciones sueltas dentro del detalle de movimientos.
 
 ### Formatos ya migrados
 - `galicia_ar/default`

@@ -24,6 +24,18 @@ def test_detect_bank_mercado_pago():
     assert processor._detect_bank(text) == "mercado_pago"
 
 
+def test_detect_bank_mercado_pago_is_not_confused_by_bbva_in_transaction_detail():
+    processor = PDFProcessor()
+    text = Path("parser_specs/mercado_pago/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    contaminated_text = "\n".join(
+        [
+            text,
+            "07-06-2023 Ingreso de dinero Cuenta BBVA Banco Frances 59084863410 3.000,00 7.448,16",
+        ]
+    )
+    assert processor._detect_bank(contaminated_text) == "mercado_pago"
+
+
 def test_process_pdf_debug():
     text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
     proc = DummyProcessor(text)

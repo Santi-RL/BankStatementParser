@@ -487,19 +487,54 @@ class PDFProcessor:
         """
         text_lower = text_content.lower()
 
+        published_match = self.spec_registry.match_published(text_content)
+        if published_match is not None:
+            return published_match.spec.bank_id
+
         # Banco Roela detection - look for C.B.U. or CBU followed by the prefix
         # 247 and 19 additional digits (total 22 digits)
         if re.search(r"C\.?B\.?U\.?\s*:?\s*247\d{19}", text_content, re.IGNORECASE):
             return "roela_ar"
 
+        weighted_keywords = {
+            'mercado_pago': [
+                ('mercado pago', 4),
+                ('mercadopago', 4),
+                ('mercado libre s.r.l.', 3),
+                ('mercado libre s.r.l', 3),
+                ('mercado libre srl', 3),
+                ('resumen de cuenta', 1),
+                ('detalle de movimientos', 1),
+                ('cvu', 2),
+            ],
+            'bbva': [
+                ('banco bbva argentina', 4),
+                ('bbva argentina', 3),
+                ('cuentas y paquetes', 2),
+                ('intervinientes', 2),
+                ('tarjetas de crédito', 2),
+                ('movimientos en cuentas', 1),
+                ('bbva', 1),
+            ],
+        }
+        weighted_thresholds = {
+            'mercado_pago': 3,
+            'bbva': 2,
+        }
+
+        best_identifier = 'unknown'
+        best_score = 0
+        for identifier, markers in weighted_keywords.items():
+            score = sum(weight for marker, weight in markers if marker in text_lower)
+            if score >= weighted_thresholds.get(identifier, 1) and score > best_score:
+                best_identifier = identifier
+                best_score = score
+
+        if best_score > 0:
+            return best_identifier
+
         keywords = {
             'santander': 'santander',
-            'bbva': 'bbva',
-            'mercado pago': 'mercado_pago',
-            'mercadopago': 'mercado_pago',
-            'mercado libre s.r.l.': 'mercado_pago',
-            'mercado libre s.r.l': 'mercado_pago',
-            'mercado libre srl': 'mercado_pago',
             'caixabank': 'caixabank',
             'galicia': 'galicia_ar',
             'bankia': 'bankia',

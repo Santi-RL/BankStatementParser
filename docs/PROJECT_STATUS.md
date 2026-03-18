@@ -43,6 +43,7 @@ Nota operativa:
 - El fallback secundario de PDF pasó de `PyPDF2` a `pypdf`.
 - El motor declarativo ya no deja `except/pass` silenciosos en la ruta específica de Roela.
 - El runtime ahora escribe logs rotados en `logs/app.log`.
+- La detección de banco ahora prioriza specs publicadas y señales del encabezado para evitar falsos positivos por menciones a otros bancos dentro de descripciones de transferencias.
 
 ### Infraestructura de tests
 - `tests/` es la fuente de verdad.
