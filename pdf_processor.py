@@ -485,7 +485,21 @@ class PDFProcessor:
         Returns:
             str: Bank identifier string
         """
-        text_lower = text_content.lower()
+        header_lines: List[str] = []
+        header_chars = 0
+        for raw_line in text_content.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            remaining_chars = 1200 - header_chars
+            if remaining_chars <= 0 or len(header_lines) >= 12:
+                break
+            trimmed_line = line[:remaining_chars]
+            header_lines.append(trimmed_line)
+            header_chars += len(trimmed_line)
+
+        detection_text = "\n".join(header_lines) if header_lines else text_content[:1200]
+        detection_text_lower = detection_text.lower()
 
         published_match = self.spec_registry.match_published(text_content)
         if published_match is not None:
@@ -525,7 +539,7 @@ class PDFProcessor:
         best_identifier = 'unknown'
         best_score = 0
         for identifier, markers in weighted_keywords.items():
-            score = sum(weight for marker, weight in markers if marker in text_lower)
+            score = sum(weight for marker, weight in markers if marker in detection_text_lower)
             if score >= weighted_thresholds.get(identifier, 1) and score > best_score:
                 best_identifier = identifier
                 best_score = score
@@ -553,7 +567,7 @@ class PDFProcessor:
         }
 
         for key, identifier in keywords.items():
-            if key in text_lower:
+            if key in detection_text_lower:
                 return identifier
 
         return 'unknown'

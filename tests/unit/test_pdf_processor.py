@@ -36,6 +36,41 @@ def test_detect_bank_mercado_pago_is_not_confused_by_bbva_in_transaction_detail(
     assert processor._detect_bank(contaminated_text) == "mercado_pago"
 
 
+def test_detect_bank_weighted_keyword_requires_header_signal():
+    processor = PDFProcessor()
+    text = "\n".join(
+        [f"Línea de resumen {index}" for index in range(1, 13)]
+        + [
+            "07-06-2023 Ingreso de dinero Cuenta BBVA Banco Frances 59084863410 3.000,00 7.448,16",
+            "Tarjetas de Crédito",
+        ]
+    )
+    assert processor._detect_bank(text) == "unknown"
+
+
+def test_detect_bank_simple_keyword_requires_header_signal():
+    processor = PDFProcessor()
+    text = "\n".join(
+        [f"Línea de resumen {index}" for index in range(1, 13)]
+        + [
+            "07/06/2023 Transferencia enviada a cuenta Santander 100,00",
+        ]
+    )
+    assert processor._detect_bank(text) == "unknown"
+
+
+def test_detect_bank_simple_keyword_in_header_is_still_detected():
+    processor = PDFProcessor()
+    text = "\n".join(
+        [
+            "Banco Santander",
+            "Resumen de cuenta",
+            "Saldo y movimientos",
+        ]
+    )
+    assert processor._detect_bank(text) == "santander"
+
+
 def test_process_pdf_debug():
     text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
     proc = DummyProcessor(text)
