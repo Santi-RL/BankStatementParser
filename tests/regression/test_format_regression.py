@@ -7,7 +7,7 @@ def test_published_spec_regression_suite_is_green():
     result = regress_published_specs()
 
     assert result["success"] is True
-    assert result["processed"] >= 4
+    assert result["processed"] >= 5
 
 
 def test_changed_galicia_fixture_would_fail_spec_thresholds():
@@ -68,6 +68,32 @@ def test_changed_roela_fixture_would_fail_spec_thresholds():
             "Período Desde 01/09/2024",
             "02-09-2024 MOVIMIENTO NUEVO 11218.00",
             "DE INTERES PARA USTED",
+        ]
+    )
+
+    from format_engine import FormatSpec
+    import tomllib
+
+    with spec_path.open("rb") as handle:
+        spec = FormatSpec(spec_path, tomllib.load(handle))
+
+    result = spec.parse_transactions(changed_text)
+
+    assert result.passes_change_detection is False
+    assert result.diagnostics["transactions_found"] == 0
+
+
+def test_changed_bbva_account_summary_fixture_would_fail_spec_thresholds():
+    spec_path = Path("parser_specs/bbva/account_summary/spec.toml")
+    changed_text = "\n".join(
+        [
+            "110252400202309262DIGITAL",
+            "Resumen",
+            "Cuentas y paquetes",
+            "Intervinientes",
+            "Movimientos en cuentas",
+            "FECHA ORIGEN CONCEPTO DÉBITO CRÉDITO SALDO",
+            "2023-09-20 MOVIMIENTO NUEVO 10,00",
         ]
     )
 

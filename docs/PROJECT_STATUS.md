@@ -14,8 +14,8 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 18 de marzo de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `25 passed`
-- `python format_cli.py regress` -> `success: true`
+- `python -m pytest -q` -> `33 passed, 4 skipped`
+- `python format_cli.py regress` -> `success: true` con `processed: 5`
 
 Procesamiento manual comprobado con assets reales:
 - `attached_assets/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
@@ -23,6 +23,10 @@ Procesamiento manual comprobado con assets reales:
 - `attached_assets/BANCO CH 2024 1.pdf` -> `chase`, 12 transacciones, vía spec declarativa.
 - `attached_assets/BANCO CH 2024 2.pdf` -> `chase`, 10 transacciones, vía spec declarativa.
 - `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` -> `bbva`, documento consolidado con 5 scopes detectados y 192 transacciones.
+- `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
+
+Nota operativa:
+- En este workspace faltaba `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf`, por eso las integraciones que dependen de ese asset quedaron condicionadas y hoy aparecen como `skipped` cuando el archivo no está disponible.
 
 ## Lo que ya está resuelto
 
@@ -65,6 +69,7 @@ Procesamiento manual comprobado con assets reales:
 - `chase/default` publicado y cubierto por regresión.
 - `roela_ar/default` publicado y cubierto por regresión.
 - `bbva/default` publicado y cubierto por regresión/integración.
+- `bbva/account_summary` publicado y cubierto por regresión/integración.
 
 ## Lo que todavía falta
 

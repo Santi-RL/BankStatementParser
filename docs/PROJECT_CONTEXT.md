@@ -47,7 +47,7 @@ Es el orquestador real del dominio. Se encarga de:
 - validar y completar transacciones.
 
 ### `parser_specs/`
-Contiene el registro declarativo versionado por banco/formato. Cada formato tiene su `spec.toml` y sus fixtures sanitizadas. Hoy Galicia, Chase, Roela y BBVA ya están migrados a este modelo.
+Contiene el registro declarativo versionado por banco/formato. Cada formato tiene su `spec.toml` y sus fixtures sanitizadas. Hoy Galicia, Chase, Roela y BBVA ya están migrados a este modelo, incluyendo dos variantes publicadas de BBVA.
 
 ### `excel_generator.py`
 Arma el Excel final. Hoy crea cuatro hojas base:
@@ -66,6 +66,7 @@ Centraliza helpers reutilizados por varios módulos: limpieza de texto, parseo d
 - `chase/default`
 - `roela_ar/default`
 - `bbva/default`
+- `bbva/account_summary`
 
 ## Esquema de transacción que consume todo el sistema
 La UI, la validación y el generador de Excel asumen que cada movimiento sale como diccionario con estas claves base:
@@ -100,6 +101,7 @@ Se procesaron localmente estos archivos con `venv\Scripts\python.exe`:
 | `attached_assets/BANCO CH 2024 1.pdf` | `chase` | 12 transacciones |
 | `attached_assets/BANCO CH 2024 2.pdf` | `chase` | 10 transacciones |
 | `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | `bbva` | Documento consolidado, 5 scopes detectados y 192 transacciones |
+| `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
 
 Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estático.
 
@@ -108,7 +110,7 @@ Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estáti
 - Hay regresión offline para los formatos declarativos publicados.
 - Existe un helper `scripts/run_app.py` y un runbook en `docs/E2E_PLAYWRIGHT.md` para smoke real con navegador.
 - Existe un runbook específico de primera salida en `docs/PRODUCTION_TEST_RUNBOOK.md`.
-- La suite actual valida formatos declarativos publicados para Galicia, Chase y Roela.
+- La suite actual valida formatos declarativos publicados para Galicia, Chase, Roela y BBVA.
 
 ## Límites explícitos del producto actual
 - Solo soporta PDFs basados en texto. No hay OCR.

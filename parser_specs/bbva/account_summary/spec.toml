@@ -1,0 +1,79 @@
+[meta]
+bank_id = "bbva"
+format_id = "account_summary"
+version = 1
+status = "published"
+country = "AR"
+currency_default = "ARS"
+display_name = "BBVA Argentina"
+
+[detect]
+required_keywords = [
+  "Cuentas y paquetes",
+  "Intervinientes",
+  "Movimientos en cuentas",
+]
+excluded_keywords = [
+  "Tarjetas de Crédito",
+]
+min_score = 0.66
+
+[[scopes]]
+name = "bank_account"
+pattern = '^(?P<account_type>CA|CC)\s+(?P<currency_token>U\$S|\$)\s+(?P<account_number>\d{3}-\d+/\d)(?:\s+\(.+?\))?\s+Saldo Consolidado$'
+scope_id_template = 'bank_account:{account_type}_{currency_token}_{account_number}'
+label_template = '{account_type} {currency_token} {account_number}'
+product_type = "bank_account"
+account_template = '{account_type} {currency_token} {account_number}'
+currency_template = '{currency_token}'
+source_sections = ["account_movements"]
+
+[extract]
+strategy = "line_regex"
+
+[[extract.sections]]
+name = "account_movements"
+start_patterns = ['^Movimientos en cuentas$']
+stop_patterns = ['^RETENCIONES ARBA$', '^Transferencias$', '^Legales y avisos$', '^Impuesto a los debitos y creditos$']
+ignore_patterns = [
+  '^FECHA\s+ORIGEN\s+CONCEPTO',
+  '^SALDO ANTERIOR',
+  '^SALDO AL ',
+  '^TOTAL MOVIMIENTOS',
+  '^\(.*\)\s+Ver Legales',
+]
+line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(?P<balance>-?\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}/\d{2}\s+'
+multiline = false
+
+[[extract.sections.context_rules]]
+action = "activate_scope"
+pattern = '^(?P<account_type>CA|CC)\s+(?P<currency_token>U\$S|\$)\s+(?P<account_number>\d{3}-\d+/\d)(?:\s+\(.+?\))?\s+- A consumidor final$'
+scope_lookup_field = "account"
+scope_lookup_template = '{account_type} {currency_token} {account_number}'
+scope_id_template = 'bank_account:{account_type}_{currency_token}_{account_number}'
+label_template = '{account_type} {currency_token} {account_number}'
+product_type = "bank_account"
+account_template = '{account_type} {currency_token} {account_number}'
+currency_template = '{currency_token}'
+
+[fields]
+date = "date"
+description = "description"
+amount = "amount"
+balance = "balance"
+account_pattern = ''
+currency = "currency"
+
+[normalize]
+date_formats = ['%d/%m']
+statement_year_pattern = '(?P<year>20\d{2})(?P<month>0[1-9]|1[0-2])\d{3}DIGITAL'
+statement_month_pattern = '20\d{2}(?P<month>0[1-9]|1[0-2])\d{3}DIGITAL'
+
+[normalize.currency_map]
+"$" = "ARS"
+"U$S" = "USD"
+
+[change_detection]
+min_transactions = 5
+min_match_ratio = 0.8

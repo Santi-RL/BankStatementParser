@@ -47,6 +47,18 @@ def test_registry_matches_published_roela_spec():
     assert match.spec.format_id == "default"
 
 
+def test_registry_matches_published_bbva_account_summary_spec():
+    registry = FormatRegistry()
+    fixture_path = Path("parser_specs/bbva/account_summary/fixtures/sample_text.txt")
+    text = fixture_path.read_text(encoding="utf-8")
+
+    match = registry.match_published(text, "bbva")
+
+    assert match is not None
+    assert match.spec.bank_id == "bbva"
+    assert match.spec.format_id == "account_summary"
+
+
 def test_save_draft_and_publish(tmp_path):
     spec = build_initial_spec(
         bank_id="demo_bank",
@@ -136,3 +148,22 @@ def test_bbva_spec_discovers_scopes_and_filters_selected_entities():
         "CA $ 354-428727/2",
         "CC $ 354-560404/1",
     }
+
+
+def test_bbva_account_summary_spec_parses_single_scope_account_statement():
+    fixture_path = Path("parser_specs/bbva/account_summary/fixtures/sample_text.txt")
+    spec_path = Path("parser_specs/bbva/account_summary/spec.toml")
+    text = fixture_path.read_text(encoding="utf-8")
+
+    with spec_path.open("rb") as handle:
+        spec = FormatSpec(spec_path, tomllib.load(handle))
+
+    result = spec.parse_transactions(text)
+
+    assert result.passes_change_detection is True
+    assert result.diagnostics["statement_year"] == 2023
+    assert len(result.available_scopes) == 1
+    assert result.available_scopes[0]["label"] == "CA $ 354-428727/2"
+    assert len(result.transactions) == 12
+    assert result.transactions[0]["date"] == "2023-08-22"
+    assert result.transactions[-1]["amount"] == -2572.98

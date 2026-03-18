@@ -1,10 +1,15 @@
 import io
 import re
+from pathlib import Path
 
+import pytest
 from openpyxl import load_workbook
 
 from excel_generator import ExcelGenerator
 from pdf_processor import PDFProcessor
+
+
+BBVA_MULTI_SCOPE_PDF = Path("attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf")
 
 
 def test_galicia_pdf_uses_declarative_spec():
@@ -62,6 +67,7 @@ def test_chase_second_pdf_matches_same_published_spec():
     assert result["transactions"][0]["account"] == "000000771927196"
 
 
+@pytest.mark.skipif(not BBVA_MULTI_SCOPE_PDF.exists(), reason="BBVA consolidated sample is not available in this workspace")
 def test_bbva_pdf_analysis_reports_multiple_scopes():
     processor = PDFProcessor()
     result = processor.analyze_pdf(
@@ -76,6 +82,37 @@ def test_bbva_pdf_analysis_reports_multiple_scopes():
     assert len(result["available_scopes"]) == 5
 
 
+def test_bbva_account_summary_pdf_uses_new_single_scope_spec():
+    processor = PDFProcessor()
+    analysis = processor.analyze_pdf(
+        "attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf",
+        "Resumen caja de ahorro BBVA 09-2023.pdf",
+    )
+    result = processor.process_pdf(
+        "attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf",
+        "Resumen caja de ahorro BBVA 09-2023.pdf",
+    )
+
+    assert analysis["success"] is True
+    assert analysis["bank_detected"] == "bbva"
+    assert analysis["format_id"] == "account_summary"
+    assert analysis["multi_scope"] is False
+    assert len(analysis["available_scopes"]) == 1
+    assert analysis["available_scopes"][0]["label"] == "CA $ 354-428727/2"
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["bank_detected"] == "bbva"
+    assert result["format_id"] == "account_summary"
+    assert result["format_version"] == 1
+    assert result["total_transactions"] == 12
+    assert result["transactions"][0]["date"] == "2023-08-22"
+    assert result["transactions"][0]["amount"] == 71093.08
+    assert result["transactions"][-1]["description"] == "CUENTA VISA NRO. 79083794696899"
+    assert all(transaction["scope_label"] == "CA $ 354-428727/2" for transaction in result["transactions"])
+
+
+@pytest.mark.skipif(not BBVA_MULTI_SCOPE_PDF.exists(), reason="BBVA consolidated sample is not available in this workspace")
 def test_bbva_pdf_can_extract_only_bank_accounts():
     processor = PDFProcessor()
     analysis = processor.analyze_pdf(
@@ -101,6 +138,7 @@ def test_bbva_pdf_can_extract_only_bank_accounts():
     assert any(transaction["scope_label"] == "CC $ 354-560404/1" for transaction in result["transactions"])
 
 
+@pytest.mark.skipif(not BBVA_MULTI_SCOPE_PDF.exists(), reason="BBVA consolidated sample is not available in this workspace")
 def test_bbva_pdf_can_extract_only_credit_card_scope():
     processor = PDFProcessor()
     analysis = processor.analyze_pdf(
@@ -120,6 +158,7 @@ def test_bbva_pdf_can_extract_only_credit_card_scope():
     assert all(transaction["product_type"] == "credit_card" for transaction in result["transactions"])
 
 
+@pytest.mark.skipif(not BBVA_MULTI_SCOPE_PDF.exists(), reason="BBVA consolidated sample is not available in this workspace")
 def test_bbva_multi_scope_excel_generation_succeeds():
     processor = PDFProcessor()
     analysis = processor.analyze_pdf(

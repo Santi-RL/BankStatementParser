@@ -79,6 +79,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `chase/default`
 - `roela_ar/default`
 - `bbva/default`
+- `bbva/account_summary`
 
 ## Pendiente
 
