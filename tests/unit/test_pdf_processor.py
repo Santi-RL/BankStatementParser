@@ -13,6 +13,15 @@ class DummyProcessor(PDFProcessor):
         return self._text
 
 
+class ForcedDetectionProcessor(DummyProcessor):
+    def __init__(self, text: str, detected_bank: str = "unknown"):
+        super().__init__(text)
+        self._detected_bank = detected_bank
+
+    def _detect_bank(self, text_content: str) -> str:
+        return self._detected_bank
+
+
 def test_detect_bank_chase():
     processor = PDFProcessor()
     assert processor._detect_bank("This is a statement from JPMorgan Chase Bank.") == "chase"
@@ -188,3 +197,92 @@ def test_bbva_account_summary_with_four_valid_transactions_is_not_rejected_as_fo
     assert result["total_transactions"] == 4
     assert result["transactions"][0]["amount"] == 144645.66
     assert result["transactions"][-1]["amount"] == -2572.98
+
+
+def test_list_available_formats_returns_only_published_specs():
+    processor = PDFProcessor()
+
+    formats = processor.list_available_formats()
+
+    assert formats
+    assert all("bank_id" in fmt and "format_id" in fmt and "label" in fmt for fmt in formats)
+    assert any(fmt["bank_id"] == "galicia_ar" and fmt["format_id"] == "default" for fmt in formats)
+    assert any(fmt["bank_id"] == "bbva" and fmt["format_id"] == "account_summary" for fmt in formats)
+
+
+def test_analyze_pdf_with_override_can_surface_multiscope_options():
+    text = Path("parser_specs/bbva/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    processor = ForcedDetectionProcessor(text, detected_bank="unknown")
+
+    analysis = processor.analyze_pdf(
+        "dummy.pdf",
+        "dummy.pdf",
+        override_bank_id="bbva",
+        override_format_id="default",
+    )
+
+    assert analysis["success"] is True
+    assert analysis["bank_detected"] == "bbva"
+    assert analysis["format_id"] == "default"
+    assert analysis["multi_scope"] is True
+    assert len(analysis["available_scopes"]) == 5
+
+
+def test_process_pdf_with_override_bypasses_wrong_bank_detection():
+    text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    processor = ForcedDetectionProcessor(text, detected_bank="santander")
+
+    without_override = processor.process_pdf("dummy.pdf", "dummy.pdf")
+    with_override = processor.process_pdf(
+        "dummy.pdf",
+        "dummy.pdf",
+        override_bank_id="galicia_ar",
+        override_format_id="default",
+    )
+
+    assert without_override["success"] is False
+    assert without_override["parse_status"] == "unknown_format"
+    assert with_override["success"] is True
+    assert with_override["bank_detected"] == "galicia_ar"
+    assert with_override["format_id"] == "default"
+
+
+def test_process_pdf_with_override_keeps_scope_selection_flow():
+    text = Path("parser_specs/bbva/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    processor = ForcedDetectionProcessor(text, detected_bank="unknown")
+    analysis = processor.analyze_pdf(
+        "dummy.pdf",
+        "dummy.pdf",
+        override_bank_id="bbva",
+        override_format_id="default",
+    )
+    selected_scope_id = analysis["available_scopes"][0]["id"]
+
+    result = processor.process_pdf(
+        "dummy.pdf",
+        "dummy.pdf",
+        selected_scope_ids=[selected_scope_id],
+        override_bank_id="bbva",
+        override_format_id="default",
+    )
+
+    assert result["success"] is True
+    assert result["multi_scope"] is True
+    assert result["transactions"]
+    assert {transaction["scope_id"] for transaction in result["transactions"]} == {selected_scope_id}
+
+
+def test_process_pdf_with_invalid_override_returns_unknown_format():
+    text = Path("parser_specs/galicia_ar/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    processor = ForcedDetectionProcessor(text, detected_bank="galicia_ar")
+
+    result = processor.process_pdf(
+        "dummy.pdf",
+        "dummy.pdf",
+        override_bank_id="galicia_ar",
+        override_format_id="missing_format",
+    )
+
+    assert result["success"] is False
+    assert result["parse_status"] == "unknown_format"
+    assert result["diagnostics"]["override_missing"] is True

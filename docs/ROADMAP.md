@@ -75,6 +75,14 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - El repo dejó de depender de artefactos históricos de Replit y del lockfile legacy de `uv`.
 - La detección de banco ahora prioriza el match de specs publicadas y señales estructurales antes que menciones sueltas dentro del detalle de movimientos.
 
+### Fase 7: selección manual y dinámica de formato
+- La UI muestra un selector por archivo con todos los formatos publicados disponibles en el runtime declarativo.
+- Cambiar el selector reanaliza ese PDF con la spec elegida antes del procesamiento final.
+- El flujo manual también actualiza dinámicamente los scopes disponibles, por lo que sigue siendo compatible con PDFs multi-entidad.
+- `PDFProcessor.analyze_pdf()` y `PDFProcessor.process_pdf()` aceptan override manual, pero solo resuelven specs publicadas.
+- Los overrides inválidos se reportan como `unknown_format`, evitando mezclar un error de selección manual con un `format_changed` real.
+- Hay tests unitarios para listar formatos, analizar multi-scope con override, procesar con override y rechazar overrides inválidos.
+
 ### Formatos ya migrados
 - `galicia_ar/default`
 - `chase/default`

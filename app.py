@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from contextlib import nullcontext
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import argparse
 import logging
 import hashlib
@@ -169,10 +169,65 @@ def _uploaded_files_signature(uploaded_files: List[Any]) -> tuple[str, ...]:
     return tuple(f"{uploaded_file.name}:{len(uploaded_file.getvalue())}:{_uploaded_file_id(uploaded_file)}" for uploaded_file in uploaded_files)
 
 
-def _clear_scope_selection_state():
+def _clear_scope_selection_state(file_id: Optional[str] = None):
+    prefix = "scope_select_" if file_id is None else f"scope_select_{file_id}_"
     for key in list(st.session_state.keys()):
-        if key.startswith("scope_select_"):
+        if key.startswith(prefix):
             del st.session_state[key]
+
+
+def _clear_format_selection_state():
+    for key in list(st.session_state.keys()):
+        if key.startswith("format_select_"):
+            del st.session_state[key]
+
+
+def _format_selector_key(file_id: str) -> str:
+    return f"format_select_{file_id}"
+
+
+def _format_option_key(bank_id: str, format_id: str) -> str:
+    return f"{bank_id}/{format_id}"
+
+
+def _parse_format_option(value: str) -> Optional[Dict[str, str]]:
+    if not value or value == "auto":
+        return None
+    bank_id, separator, format_id = value.partition("/")
+    if not separator or not bank_id or not format_id:
+        return None
+    return {"bank_id": bank_id, "format_id": format_id}
+
+
+def _analysis_format_option(analysis: Dict[str, Any]) -> Optional[str]:
+    bank_detected = str(analysis.get("bank_detected") or "").strip()
+    format_id = str(analysis.get("format_id") or "").strip()
+    if not bank_detected or not format_id:
+        return None
+    return _format_option_key(bank_detected, format_id)
+
+
+def _entry_selected_format_option(entry: Dict[str, Any]) -> str:
+    override = entry.get("applied_override")
+    if override:
+        return _format_option_key(override["bank_id"], override["format_id"])
+    return "auto"
+
+
+def _build_analysis_entry(
+    file_id: str,
+    file_name: str,
+    auto_analysis: Dict[str, Any],
+    effective_analysis: Optional[Dict[str, Any]] = None,
+    applied_override: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    return {
+        "file_id": file_id,
+        "file_name": file_name,
+        "auto_analysis": auto_analysis,
+        "analysis": effective_analysis or auto_analysis,
+        "applied_override": applied_override,
+    }
 
 
 def _scope_checkbox_key(file_id: str, scope_id: str) -> str:
@@ -191,6 +246,69 @@ def _apply_scope_preset(file_id: str, scopes: List[Dict[str, Any]], allowed_prod
     for scope in scopes:
         selected = allowed_product_types is None or scope.get("product_type") in allowed_product_types
         st.session_state[_scope_checkbox_key(file_id, scope["id"])] = selected
+
+
+def _sync_scope_selection_state(file_id: str, scopes: List[Dict[str, Any]]):
+    expected_keys = {_scope_checkbox_key(file_id, scope["id"]) for scope in scopes}
+    for key in list(st.session_state.keys()):
+        if key.startswith(f"scope_select_{file_id}_") and key not in expected_keys:
+            del st.session_state[key]
+    for key in expected_keys:
+        st.session_state.setdefault(key, False)
+
+
+def _seed_training_from_result(file_name: str, result: Dict[str, Any]):
+    st.session_state.training_seed = {
+        'file_name': file_name,
+        'bank_detected': result.get('bank_detected', 'unknown'),
+        'bank_name': result.get('bank_name', ''),
+        'extracted_text': result.get('extracted_text', ''),
+        'diagnostics': result.get('diagnostics', {}),
+        'suggested_format_id': _suggest_format_id(file_name),
+    }
+
+
+def _analyze_uploaded_file(
+    uploaded_file: Any,
+    pdf_processor: PDFProcessor,
+    debug: bool = False,
+    override: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    with temporary_pdf_copy(uploaded_file.getvalue()) as tmp_file_path:
+        return pdf_processor.analyze_pdf(
+            tmp_file_path,
+            uploaded_file.name,
+            debug=debug,
+            override_bank_id=override["bank_id"] if override else None,
+            override_format_id=override["format_id"] if override else None,
+        )
+
+
+def _build_effective_analysis_entry(
+    uploaded_file: Any,
+    pdf_processor: PDFProcessor,
+    debug: bool = False,
+    override: Optional[Dict[str, str]] = None,
+    auto_analysis: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    file_id = _uploaded_file_id(uploaded_file)
+    auto_result = auto_analysis or _analyze_uploaded_file(uploaded_file, pdf_processor, debug=debug)
+    effective_analysis = auto_result
+    applied_override = None
+    if override is not None:
+        effective_analysis = _analyze_uploaded_file(uploaded_file, pdf_processor, debug=debug, override=override)
+        applied_override = override
+
+    entry = _build_analysis_entry(
+        file_id=file_id,
+        file_name=uploaded_file.name,
+        auto_analysis=auto_result,
+        effective_analysis=effective_analysis,
+        applied_override=applied_override,
+    )
+    scopes = effective_analysis.get("available_scopes", []) if effective_analysis.get("success") and effective_analysis.get("multi_scope") else []
+    _sync_scope_selection_state(file_id, scopes)
+    return entry
 
 
 def _build_scope_groups(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -279,11 +397,49 @@ def _analysis_title(file_name: str, analysis: Dict[str, Any]) -> str:
     return f"{file_name} · sin detección de banco"
 
 
+def _render_override_summary(
+    entry: Dict[str, Any],
+    option_labels: Dict[str, str],
+):
+    override = entry.get("applied_override")
+    if not override:
+        return
+
+    analysis = entry["analysis"]
+    auto_analysis = entry.get("auto_analysis", analysis)
+    override_key = _format_option_key(override["bank_id"], override["format_id"])
+    override_label = option_labels.get(override_key, override_key)
+    auto_format_key = _analysis_format_option(auto_analysis)
+
+    if auto_analysis.get("success") and auto_format_key and auto_format_key != override_key:
+        auto_label = option_labels.get(auto_format_key, auto_format_key)
+        st.info(f"Se usará manualmente **{override_label}** en lugar del auto-detectado **{auto_label}**.")
+        return
+
+    if auto_analysis.get("success") and auto_format_key == override_key:
+        st.info(f"Se fijó manualmente el formato **{override_label}**.")
+        return
+
+    auto_bank_label = _analysis_bank_label(auto_analysis)
+    if auto_bank_label:
+        st.info(
+            f"Se intentará manualmente con **{override_label}**. "
+            f"La auto-detección original había quedado en revisión para **{auto_bank_label}**."
+        )
+        return
+
+    st.info(f"Se intentará manualmente con **{override_label}** porque la auto-detección no resolvió el archivo.")
+
+
 def _render_analysis_technical_details(entry: Dict[str, Any], analysis: Dict[str, Any], debug: bool, mode: str):
     if not debug or _is_production_test(mode):
         return
 
     with st.expander("Detalles técnicos (depuración)", expanded=False):
+        applied_override = entry.get("applied_override")
+        if applied_override:
+            st.write(f"Override manual: `{applied_override['bank_id']}/{applied_override['format_id']}`")
+
         bank_detected = analysis.get("bank_detected")
         if bank_detected:
             st.write(f"Banco interno: `{bank_detected}`")
@@ -421,6 +577,7 @@ def main(debug: bool = False, lang: str = LANG, mode: str = "local"):
                         st.session_state.processed_data = None
                         st.session_state.processing_complete = False
                         _clear_scope_selection_state()
+                        _clear_format_selection_state()
 
                     st.success(tr("valid_files", n=len(uploaded_files)))
                     
@@ -434,7 +591,7 @@ def main(debug: bool = False, lang: str = LANG, mode: str = "local"):
                         analyze_files(uploaded_files, debug=debug_enabled, mode=mode)
 
                     if st.session_state.analysis_results:
-                        render_analysis_results(st.session_state.analysis_results, debug=debug_enabled, mode=mode)
+                        render_analysis_results(uploaded_files, st.session_state.analysis_results, debug=debug_enabled, mode=mode)
                         process_disabled = not _selection_ready(st.session_state.analysis_results)
                         if process_disabled:
                             st.info("Selecciona al menos una cuenta o tarjeta en cada PDF consolidado antes de procesar.")
@@ -470,29 +627,12 @@ def analyze_files(uploaded_files: List[Any], debug: bool = False, mode: str = "l
             progress_bar.progress(progress)
             status_text.text(f"Analizando {uploaded_file.name}... ({i+1}/{len(uploaded_files)})")
 
-            with temporary_pdf_copy(uploaded_file.getvalue()) as tmp_file_path:
-                result = pdf_processor.analyze_pdf(tmp_file_path, uploaded_file.name, debug=debug)
-                file_id = _uploaded_file_id(uploaded_file)
-                analysis_entry = {
-                    "file_id": file_id,
-                    "file_name": uploaded_file.name,
-                    "analysis": result,
-                }
-                analysis_results.append(analysis_entry)
+            analysis_entry = _build_effective_analysis_entry(uploaded_file, pdf_processor, debug=debug)
+            analysis_results.append(analysis_entry)
 
-                if result.get("success") and result.get("multi_scope"):
-                    for scope in result.get("available_scopes", []):
-                        st.session_state.setdefault(_scope_checkbox_key(file_id, scope["id"]), False)
-
-                if not result.get("success") and result.get('parse_status') in {'unknown_format', 'format_changed'}:
-                    st.session_state.training_seed = {
-                        'file_name': uploaded_file.name,
-                        'bank_detected': result.get('bank_detected', 'unknown'),
-                        'bank_name': result.get('bank_name', ''),
-                        'extracted_text': result.get('extracted_text', ''),
-                        'diagnostics': result.get('diagnostics', {}),
-                        'suggested_format_id': _suggest_format_id(uploaded_file.name),
-                    }
+            result = analysis_entry["analysis"]
+            if not result.get("success") and result.get('parse_status') in {'unknown_format', 'format_changed'}:
+                _seed_training_from_result(uploaded_file.name, result)
 
         st.session_state.analysis_results = analysis_results
         progress_bar.progress(1.0)
@@ -503,12 +643,57 @@ def analyze_files(uploaded_files: List[Any], debug: bool = False, mode: str = "l
         status_text.empty()
 
 
-def render_analysis_results(analysis_results: List[Dict[str, Any]], debug: bool = False, mode: str = "local"):
+def render_analysis_results(uploaded_files: List[Any], analysis_results: List[Dict[str, Any]], debug: bool = False, mode: str = "local"):
     st.subheader("Análisis previo")
-    for entry in analysis_results:
+    pdf_processor = PDFProcessor()
+    available_formats = pdf_processor.list_available_formats()
+    format_keys = ["auto"] + [_format_option_key(fmt["bank_id"], fmt["format_id"]) for fmt in available_formats]
+    option_labels = {
+        "auto": "Auto-detectado",
+        **{
+            _format_option_key(fmt["bank_id"], fmt["format_id"]): fmt["label"]
+            for fmt in available_formats
+        },
+    }
+    uploaded_file_map = {_uploaded_file_id(uploaded_file): uploaded_file for uploaded_file in uploaded_files}
+
+    for index, entry in enumerate(analysis_results):
         analysis = entry["analysis"]
         title = _analysis_title(entry["file_name"], analysis)
         with st.expander(title, expanded=True):
+            selector_key = _format_selector_key(entry["file_id"])
+            current_option = _entry_selected_format_option(entry)
+            if st.session_state.get(selector_key) not in format_keys:
+                st.session_state[selector_key] = current_option if current_option in format_keys else "auto"
+
+            selected_option = st.selectbox(
+                "Formato a aplicar",
+                options=format_keys,
+                format_func=lambda value: option_labels.get(value, value),
+                key=selector_key,
+                help="Elegí cualquier formato publicado para reanalizar este PDF con esa spec.",
+            )
+            auto_option = _analysis_format_option(entry.get("auto_analysis", analysis))
+            normalized_option = "auto" if selected_option == auto_option else selected_option
+            if normalized_option != current_option:
+                uploaded_file = uploaded_file_map.get(entry["file_id"])
+                if uploaded_file is None:
+                    st.error("No se pudo recuperar el archivo cargado para reanalizarlo.")
+                else:
+                    override = _parse_format_option(normalized_option)
+                    analysis_results[index] = _build_effective_analysis_entry(
+                        uploaded_file,
+                        pdf_processor,
+                        debug=debug,
+                        override=override,
+                        auto_analysis=entry.get("auto_analysis"),
+                    )
+                    st.session_state.analysis_results = analysis_results
+                    st.session_state[selector_key] = normalized_option
+                    st.rerun()
+
+            analysis = entry["analysis"]
+            _render_override_summary(entry, option_labels)
             bank_label = _analysis_bank_label(analysis)
             if analysis.get("success"):
                 if bank_label:
@@ -594,6 +779,7 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                 file_id = _uploaded_file_id(uploaded_file)
                 analysis_entry = analysis_map.get(file_id)
                 analysis = analysis_entry["analysis"] if analysis_entry else None
+                applied_override = analysis_entry.get("applied_override") if analysis_entry else None
                 if analysis and not analysis.get("success"):
                     processing_summary['failed_files'] += 1
                     processing_summary['errors'].append(f"{uploaded_file.name}: {analysis['error']}")
@@ -606,6 +792,8 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                         uploaded_file.name,
                         debug=debug,
                         selected_scope_ids=selected_scope_map.get(file_id) or None,
+                        override_bank_id=applied_override["bank_id"] if applied_override else None,
+                        override_format_id=applied_override["format_id"] if applied_override else None,
                     )
                 
                 if result['success']:
@@ -620,15 +808,8 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                     processing_summary['failed_files'] += 1
                     processing_summary['errors'].append(f"{uploaded_file.name}: {result['error']}")
                     st.error(tr("file_error", name=uploaded_file.name, error=result['error']))
-                    if result.get('parse_status') in {'unknown_format', 'format_changed'}:
-                        st.session_state.training_seed = {
-                            'file_name': uploaded_file.name,
-                            'bank_detected': result.get('bank_detected', 'unknown'),
-                            'bank_name': result.get('bank_name', ''),
-                            'extracted_text': result.get('extracted_text', ''),
-                            'diagnostics': result.get('diagnostics', {}),
-                            'suggested_format_id': _suggest_format_id(uploaded_file.name),
-                        }
+                    if applied_override is None and result.get('parse_status') in {'unknown_format', 'format_changed'}:
+                        _seed_training_from_result(uploaded_file.name, result)
                         if not _is_production_test(mode):
                             st.info("Se guardó el último fallo de formato en la pestaña 'Aprender Formatos'.")
 
@@ -763,6 +944,7 @@ def display_results(mode: str = "local"):
         st.session_state.analysis_results = None
         st.session_state.upload_signature = None
         _clear_scope_selection_state()
+        _clear_format_selection_state()
         st.rerun()
 
 

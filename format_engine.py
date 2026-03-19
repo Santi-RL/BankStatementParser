@@ -933,6 +933,12 @@ class FormatRegistry:
     def has_published_bank(self, bank_id: str) -> bool:
         return any(spec.bank_id == bank_id for spec in self.specs_by_status("published"))
 
+    def get_published_spec(self, bank_id: str, format_id: str) -> Optional[FormatSpec]:
+        for spec in self.specs_by_status("published"):
+            if spec.bank_id == bank_id and spec.format_id == format_id:
+                return spec
+        return None
+
     def get_spec(self, bank_id: str, format_id: str) -> Optional[FormatSpec]:
         for spec in self.all_specs():
             if spec.bank_id == bank_id and spec.format_id == format_id:

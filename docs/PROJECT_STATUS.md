@@ -14,7 +14,7 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 18 de marzo de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `38 passed, 4 skipped`
+- `python -m pytest -q` -> `49 passed, 4 skipped`
 - `python format_cli.py regress` -> `success: true` con `processed: 6`
 
 Procesamiento manual comprobado con assets reales:
@@ -55,12 +55,21 @@ Nota operativa:
 - Existe `format_engine.py` con registro de specs TOML.
 - `PDFProcessor` usa exclusivamente specs publicadas.
 - `PDFProcessor` expone `analyze_pdf()` para descubrir scopes antes del parseo final.
+- `PDFProcessor` también acepta override manual en `analyze_pdf()` y `process_pdf()` para forzar una spec publicada concreta.
+- `PDFProcessor` expone `list_available_formats()` para listar dinámicamente los formatos publicados visibles en UI.
 - `process_pdf()` ya devuelve `parse_status`, `format_id`, `format_version` y `diagnostics`.
 - Hay detección cerrada de `format_changed` cuando un banco con specs publicadas deja de matchear.
 - El core declarativo ya soporta preextracción específica desde PDF y reglas de signo basadas en códigos para formatos complejos como Roela.
 - El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
 - El core declarativo ya soporta documentos multi-entidad con descubrimiento de scopes y filtrado por selección explícita.
 - El fallback Python legacy fue retirado del runtime.
+
+### Selección manual de formato
+- La UI muestra un selector por archivo con todos los formatos publicados.
+- Cambiar el selector reanaliza el PDF con la spec elegida y actualiza dinámicamente los scopes disponibles.
+- El flujo manual también cubre PDFs multi-entidad: si el formato forzado descubre múltiples scopes, la UI vuelve a exigir selección explícita antes de procesar.
+- Los overrides inválidos o no publicados fallan como `unknown_format`; no se mezclan con `format_changed`.
+- El override manual no siembra falsos positivos en el backoffice de entrenamiento cuando el usuario fuerza un formato incorrecto.
 
 ### Aprendizaje asistido
 - Existe backoffice en Streamlit para aprender formatos.
