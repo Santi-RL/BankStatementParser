@@ -123,6 +123,40 @@ def test_declared_format_change_is_reported():
     assert result["bank_detected"] == "galicia_ar"
 
 
+def test_galicia_single_transaction_statement_is_accepted_and_ignores_totals():
+    text = "\n".join(
+        [
+            "Resumen de Caja de Ahorro en Pesos",
+            "Datos de la cuenta",
+            "Número de cuenta",
+            "N 4046017-6 335-0",
+            "Movimientos",
+            "Fecha Descripción Origen Crédito Débito Saldo",
+            "25/08/23 TRANSFERENCIA DE CUENTA 100.000,00 100.000,00",
+            "PROPIA",
+            "PROZZI/ANDRES LEONEL",
+            "20332862368",
+            "CUENTA ORIGEN CTA CT",
+            "3540005604041",
+            "4517650664260429",
+            "VARIOS",
+            "Total $ 100.000,00 -$ 0,00 $ 100.000,00",
+            "Los depósitos en pesos y en moneda extranjera cuentan con la garantía de hasta $ 1.500.000.",
+        ]
+    )
+    processor = DummyProcessor(text)
+
+    result = processor.process_pdf("dummy.pdf", "dummy.pdf")
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["bank_detected"] == "galicia_ar"
+    assert result["total_transactions"] == 1
+    assert "Total $" not in result["transactions"][0]["description"]
+    assert result["transactions"][0]["amount"] == 100000.0
+    assert result["transactions"][0]["balance"] == 100000.0
+
+
 def test_unknown_format_is_reported():
     processor = DummyProcessor("Completely unknown statement layout without known bank markers")
     result = processor.process_pdf("dummy.pdf", "dummy.pdf")

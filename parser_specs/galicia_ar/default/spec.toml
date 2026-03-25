@@ -29,6 +29,7 @@ ignore_patterns = [
   '^Número de cuenta$',
   '^CBU ',
   '^Disponés de',
+  '^Total ',
 ]
 stop_patterns = [
   '^Consolidado de retención',
@@ -51,5 +52,5 @@ account_pattern = 'Número de cuenta\s*\n([A-Z0-9\-\s]+)'
 date_formats = ['%d/%m/%y']
 
 [change_detection]
-min_transactions = 3
+min_transactions = 1
 min_match_ratio = 0.7
