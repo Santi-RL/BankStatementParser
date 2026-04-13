@@ -7,7 +7,7 @@ def test_published_spec_regression_suite_is_green():
     result = regress_published_specs()
 
     assert result["success"] is True
-    assert result["processed"] >= 6
+    assert result["processed"] >= 7
 
 
 def test_changed_galicia_fixture_would_fail_spec_thresholds():
@@ -118,6 +118,30 @@ def test_changed_mercado_pago_fixture_would_fail_spec_thresholds():
             "DETALLE DE MOVIMIENTOS",
             "Fecha Descripción Valor Saldo",
             "2023/02/01 Movimiento nuevo 10,00 10,00",
+        ]
+    )
+
+    from format_engine import FormatSpec
+    import tomllib
+
+    with spec_path.open("rb") as handle:
+        spec = FormatSpec(spec_path, tomllib.load(handle))
+
+    result = spec.parse_transactions(changed_text)
+
+    assert result.passes_change_detection is False
+    assert result.diagnostics["transactions_found"] == 0
+
+
+def test_changed_brubank_fixture_would_fail_spec_thresholds():
+    spec_path = Path("parser_specs/brubank/default/spec.toml")
+    changed_text = "\n".join(
+        [
+            "Mi cuenta Resumen",
+            "Movimientos",
+            "Fecha Ref Descripción Débito Crédito Saldo",
+            "2026/02/01 MOVIMIENTO NUEVO 10,00 10,00",
+            "Brubank S.A.U.",
         ]
     )
 

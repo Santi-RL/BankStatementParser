@@ -1,0 +1,342 @@
+[
+  {
+    "date": "2026-01-02",
+    "description": "XXXXXXXXXX A una cuenta tuya - PERSONA",
+    "amount": -47000.0,
+    "balance": 65033.83,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "XXXXXXXXXX A una cuenta tuya - PERSONA",
+    "amount": -17000.0,
+    "balance": 48033.83,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-19",
+    "description": "XXXXXXXXXX Didiride",
+    "amount": -1200.0,
+    "balance": 46833.83,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "XXXXXXXXXX Metrogas",
+    "amount": -5605.62,
+    "balance": 41228.21,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "XXXXXXXXXX GCBA Inmobiliario/ABL",
+    "amount": -27330.41,
+    "balance": 13897.8,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-22",
+    "description": "XXXXXXXXXX Didiride",
+    "amount": -3710.0,
+    "balance": 10187.8,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-28",
+    "description": "XXXXXXXXXX XXXXXXXXXXX - CLUB NAUTICO HACOAJ",
+    "amount": 712500.0,
+    "balance": 722687.8,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-01-29",
+    "description": "XXXXXXXXXX PERSONA da Purificacao",
+    "amount": -9000.0,
+    "balance": 713687.8,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "0 Intereses pagados",
+    "amount": 3.42,
+    "balance": 713691.22,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "XXXXXXXXXX A una cuenta tuya - MercadoPago",
+    "amount": -700000.0,
+    "balance": 13691.22,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "XXXXXXXXXX PERSONA",
+    "amount": -551.24,
+    "balance": 13139.98,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "XXXXXXXXXX PERSONA",
+    "amount": 551.24,
+    "balance": 13691.22,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-04",
+    "description": "XXXXXXXXXX Proveedor - ASOCIACION CIVIL UNIVERSIDAD",
+    "amount": 1654772.0,
+    "balance": 1668463.22,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-04",
+    "description": "XXXXXXXXXX A una cuenta tuya - MercadoPago",
+    "amount": -1666666.66,
+    "balance": 1796.56,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "XXXXXXXXXX De una cuenta tuya - MercadoPago",
+    "amount": 10000.0,
+    "balance": 11796.56,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "XXXXXXXXXX PERSONA",
+    "amount": -551.24,
+    "balance": 11245.32,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "XXXXXXXXXX Didiride",
+    "amount": -4070.0,
+    "balance": 7175.32,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "XXXXXXXXXX De una cuenta tuya - MercadoPago",
+    "amount": 80000.0,
+    "balance": 87175.32,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "XXXXXXXXXX EDESUR",
+    "amount": -53205.12,
+    "balance": 33970.2,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "XXXXXXXXXX GCBA Inmobiliario/ABL",
+    "amount": -24372.97,
+    "balance": 9597.23,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "XXXXXXXXXX Didiride",
+    "amount": -2890.0,
+    "balance": 6707.23,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-11",
+    "description": "XXXXXXXXXX PERSONA",
+    "amount": 551.24,
+    "balance": 7258.47,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-11",
+    "description": "XXXXXXXXXX XXXXXXXXXXX - CLUB NAUTICO HACOAJ",
+    "amount": 712500.0,
+    "balance": 719758.47,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "XXXXXXXXXX PERSONA",
+    "amount": -7840.0,
+    "balance": 711918.47,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "XXXXXXXXXX Didiride",
+    "amount": -1202.28,
+    "balance": 710716.19,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "XXXXXXXXXX A una cuenta tuya - MercadoPago",
+    "amount": -650000.0,
+    "balance": 60716.19,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-18",
+    "description": "XXXXXXXXXX XXXXXXXXXXX - GRANDELA/SILVIA",
+    "amount": 300000.0,
+    "balance": 360716.19,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-18",
+    "description": "XXXXXXXXXX A una cuenta tuya - MercadoPago",
+    "amount": -300000.0,
+    "balance": 60716.19,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-19",
+    "description": "XXXXXXXXXX De una cuenta tuya - MercadoPago",
+    "amount": 88888.0,
+    "balance": 149604.19,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-19",
+    "description": "XXXXXXXXXX PERSONA",
+    "amount": -129045.32,
+    "balance": 20558.87,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-19",
+    "description": "XXXXXXXXXX Metrogas",
+    "amount": -5540.25,
+    "balance": 15018.62,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Debit"
+  },
+  {
+    "date": "2026-02-27",
+    "description": "0 Intereses pagados",
+    "amount": 1.93,
+    "balance": 15020.55,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-27",
+    "description": "XXXXXXXXXX De una cuenta tuya - BBVA",
+    "amount": 1.0,
+    "balance": 15021.55,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  },
+  {
+    "date": "2026-02-27",
+    "description": "XXXXXXXXXX De una cuenta tuya - BBVA",
+    "amount": 24955.31,
+    "balance": 39976.86,
+    "account": "XXXXXXXXXXXXX",
+    "bank": "Brubank",
+    "currency": "ARS",
+    "transaction_type": "Credit"
+  }
+]

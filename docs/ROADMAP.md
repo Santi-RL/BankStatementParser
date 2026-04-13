@@ -44,6 +44,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
   - secciones múltiples,
   - fechas con año implícito,
   - fecha arrastrada por bloque,
+  - montos derivados desde columnas separadas de débito/crédito,
   - thresholds de cobertura y cantidad mínima,
   - descubrimiento de scopes,
   - contexto dinámico por bloque,
@@ -90,6 +91,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `bbva/default`
 - `bbva/account_summary`
 - `mercado_pago/default`
+- `brubank/default`
 
 ## Pendiente
 

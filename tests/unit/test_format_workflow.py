@@ -71,6 +71,18 @@ def test_registry_matches_published_mercado_pago_spec():
     assert match.spec.format_id == "default"
 
 
+def test_registry_matches_published_brubank_spec():
+    registry = FormatRegistry()
+    fixture_path = Path("parser_specs/brubank/default/fixtures/sample_text.txt")
+    text = fixture_path.read_text(encoding="utf-8")
+
+    match = registry.match_published(text, "brubank")
+
+    assert match is not None
+    assert match.spec.bank_id == "brubank"
+    assert match.spec.format_id == "default"
+
+
 def test_save_draft_and_publish(tmp_path):
     spec = build_initial_spec(
         bank_id="demo_bank",
@@ -197,3 +209,20 @@ def test_mercado_pago_spec_parses_wallet_fixture():
     assert len(result.transactions) == 11
     assert result.transactions[0]["amount"] == -15950.0
     assert result.transactions[-1]["description"] == "Transferencia recibida PERSONA DIEZ"
+
+
+def test_brubank_spec_parses_debit_and_credit_columns_fixture():
+    fixture_path = Path("parser_specs/brubank/default/fixtures/sample_text.txt")
+    spec_path = Path("parser_specs/brubank/default/spec.toml")
+    text = fixture_path.read_text(encoding="utf-8")
+
+    with spec_path.open("rb") as handle:
+        spec = FormatSpec(spec_path, tomllib.load(handle))
+
+    result = spec.parse_transactions(text)
+
+    assert result.passes_change_detection is True
+    assert len(result.transactions) == 34
+    assert result.transactions[0]["amount"] == -47000.0
+    assert result.transactions[6]["amount"] == 712500.0
+    assert result.transactions[-1]["amount"] == 24955.31

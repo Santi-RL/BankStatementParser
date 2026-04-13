@@ -37,6 +37,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `parser_specs/bbva/default/spec.toml` | Formato publicado de BBVA consolidado | Vigente |
 | `parser_specs/bbva/account_summary/spec.toml` | Formato publicado de BBVA para resumen simple de cuenta | Vigente |
 | `parser_specs/mercado_pago/default/spec.toml` | Formato publicado de Mercado Pago para resumen de cuenta wallet | Vigente |
+| `parser_specs/brubank/default/spec.toml` | Formato publicado de Brubank para resumen de cuenta | Vigente |
 | `parser_specs/*/*/fixtures/sample_text.txt` | Fixture sanitizada de texto | Vigente |
 | `parser_specs/*/*/fixtures/expected_transactions.json` | Salida esperada sanitizada | Vigente |
 

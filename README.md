@@ -91,7 +91,7 @@ El smoke E2E con navegador queda documentado en `docs/E2E_PLAYWRIGHT.md`.
 
 ## Primera prueba en producción
 
-- Formatos hoy soportados: Galicia Argentina, Roela Argentina, Chase y BBVA consolidado.
+- Formatos hoy soportados: Galicia Argentina, Roela Argentina, Chase, BBVA (consolidado y resumen simple), Mercado Pago y Brubank.
 - El modo recomendado para la primera prueba controlada es `production-test`.
 - El runbook operativo breve está en `docs/PRODUCTION_TEST_RUNBOOK.md`.
 

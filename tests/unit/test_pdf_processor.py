@@ -33,6 +33,12 @@ def test_detect_bank_mercado_pago():
     assert processor._detect_bank(text) == "mercado_pago"
 
 
+def test_detect_bank_brubank_via_published_spec():
+    processor = PDFProcessor()
+    text = Path("parser_specs/brubank/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    assert processor._detect_bank(text) == "brubank"
+
+
 def test_detect_bank_mercado_pago_is_not_confused_by_bbva_in_transaction_detail():
     processor = PDFProcessor()
     text = Path("parser_specs/mercado_pago/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
@@ -320,3 +326,24 @@ def test_process_pdf_with_invalid_override_returns_unknown_format():
     assert result["success"] is False
     assert result["parse_status"] == "unknown_format"
     assert result["diagnostics"]["override_missing"] is True
+
+
+def test_brubank_fixture_processes_with_published_spec():
+    text = Path("parser_specs/brubank/default/fixtures/sample_text.txt").read_text(encoding="utf-8")
+    processor = DummyProcessor(text)
+
+    analysis = processor.analyze_pdf("dummy.pdf", "brubank.pdf")
+    result = processor.process_pdf("dummy.pdf", "brubank.pdf")
+
+    assert analysis["success"] is True
+    assert analysis["bank_detected"] == "brubank"
+    assert analysis["format_id"] == "default"
+    assert analysis["multi_scope"] is False
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["bank_detected"] == "brubank"
+    assert result["format_id"] == "default"
+    assert result["total_transactions"] == 34
+    assert result["transactions"][0]["amount"] == -47000.0
+    assert result["transactions"][-1]["amount"] == 24955.31

@@ -29,6 +29,9 @@ La app queda escuchando en `http://127.0.0.1:8501`.
 - `roela_ar/default`
 - `chase/default`
 - `bbva/default`
+- `bbva/account_summary`
+- `mercado_pago/default`
+- `brubank/default`
 
 ## Criterio de rollback
 Volver a `local` o detener la prueba si aparece cualquiera de estos casos:

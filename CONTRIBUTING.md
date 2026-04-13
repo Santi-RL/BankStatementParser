@@ -327,6 +327,7 @@ Para formatos más complejos, el motor soporta:
 
 - **`multiline = true`**: descripciones que abarcan múltiples líneas
 - **`extract.sign_rules`**: determinación de débito/crédito basada en códigos de transacción
+- **`fields.debit` + `fields.credit`**: derivación declarativa de `amount` cuando el PDF separa columnas de débito y crédito
 - **`pdf_text_strategy`**: estrategias especiales de extracción de texto (`"roela_columns"`, `"x_band_table"`)
 - **`scopes`**: documentos consolidados con múltiples cuentas/tarjetas
 - **`current_date_pattern` + `strip_current_date`**: fechas que aplican a bloques de transacciones
@@ -335,6 +336,7 @@ Para ejemplos de estos patrones, consultá las specs existentes:
 - Roela (`parser_specs/roela_ar/default/`) — multiline, sign_rules, columns
 - BBVA (`parser_specs/bbva/default/`) — scopes multi-entidad
 - Mercado Pago (`parser_specs/mercado_pago/default/`) — x_band_table
+- Brubank (`parser_specs/brubank/default/`) — columnas débito/crédito
 
 ---
 

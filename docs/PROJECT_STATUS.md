@@ -12,10 +12,10 @@ El proyecto ya dejó de ser solo un prototipo con parsers sueltos. Hoy tiene:
 
 Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato.
 
-## Estado comprobado al 18 de marzo de 2026
+## Estado comprobado al 11 de abril de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `49 passed, 4 skipped`
-- `python format_cli.py regress` -> `success: true` con `processed: 6`
+- `python -m pytest -q` -> `55 passed, 4 skipped`
+- `python format_cli.py regress` -> `success: true` con `processed: 7`
 
 Procesamiento manual comprobado con assets reales:
 - `attached_assets/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
@@ -25,6 +25,7 @@ Procesamiento manual comprobado con assets reales:
 - `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` -> `bbva`, documento consolidado con 5 scopes detectados y 192 transacciones.
 - `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
+- `Estado de cuenta Brubank [2026-01-01 al 2026-02-28]` -> `brubank`, 34 transacciones, vía spec declarativa publicada.
 
 Nota operativa:
 - En este workspace faltaba `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf`, por eso las integraciones que dependen de ese asset quedaron condicionadas y hoy aparecen como `skipped` cuando el archivo no está disponible.
@@ -60,6 +61,7 @@ Nota operativa:
 - `process_pdf()` ya devuelve `parse_status`, `format_id`, `format_version` y `diagnostics`.
 - Hay detección cerrada de `format_changed` cuando un banco con specs publicadas deja de matchear.
 - El core declarativo ya soporta preextracción específica desde PDF y reglas de signo basadas en códigos para formatos complejos como Roela.
+- El core declarativo ya soporta también derivar `amount` desde columnas separadas de `debit`/`credit`, como en Brubank.
 - El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
 - El core declarativo ya soporta documentos multi-entidad con descubrimiento de scopes y filtrado por selección explícita.
 - El fallback Python legacy fue retirado del runtime.
@@ -83,6 +85,7 @@ Nota operativa:
 - `bbva/default` publicado y cubierto por regresión/integración.
 - `bbva/account_summary` publicado y cubierto por regresión/integración.
 - `mercado_pago/default` publicado y cubierto por regresión/integración.
+- `brubank/default` publicado y cubierto por regresión + validación manual con PDF real.
 
 ## Lo que todavía falta
 

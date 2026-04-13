@@ -537,16 +537,13 @@ class FormatSpec:
         if desc_lines:
             description = clean_text(f"{description} {' '.join(desc_lines)}")
 
-        amount_str = groups.get(self.fields.get("amount", "amount"), "")
+        amount = self._extract_transaction_amount(groups, amount_sign, sign_rules)
         balance_key = self.fields.get("balance", "balance")
         balance_str = groups.get(balance_key, "") if balance_key else ""
 
         parsed_date = self._parse_spec_date(date_str, statement_year, statement_month)
-        if not parsed_date or not description or not amount_str:
+        if not parsed_date or not description or amount is None:
             return None
-
-        amount = parse_amount(amount_str)
-        amount = self._apply_amount_sign(amount, amount_sign, sign_rules, groups)
 
         balance: Any = ""
         if balance_str:
@@ -577,6 +574,44 @@ class FormatSpec:
             if active_scope.get("linked_account"):
                 transaction["linked_account"] = active_scope["linked_account"]
         return transaction
+
+    def _extract_transaction_amount(
+        self,
+        groups: Dict[str, str],
+        amount_sign: str,
+        sign_rules: Dict[str, Any],
+    ) -> Optional[float]:
+        amount_key = self.fields.get("amount", "amount")
+        amount_str = groups.get(amount_key, "") if amount_key else ""
+        if amount_str:
+            amount = parse_amount(amount_str)
+            return self._apply_amount_sign(amount, amount_sign, sign_rules, groups)
+
+        debit_key = self.fields.get("debit", "")
+        credit_key = self.fields.get("credit", "")
+        debit_str = groups.get(debit_key, "") if debit_key else ""
+        credit_str = groups.get(credit_key, "") if credit_key else ""
+        return self._derive_amount_from_columns(debit_str, credit_str)
+
+    def _derive_amount_from_columns(self, debit_str: str, credit_str: str) -> Optional[float]:
+        normalized_debit = self._normalize_optional_amount(debit_str)
+        normalized_credit = self._normalize_optional_amount(credit_str)
+        if normalized_debit and normalized_credit:
+            return None
+        if normalized_credit:
+            return abs(parse_amount(normalized_credit))
+        if normalized_debit:
+            return -abs(parse_amount(normalized_debit))
+        return None
+
+    def _normalize_optional_amount(self, value: str) -> str:
+        cleaned_value = clean_text(str(value or ""), preserve_lines=False)
+        if not cleaned_value:
+            return ""
+        cleaned_value = cleaned_value.replace(" ", "")
+        if cleaned_value in {"-", "--"}:
+            return ""
+        return cleaned_value
 
     def _scope_is_selected(self, transaction: Dict[str, Any], selected_scope_ids: Optional[List[str]]) -> bool:
         if not selected_scope_ids:
