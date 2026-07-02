@@ -49,3 +49,9 @@ Campos esperables cuando el formato puede resolverlos:
 - Preservar la forma normalizada de las transacciones; cambiar claves rompe app, validación y Excel.
 - Si se toca una spec o el motor declarativo, validar al menos con un PDF real de `attached_assets/`.
 - Después de cada bloque grande de cambios, actualizar `docs/ROADMAP.md` y, si cambió el estado general del proyecto, también `docs/PROJECT_STATUS.md`.
+
+## Revisión de código y seguridad
+- Usar `security-best-practices` si se cambian validaciones de PDFs, rutas de archivos, parsing de entradas externas, exportaciones, manejo de datos bancarios o Streamlit.
+- Usar `autoreview` como cierre de cambios no triviales en parser, specs, app o exportadores: ejecutar `venv\Scripts\python.exe -m pytest -q` y validar con una muestra real cuando aplique; verificar manualmente cada finding.
+- Usar `clawpatch` solo para auditorías/backlog de mantenimiento del repo o por pedido explícito. Empezar por `clawpatch status`, `clawpatch map`, `clawpatch review --limit <n>` y `clawpatch report`; `clawpatch fix --finding <id>` requiere worktree limpio y confirmación explícita.
+- No usar estas herramientas para simples pruebas manuales con PDFs o actualizaciones documentales menores.
