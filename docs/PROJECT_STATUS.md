@@ -26,6 +26,7 @@ Procesamiento manual comprobado con assets reales:
 - `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
 - `Estado de cuenta Brubank [2026-01-01 al 2026-02-28]` -> `brubank`, 34 transacciones, vía spec declarativa publicada.
+- `Estado de cuenta Brubank junio 2026 multi-cuenta (PDF externo no versionado)` -> `brubank`, documento multi-cuenta con 3 scopes detectados y 47 movimientos procesados al seleccionar todos los scopes; la cuenta en dólares queda detectada sin movimientos.
 
 Nota operativa:
 - En este workspace faltaba `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf`, por eso las integraciones que dependen de ese asset quedaron condicionadas y hoy aparecen como `skipped` cuando el archivo no está disponible.
@@ -64,6 +65,7 @@ Nota operativa:
 - El core declarativo ya soporta también derivar `amount` desde columnas separadas de `debit`/`credit`, como en Brubank.
 - El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
 - El core declarativo ya soporta documentos multi-entidad con descubrimiento de scopes y filtrado por selección explícita.
+- Las actualizaciones parciales de scopes ya no pisan la moneda previamente detectada cuando una regla solo completa datos como el número de cuenta.
 - El fallback Python legacy fue retirado del runtime.
 
 ### Selección manual de formato
@@ -85,7 +87,7 @@ Nota operativa:
 - `bbva/default` publicado y cubierto por regresión/integración.
 - `bbva/account_summary` publicado y cubierto por regresión/integración.
 - `mercado_pago/default` publicado y cubierto por regresión/integración.
-- `brubank/default` publicado y cubierto por regresión + validación manual con PDF real.
+- `brubank/default` publicado y cubierto por regresión + validación manual con PDFs reales, incluyendo resumen multi-cuenta con caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos.
 
 ## Lo que todavía falta
 

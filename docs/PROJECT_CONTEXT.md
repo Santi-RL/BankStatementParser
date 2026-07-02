@@ -106,6 +106,7 @@ Se procesaron localmente estos archivos con `venv\Scripts\python.exe`:
 | `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
 | `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | `mercado_pago` | Resumen de cuenta wallet, 1 scope detectado y 232 transacciones |
 | `Brubank ene-feb 2026 (PDF externo no versionado)` | `brubank` | Resumen de cuenta con 34 transacciones, vía spec declarativa |
+| `Brubank jun 2026 multi-cuenta (PDF externo no versionado)` | `brubank` | 3 scopes detectados: caja de ahorro ARS, cuenta remunerada ARS y caja de ahorro USD sin movimientos; 47 movimientos al seleccionar todos los scopes |
 
 Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estático.
 

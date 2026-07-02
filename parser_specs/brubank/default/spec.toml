@@ -1,7 +1,7 @@
 [meta]
 bank_id = "brubank"
 format_id = "default"
-version = 1
+version = 2
 status = "published"
 country = "AR"
 currency_default = "ARS"
@@ -19,14 +19,63 @@ min_score = 0.66
 [extract]
 strategy = "line_regex"
 section_start_patterns = ['^Movimientos$']
-stop_patterns = ['^Mi cuenta Resumen$', '^Sin Movimientos$', '^Los depósitos en pesos']
+stop_patterns = ['^Los depósitos en pesos', '^Brubank S\.A\.U\.']
 ignore_patterns = [
   '^Fecha\s+Ref\s+Descripción\s+Débito\s+Crédito\s+Saldo$',
+  '^Mi cuenta Resumen$',
   '^Movimientos$',
+  '^Sin Movimientos$',
 ]
-line_pattern = '^(?P<date>\d{2}-\d{2}-\d{2})\s+(?P<reference>\S+)\s+(?P<description>.+?)\s+(?P<debit>(?:\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}|-)\s+(?P<credit>(?:\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}|-)\s+\$\s*(?P<balance>\d{1,3}(?:\.\d{3})*,\d{2})$'
+line_pattern = '^(?P<date>\d{2}-\d{2}-\d{2})\s+(?P<reference>\S+)\s+(?P<description>.+?)\s+(?:(?:U\$S|\$)\s*)?(?P<debit>\d{1,3}(?:\.\d{3})*,\d{2}|-)\s+(?:(?:U\$S|\$)\s*)?(?P<credit>\d{1,3}(?:\.\d{3})*,\d{2}|-)\s+(?:U\$S|\$)\s*(?P<balance>-?\d{1,3}(?:\.\d{3})*,\d{2})$'
 candidate_pattern = '^\d{2}-\d{2}-\d{2}\s+\S+\s+'
 multiline = false
+
+[[extract.sections]]
+name = "movements"
+start_patterns = ['^Movimientos$']
+stop_patterns = ['^Los depósitos en pesos', '^Brubank S\.A\.U\.']
+ignore_patterns = [
+  '^Fecha\s+Ref\s+Descripción\s+Débito\s+Crédito\s+Saldo$',
+  '^Mi cuenta Resumen$',
+  '^Movimientos$',
+  '^Sin Movimientos$',
+]
+line_pattern = '^(?P<date>\d{2}-\d{2}-\d{2})\s+(?P<reference>\S+)\s+(?P<description>.+?)\s+(?:(?:U\$S|\$)\s*)?(?P<debit>\d{1,3}(?:\.\d{3})*,\d{2}|-)\s+(?:(?:U\$S|\$)\s*)?(?P<credit>\d{1,3}(?:\.\d{3})*,\d{2}|-)\s+(?:U\$S|\$)\s*(?P<balance>-?\d{1,3}(?:\.\d{3})*,\d{2})$'
+candidate_pattern = '^\d{2}-\d{2}-\d{2}\s+\S+\s+'
+multiline = false
+
+[[extract.sections.context_rules]]
+action = "activate_scope"
+pattern = '^Tipo\s+Caja de ahorro\s+Saldo Inicial\s+(?P<currency_token>\$)\s*\d{1,3}(?:\.\d{3})*,\d{2}$'
+scope_id_template = 'bank_account:caja_ahorro_ars'
+label_template = 'Caja de ahorro ARS'
+product_type = "bank_account"
+account_template = 'Caja de ahorro ARS'
+currency_template = '{currency_token}'
+
+[[extract.sections.context_rules]]
+action = "activate_scope"
+pattern = '^Tipo\s+Caja de ahorro\s+Saldo Inicial\s+(?P<currency_token>U\$S)\s*\d{1,3}(?:\.\d{3})*,\d{2}$'
+scope_id_template = 'bank_account:caja_ahorro_usd'
+label_template = 'Caja de ahorro USD'
+product_type = "bank_account"
+account_template = 'Caja de ahorro USD'
+currency_template = '{currency_token}'
+
+[[extract.sections.context_rules]]
+action = "activate_scope"
+pattern = '^Tipo\s+Cuenta remunerada\s+Saldo Inicial\s+(?P<currency_token>\$)\s*\d{1,3}(?:\.\d{3})*,\d{2}$'
+scope_id_template = 'bank_account:cuenta_remunerada_ars'
+label_template = 'Cuenta remunerada ARS'
+product_type = "bank_account"
+account_template = 'Cuenta remunerada ARS'
+currency_template = '{currency_token}'
+
+[[extract.sections.context_rules]]
+action = "update_scope"
+pattern = '^Número\s+(?P<account>\S+)$'
+account_template = '{account}'
+create_if_missing = false
 
 [fields]
 date = "date"
@@ -38,6 +87,12 @@ account_pattern = '(?m)^Número\s+(\S+)$'
 
 [normalize]
 date_formats = ['%d-%m-%y']
+
+[normalize.currency_map]
+"$" = "ARS"
+"ARS" = "ARS"
+"U$S" = "USD"
+"USD" = "USD"
 
 [change_detection]
 min_transactions = 10

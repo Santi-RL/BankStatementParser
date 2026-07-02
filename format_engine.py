@@ -295,6 +295,8 @@ class FormatSpec:
                 if target_scope is None:
                     continue
                 scope_data = self._scope_values_from_templates(rule, groups, default_source_section=scope["name"])
+                if not rule.get("currency_template") and not rule.get("currency_value"):
+                    scope_data["currency"] = ""
                 scope_data["id"] = target_scope["id"]
                 resolved_scope = self._ensure_scope(scope_registry, scope_data)
 

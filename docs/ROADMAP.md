@@ -48,7 +48,8 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
   - thresholds de cobertura y cantidad mínima,
   - descubrimiento de scopes,
   - contexto dinámico por bloque,
-  - filtrado por entidades seleccionadas.
+  - filtrado por entidades seleccionadas,
+  - actualización parcial de scopes sin perder moneda ya detectada.
 
 ### Fase 4: aprendizaje asistido y publicación
 - Existe backoffice en Streamlit para aprender formatos.
@@ -91,7 +92,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `bbva/default`
 - `bbva/account_summary`
 - `mercado_pago/default`
-- `brubank/default`
+- `brubank/default` v2, con soporte para resumen multi-cuenta: caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos
 
 ## Pendiente
 

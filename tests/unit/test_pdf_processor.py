@@ -347,3 +347,36 @@ def test_brubank_fixture_processes_with_published_spec():
     assert result["total_transactions"] == 34
     assert result["transactions"][0]["amount"] == -47000.0
     assert result["transactions"][-1]["amount"] == 24955.31
+
+
+def test_brubank_multi_account_statement_requires_scope_selection_and_processes_all_selected():
+    text = Path("parser_specs/brubank/default/fixtures/multi_account_sample_text.txt").read_text(encoding="utf-8")
+    processor = DummyProcessor(text)
+
+    analysis = processor.analyze_pdf("dummy.pdf", "brubank-multi.pdf")
+    without_selection = processor.process_pdf("dummy.pdf", "brubank-multi.pdf")
+    selected_scope_ids = [scope["id"] for scope in analysis["available_scopes"]]
+    with_selection = processor.process_pdf(
+        "dummy.pdf",
+        "brubank-multi.pdf",
+        selected_scope_ids=selected_scope_ids,
+    )
+
+    assert analysis["success"] is True
+    assert analysis["bank_detected"] == "brubank"
+    assert analysis["format_id"] == "default"
+    assert analysis["multi_scope"] is True
+    assert len(analysis["available_scopes"]) == 3
+    assert {scope["currency"] for scope in analysis["available_scopes"]} == {"ARS", "USD"}
+
+    assert without_selection["success"] is False
+    assert without_selection["parse_status"] == "validation_failed"
+    assert without_selection["multi_scope"] is True
+
+    assert with_selection["success"] is True
+    assert with_selection["parse_status"] == "ok"
+    assert with_selection["total_transactions"] == 12
+    assert {transaction["scope_label"] for transaction in with_selection["transactions"]} == {
+        "Caja de ahorro ARS",
+        "Cuenta remunerada ARS",
+    }

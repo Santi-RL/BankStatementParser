@@ -226,3 +226,47 @@ def test_brubank_spec_parses_debit_and_credit_columns_fixture():
     assert result.transactions[0]["amount"] == -47000.0
     assert result.transactions[6]["amount"] == 712500.0
     assert result.transactions[-1]["amount"] == 24955.31
+
+
+def test_brubank_spec_discovers_multi_account_statement_scopes():
+    fixture_path = Path("parser_specs/brubank/default/fixtures/multi_account_sample_text.txt")
+    spec_path = Path("parser_specs/brubank/default/spec.toml")
+    text = fixture_path.read_text(encoding="utf-8")
+
+    with spec_path.open("rb") as handle:
+        spec = FormatSpec(spec_path, tomllib.load(handle))
+
+    result = spec.parse_transactions(text)
+    remunerated_result = spec.parse_transactions(
+        text,
+        selected_scope_ids=["bank_account:cuenta_remunerada_ars"],
+    )
+
+    assert result.passes_change_detection is True
+    assert result.diagnostics["matched_starts"] == 12
+    assert result.diagnostics["candidate_lines"] == 12
+    assert len(result.available_scopes) == 3
+    assert {scope["id"] for scope in result.available_scopes} == {
+        "bank_account:caja_ahorro_ars",
+        "bank_account:cuenta_remunerada_ars",
+        "bank_account:caja_ahorro_usd",
+    }
+    assert next(
+        scope for scope in result.available_scopes if scope["id"] == "bank_account:caja_ahorro_usd"
+    )["currency"] == "USD"
+    assert len(result.transactions) == 12
+    assert {transaction["scope_label"] for transaction in result.transactions} == {
+        "Caja de ahorro ARS",
+        "Cuenta remunerada ARS",
+    }
+    assert sum(1 for transaction in result.transactions if transaction["scope_label"] == "Caja de ahorro ARS") == 6
+    assert sum(1 for transaction in result.transactions if transaction["scope_label"] == "Cuenta remunerada ARS") == 6
+    assert all(transaction["currency"] == "ARS" for transaction in result.transactions)
+    assert result.transactions[0]["account"] == "XXXXXXXXXXXXX001"
+    assert result.transactions[-1]["account"] == "Cuenta remunerada ARS"
+
+    assert len(remunerated_result.transactions) == 6
+    assert all(
+        transaction["scope_id"] == "bank_account:cuenta_remunerada_ars"
+        for transaction in remunerated_result.transactions
+    )

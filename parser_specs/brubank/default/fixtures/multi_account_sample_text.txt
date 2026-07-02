@@ -1,0 +1,52 @@
+1 JUN 2026 al 30 JUN 2026
+PERSONA
+DOMICILIO SANITIZADO
+Mi cuenta Resumen
+Tipo Caja de ahorro Saldo Inicial $ 10,00
+Moneda Pesos (ARS) Créditos $ 3.210,00
+CUIT XXXXXXXXXXX Débitos $ 800,00
+Número XXXXXXXXXXXXX001
+CBU XXXXXXXXXXXXXXXXXXXXXX001
+Imp. Trans. Financieras $ 0,00 Saldo Final $ 2.420,00
+Movimientos
+Fecha Ref Descripción Débito Crédito Saldo
+01-06-26 REF0000001 Proveedor - EMPRESA UNO - $ 1.000,00 $ 1.010,00
+09-06-26 REF0000002 Fondeo de tu cuenta Max $ 500,00 - $ 510,00
+09-06-26 REF0000003 Retiro de tu cuenta Max - $ 200,00 $ 710,00
+09-06-26 REF0000004 A una cuenta tuya - Prex $ 300,00 - $ 410,00
+23-06-26 REF0000005 Proveedor - EMPRESA DOS - $ 2.000,00 $ 2.410,00
+30-06-26 REF0000006 Intereses pagados - $ 10,00 $ 2.420,00
+1 JUN 2026 al 30 JUN 2026
+PERSONA
+DOMICILIO SANITIZADO
+Mi cuenta Resumen
+Tipo Cuenta remunerada Saldo Inicial $ 1.000,00
+Moneda Pesos (ARS) Créditos $ 1.020,00
+CUIT XXXXXXXXXXX Débitos $ 300,00
+Imp. Trans. Financieras $ 0,00 Saldo Final $ 1.720,00
+Movimientos
+Fecha Ref Descripción Débito Crédito Saldo
+01-06-26 REF0000007 Intereses pagados - $ 10,00 $ 1.010,00
+09-06-26 REF0000008 Depósito en cuenta remunerada - $ 1.000,00 $ 2.010,00
+09-06-26 REF0000009 Retiro de cuenta remunerada $ 100,00 - $ 1.910,00
+19-06-26 REF0000010 Retiro de cuenta remunerada $ 200,00 - $ 1.710,00
+1 JUN 2026 al 30 JUN 2026
+PERSONA
+DOMICILIO SANITIZADO
+Movimientos
+Fecha Ref Descripción Débito Crédito Saldo
+29-06-26 REF0000011 Intereses pagados - $ 5,00 $ 1.715,00
+30-06-26 REF0000012 Intereses pagados - $ 5,00 $ 1.720,00
+1 JUN 2026 al 30 JUN 2026
+PERSONA
+DOMICILIO SANITIZADO
+Mi cuenta Resumen
+Tipo Caja de ahorro Saldo Inicial U$S 100,00
+Moneda Dólar (USD) Créditos U$S 0,00
+CUIT XXXXXXXXXXX Débitos U$S 0,00
+Número XXXXXXXXXXXXX002
+CBU XXXXXXXXXXXXXXXXXXXXXX002
+Imp. Trans. Financieras U$S 0,00 Saldo Final U$S 100,00
+Sin Movimientos
+Los depósitos en pesos y en moneda extranjera cuentan con la garantía de hasta $
+Brubank S.A.U. - C.U.I.T XXXXXXXXXXX - IVA Inscripto
