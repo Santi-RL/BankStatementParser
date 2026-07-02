@@ -39,6 +39,12 @@ Campos esperables cuando el formato puede resolverlos:
 - Ejecución UI: `venv\Scripts\streamlit.exe run app.py`
 - Tests: `venv\Scripts\python.exe -m pytest -q`
 
+## Flujo Git del proyecto
+- La rama de trabajo normal es `main`.
+- No crear ramas nuevas para tareas habituales; hacer commits directamente en `main` y luego `git push origin main`.
+- Crear ramas de trabajo, PRs o ramas `codex/*` solo si el usuario lo pide explícitamente o si se acuerda antes por una razón técnica concreta.
+- Antes de hacer push a `main`, verificar que el árbol esté limpio, que los tests relevantes pasen y que no queden ramas temporales locales o remotas que puedan confundir.
+
 ## Riesgos conocidos
 - La detección de banco sigue siendo heurística.
 - Los bancos sin spec publicada deben fallar como `unknown_format`.
