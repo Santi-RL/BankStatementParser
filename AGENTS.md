@@ -1,5 +1,10 @@
 # AGENTS.md
 
+## Instrucciones compartidas
+- Este proyecto vive bajo `C:\Users\SANTI\Documents\Proyectos`.
+- Para instrucciones generales compartidas, revisar también `C:\Users\SANTI\Documents\Proyectos\AGENTS.md`.
+- En caso de conflicto, este `AGENTS.md` local prevalece para reglas específicas de BankStatementParser.
+
 ## Lectura recomendada
 1. `docs/PROJECT_CONTEXT.md`
 2. `docs/PROJECT_STATUS.md`
@@ -59,5 +64,5 @@ Campos esperables cuando el formato puede resolverlos:
 ## Revisión de código y seguridad
 - Usar `security-best-practices` si se cambian validaciones de PDFs, rutas de archivos, parsing de entradas externas, exportaciones, manejo de datos bancarios o Streamlit.
 - Usar `autoreview` como cierre de cambios no triviales en parser, specs, app o exportadores: ejecutar `venv\Scripts\python.exe -m pytest -q` y validar con una muestra real cuando aplique; verificar manualmente cada finding.
-- Usar `clawpatch` solo para auditorías/backlog de mantenimiento del repo o por pedido explícito. Empezar por `clawpatch status`, `clawpatch map`, `clawpatch review --limit <n>` y `clawpatch report`; `clawpatch fix --finding <id>` requiere worktree limpio y confirmación explícita.
+- Usar la CLI global `clawpatch` (`C:\Users\SANTI\AppData\Roaming\npm\clawpatch.cmd`) solo para auditorías/backlog de mantenimiento del repo o por pedido explícito. Para la política compartida de comandos, revisar `C:\Users\SANTI\Documents\Proyectos\AGENTS.md`. Empezar por `clawpatch status`, `clawpatch map`, `clawpatch review --limit <n>` y `clawpatch report`; `clawpatch fix --finding <id>` requiere worktree limpio y confirmación explícita.
 - No usar estas herramientas para simples pruebas manuales con PDFs o actualizaciones documentales menores.
