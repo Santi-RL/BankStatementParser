@@ -13,11 +13,22 @@ from format_training import (
     regress_published_specs,
     save_draft,
     validate_spec,
+    validate_spec_identifier,
 )
 
 
 def _load_text(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
+
+
+def _spec_identifier_arg(field_name: str):
+    def parse(value: str) -> str:
+        try:
+            return validate_spec_identifier(field_name, value)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(str(exc)) from exc
+
+    return parse
 
 
 def _update_spec_from_args(spec: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
@@ -91,8 +102,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     train_parser = subparsers.add_parser("train", help="Create a draft spec from a PDF")
     train_parser.add_argument("pdf", help="PDF sample path")
-    train_parser.add_argument("--bank-id", required=True)
-    train_parser.add_argument("--format-id", required=True)
+    train_parser.add_argument("--bank-id", required=True, type=_spec_identifier_arg("bank_id"))
+    train_parser.add_argument("--format-id", required=True, type=_spec_identifier_arg("format_id"))
     train_parser.add_argument("--display-name", required=True)
     train_parser.add_argument("--country", default="AR")
     train_parser.add_argument("--currency", default="ARS")

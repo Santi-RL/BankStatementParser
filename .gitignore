@@ -10,3 +10,4 @@ logs/
 htmlcov/
 playwright-report/
 test-results/
+.clawpatch/

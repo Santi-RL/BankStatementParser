@@ -1,6 +1,9 @@
 from pathlib import Path
 import tomllib
 
+import pytest
+
+from format_cli import build_parser
 from format_engine import FormatRegistry, FormatSpec
 from format_training import (
     build_initial_spec,
@@ -270,3 +273,54 @@ def test_brubank_spec_discovers_multi_account_statement_scopes():
         transaction["scope_id"] == "bank_account:cuenta_remunerada_ars"
         for transaction in remunerated_result.transactions
     )
+
+@pytest.mark.parametrize(
+    ("bank_id", "format_id"),
+    [
+        ("..", "default"),
+        ("demo", "../escape"),
+        ("demo", "bad/name"),
+        ("demo", "bad\\name"),
+        ("Demo", "default"),
+        ("", "default"),
+    ],
+)
+def test_save_draft_rejects_unsafe_spec_identifiers(tmp_path, bank_id, format_id):
+    spec = build_initial_spec(
+        bank_id=bank_id,
+        format_id=format_id,
+        display_name="Demo Bank",
+        extracted_text="01/01/25 TEST 10,00 10,00",
+    )
+    specs_root = tmp_path / "parser_specs"
+
+    with pytest.raises(ValueError):
+        save_draft(
+            spec,
+            extracted_text="01/01/25 TEST 10,00 10,00",
+            expected_transactions=[],
+            root=specs_root,
+        )
+
+    assert not (tmp_path / "escape").exists()
+    assert not (tmp_path / "bad").exists()
+
+
+def test_train_parser_rejects_unsafe_identifiers_cleanly():
+    parser = build_parser()
+
+    with pytest.raises(SystemExit) as exc_info:
+        parser.parse_args(
+            [
+                "train",
+                "sample.pdf",
+                "--bank-id",
+                "../outside",
+                "--format-id",
+                "default",
+                "--display-name",
+                "Demo Bank",
+            ]
+        )
+
+    assert exc_info.value.code == 2

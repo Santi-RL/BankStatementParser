@@ -1,5 +1,6 @@
 import io
 from pathlib import Path
+import tomllib
 
 import pytest
 from openpyxl import load_workbook
@@ -180,3 +181,139 @@ def test_excel_summary_flags_multiple_currencies():
     assert _find_summary_value(workbook, "Total Credits:") == "N/A (multiple currencies)"
     assert _find_summary_value(workbook, "Total Debits:") == "N/A (multiple currencies)"
     assert _find_summary_value(workbook, "Net Amount:") == "N/A (multiple currencies)"
+
+def test_excel_export_escapes_formula_prefixed_text_cells():
+    transactions = [
+        {
+            "date": "2024-01-01",
+            "description": "=1+1",
+            "amount": 10.0,
+            "balance": 10.0,
+            "transaction_type": "Credit",
+            "bank": "bbva",
+            "account": "1",
+            "currency": "ARS",
+            "scope_label": "=scope",
+            "product_type": "bank_account",
+            "linked_account": "",
+            "source_file": "=1+1.pdf",
+        }
+    ]
+    summary = _build_summary(
+        total_transactions=1,
+        selected_scopes=[{"label": "=scope", "product_type": "@product", "currency": "+ARS"}],
+    )
+    summary["errors"] = ["=bad"]
+
+    workbook_bytes = ExcelGenerator().create_excel_file(transactions, summary)
+    workbook = load_workbook(io.BytesIO(workbook_bytes), data_only=False)
+    worksheet = workbook["All Transactions"]
+    headers = [cell.value for cell in worksheet[1]]
+    description_cell = worksheet.cell(row=2, column=headers.index("Description") + 1)
+    source_file_cell = worksheet.cell(row=2, column=headers.index("Source File") + 1)
+
+    assert description_cell.data_type != "f"
+    assert description_cell.value == "'=1+1"
+    assert source_file_cell.data_type != "f"
+    assert source_file_cell.value == "'=1+1.pdf"
+    assert workbook["Summary"]["A18"].value == "'=scope"
+    assert workbook["Summary"]["B18"].value == "'@product"
+    assert workbook["Summary"]["C18"].value == "'+ARS"
+
+
+def test_excel_transactions_sheet_formats_amounts_by_header_without_balance():
+    transactions = [
+        {
+            "date": "2024-01-01",
+            "description": "Debito",
+            "amount": -25.0,
+            "transaction_type": "Debit",
+            "bank": "bbva",
+            "account": "1",
+            "currency": "ARS",
+        }
+    ]
+
+    workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=1))
+    workbook = load_workbook(io.BytesIO(workbook_bytes))
+    worksheet = workbook["All Transactions"]
+    headers = [cell.value for cell in worksheet[1]]
+
+    assert "Balance" not in headers
+    assert headers[2] == "Amount"
+    assert headers[3] == "Type"
+    assert worksheet["C2"].number_format == "#,##0.00"
+    assert worksheet["D2"].value == "Debit"
+    assert worksheet["D2"].number_format == "General"
+
+
+def test_excel_monthly_summaries_keep_currencies_separate():
+    transactions = [
+        {
+            "date": "2024-01-01",
+            "description": "Ingreso ARS",
+            "amount": 100000.0,
+            "balance": 100000.0,
+            "transaction_type": "Credit",
+            "bank": "brubank",
+            "account": "1",
+            "currency": "ARS",
+        },
+        {
+            "date": "2024-01-02",
+            "description": "Ingreso USD",
+            "amount": 100.0,
+            "balance": 100.0,
+            "transaction_type": "Credit",
+            "bank": "brubank",
+            "account": "2",
+            "currency": "USD",
+        },
+        {
+            "date": "2024-01-03",
+            "description": "Debito USD",
+            "amount": -10.0,
+            "balance": 90.0,
+            "transaction_type": "Debit",
+            "bank": "brubank",
+            "account": "2",
+            "currency": "USD",
+        },
+    ]
+
+    workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=3))
+    workbook = load_workbook(io.BytesIO(workbook_bytes))
+    monthly_sheet = workbook["Monthly Summary"]
+    headers = [cell.value for cell in monthly_sheet[2]]
+    rows_by_currency = {
+        row[headers.index("Currency")].value: row
+        for row in monthly_sheet.iter_rows(min_row=3, max_row=4)
+    }
+
+    assert headers == [
+        "Month",
+        "Currency",
+        "Total Credits",
+        "Total Debits",
+        "Net Amount",
+        "Transaction Count",
+        "Average Transaction",
+    ]
+    assert rows_by_currency["ARS"][headers.index("Total Credits")].value == 100000.0
+    assert rows_by_currency["ARS"][headers.index("Net Amount")].value == 100000.0
+    assert rows_by_currency["USD"][headers.index("Total Credits")].value == 100.0
+    assert rows_by_currency["USD"][headers.index("Total Debits")].value == 10.0
+    assert rows_by_currency["USD"][headers.index("Net Amount")].value == 90.0
+
+    analysis_sheet = workbook["Analysis"]
+    assert [cell.value for cell in analysis_sheet[4][6:11]] == ["Month", "Currency", "Income", "Spending", "Net"]
+
+
+def test_project_metadata_uses_product_identity():
+    with Path("pyproject.toml").open("rb") as handle:
+        pyproject = tomllib.load(handle)
+
+    project = pyproject["project"]
+    assert project["name"] == "bank-statement-parser"
+    assert "bank statement" in project["description"].lower()
+    assert "Add your description" not in project["description"]

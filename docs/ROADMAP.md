@@ -71,6 +71,12 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 ### Fase 6: endurecimiento para primeras pruebas en producción
 - Existe un modo `production-test` para correr la app sin backoffice ni debug interactivo.
 - Los errores inesperados quedan sanitizados en UI y registrados en `logs/app.log`.
+- La exportación Excel quedó endurecida contra fórmula injection en textos no confiables.
+- Los resúmenes mensuales de Excel separan totales por moneda cuando hay movimientos multi-moneda.
+- El formato monetario de Excel se aplica por encabezado y ya no depende de que `Balance` exista físicamente como columna D.
+- El entrenamiento de specs valida slugs y contención bajo `parser_specs/` antes de escribir borradores.
+- Los scripts diagnósticos devuelven estados de salida útiles para mantenimiento y CI.
+- La metadata de paquete dejó de usar la identidad de template de Replit.
 - Los temporales PDF quedan centralizados y se limpian incluso ante excepciones.
 - `process_pdf()` ya no duplica extracción, matching y preparación de texto.
 - El fallback PDF secundario ya usa `pypdf`.

@@ -6,10 +6,15 @@ from openpyxl.utils import get_column_letter
 from openpyxl.cell.cell import MergedCell
 import io
 import re
+from numbers import Real
 from typing import List, Dict, Any
 from datetime import datetime
 
 from utils import format_currency, get_transaction_currencies, resolve_single_currency
+
+
+FORMULA_TRIGGER_CHARACTERS = ("=", "+", "-", "@", "\t", "\r", "\n")
+
 
 class ExcelGenerator:
     """Generates structured Excel files from transaction data."""
@@ -68,6 +73,72 @@ class ExcelGenerator:
         if len(currencies) > 1:
             return multiple_currency_label
         return format_currency(amount, self._single_transaction_currency())
+
+    def _safe_excel_value(self, value: Any) -> Any:
+        if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARACTERS):
+            return f"'{value}"
+        return value
+
+    def _set_cell_value(self, worksheet, coordinate: str, value: Any):
+        worksheet[coordinate] = self._safe_excel_value(value)
+
+    def _append_dataframe_rows(self, worksheet, dataframe: pd.DataFrame):
+        for row in dataframe_to_rows(dataframe, index=False, header=True):
+            worksheet.append([self._safe_excel_value(value) for value in row])
+
+    def _currency_bucket_series(self, dataframe: pd.DataFrame) -> pd.Series:
+        if 'currency' not in dataframe.columns:
+            return pd.Series(["N/A"] * len(dataframe), index=dataframe.index)
+        return (
+            dataframe['currency']
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .replace("", "N/A")
+        )
+
+    def _monthly_summary_rows(self, dataframe: pd.DataFrame) -> tuple[List[Dict[str, Any]], bool]:
+        df_copy = dataframe.copy()
+        df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
+        df_copy = df_copy.dropna(subset=['date'])
+
+        if df_copy.empty:
+            return [], False
+
+        df_copy['year_month'] = df_copy['date'].dt.to_period('M')
+        df_copy['currency_bucket'] = self._currency_bucket_series(df_copy)
+        split_by_currency = df_copy['currency_bucket'].nunique(dropna=False) > 1
+        group_columns = ['year_month', 'currency_bucket'] if split_by_currency else ['year_month']
+
+        monthly_data = []
+        for group_key, group in df_copy.groupby(group_columns, sort=True):
+            if split_by_currency:
+                month, currency = group_key
+            else:
+                month = group_key
+                currency = None
+
+            credits = group[group['amount'] > 0]['amount'].sum()
+            debits = abs(group[group['amount'] < 0]['amount'].sum())
+            net = credits - debits
+            row = {
+                'Month': str(month),
+                'Total Credits': credits,
+                'Total Debits': debits,
+                'Net Amount': net,
+                'Transaction Count': len(group),
+                'Average Transaction': group['amount'].mean(),
+            }
+            if split_by_currency:
+                row = {
+                    'Month': str(month),
+                    'Currency': currency,
+                    **{key: value for key, value in row.items() if key != 'Month'},
+                }
+            monthly_data.append(row)
+
+        return monthly_data, split_by_currency
     
     def _create_summary_sheet(self, summary: Dict[str, Any]):
         """Create summary sheet with processing information."""
@@ -107,11 +178,11 @@ class ExcelGenerator:
         ws['B12'] = len(summary['banks_detected'])
         
         ws['A13'] = "Bank Names:"
-        ws['B13'] = ", ".join(sorted(summary['banks_detected']))
+        self._set_cell_value(ws, 'B13', ", ".join(sorted(summary['banks_detected'])))
 
         currencies = self._transaction_currency_list()
         ws['A14'] = "Currencies Detected:"
-        ws['B14'] = ", ".join(currencies) if currencies else "N/A"
+        self._set_cell_value(ws, 'B14', ", ".join(currencies) if currencies else "N/A")
 
         selected_scopes = summary.get('selected_scopes', [])
         if selected_scopes:
@@ -125,9 +196,9 @@ class ExcelGenerator:
 
             row = 18
             for scope in selected_scopes:
-                ws[f'A{row}'] = scope.get('label', '')
-                ws[f'B{row}'] = scope.get('product_type', '')
-                ws[f'C{row}'] = scope.get('currency', '')
+                self._set_cell_value(ws, f'A{row}', scope.get('label', ''))
+                self._set_cell_value(ws, f'B{row}', scope.get('product_type', ''))
+                self._set_cell_value(ws, f'C{row}', scope.get('currency', ''))
                 row += 1
         else:
             row = 16
@@ -143,14 +214,22 @@ class ExcelGenerator:
             ws[f'A{summary_row}'].font = Font(bold=True, size=12)
             
             ws[f'A{summary_row + 1}'] = "Total Credits:"
-            ws[f'B{summary_row + 1}'] = self._display_financial_amount(total_credits, "N/A (multiple currencies)")
+            self._set_cell_value(
+                ws,
+                f'B{summary_row + 1}',
+                self._display_financial_amount(total_credits, "N/A (multiple currencies)"),
+            )
             
             ws[f'A{summary_row + 2}'] = "Total Debits:"
-            ws[f'B{summary_row + 2}'] = self._display_financial_amount(total_debits, "N/A (multiple currencies)")
+            self._set_cell_value(
+                ws,
+                f'B{summary_row + 2}',
+                self._display_financial_amount(total_debits, "N/A (multiple currencies)"),
+            )
             
             ws[f'A{summary_row + 3}'] = "Net Amount:"
             net_display = self._display_financial_amount(net_amount, "N/A (multiple currencies)")
-            ws[f'B{summary_row + 3}'] = net_display
+            self._set_cell_value(ws, f'B{summary_row + 3}', net_display)
             if isinstance(net_display, str) and net_display.startswith("N/A"):
                 pass
             elif net_amount < 0:
@@ -166,7 +245,7 @@ class ExcelGenerator:
             
             row = error_row + 1
             for error in summary['errors']:
-                ws[f'A{row}'] = error
+                self._set_cell_value(ws, f'A{row}', error)
                 ws[f'A{row}'].font = Font(color="FF0000")
                 row += 1
         
@@ -217,8 +296,7 @@ class ExcelGenerator:
         df_excel = df_excel.rename(columns=column_names)
         
         # Add data to worksheet
-        for r in dataframe_to_rows(df_excel, index=False, header=True):
-            ws.append(r)
+        self._append_dataframe_rows(ws, df_excel)
         
         # Format header row
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
@@ -230,6 +308,17 @@ class ExcelGenerator:
             cell.alignment = Alignment(horizontal='center')
         
         # Format data rows
+        header_columns = {cell.value: cell.column for cell in ws[1]}
+        amount_columns = {
+            column
+            for column in [
+                header_columns.get('Amount'),
+                header_columns.get('Balance'),
+            ]
+            if column is not None
+        }
+        date_column = header_columns.get('Date')
+
         for row in ws.iter_rows(min_row=2):
             for cell in row:
                 # Add borders
@@ -242,13 +331,13 @@ class ExcelGenerator:
                 cell.border = thin_border
                 
                 # Format amount columns
-                if cell.column_letter in ['C', 'D']:  # Amount and Balance columns
+                if cell.column in amount_columns:
                     cell.number_format = '#,##0.00'
-                    if cell.value and cell.value < 0:
+                    if isinstance(cell.value, Real) and not isinstance(cell.value, bool) and cell.value < 0:
                         cell.font = Font(color="FF0000")  # Red for negative amounts
                 
                 # Format date column
-                if cell.column_letter == 'A' and cell.value:
+                if cell.column == date_column and cell.value:
                     cell.number_format = 'DD/MM/YYYY'
         
         # Auto-adjust column widths
@@ -282,8 +371,7 @@ class ExcelGenerator:
             column_order = ['date', 'description', 'amount', 'balance', 'transaction_type', 'bank', 'account', 'currency', 'scope_label', 'product_type', 'linked_account', 'source_file']
             existing_columns = [col for col in column_order if col in df_scope.columns]
             df_scope = df_scope[existing_columns]
-            for r in dataframe_to_rows(df_scope, index=False, header=True):
-                ws.append(r)
+            self._append_dataframe_rows(ws, df_scope)
 
             header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
             header_font = Font(color="FFFFFF", bold=True)
@@ -333,7 +421,7 @@ class ExcelGenerator:
         
         row = 4
         for trans_type, count in type_counts.items():
-            ws[f'A{row}'] = trans_type
+            self._set_cell_value(ws, f'A{row}', trans_type)
             ws[f'B{row}'] = count
             row += 1
         
@@ -346,48 +434,43 @@ class ExcelGenerator:
             
             row = 4
             for bank, count in bank_counts.items():
-                ws[f'D{row}'] = bank
+                self._set_cell_value(ws, f'D{row}', bank)
                 ws[f'E{row}'] = count
                 row += 1
         
         # Monthly spending analysis
         if 'date' in self.transactions_df.columns:
-            df_copy = self.transactions_df.copy()
-            df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
-            df_copy['month'] = df_copy['date'].dt.to_period('M')
-            
-            monthly_spending = df_copy[df_copy['amount'] < 0].groupby('month')['amount'].sum().abs()
-            monthly_income = df_copy[df_copy['amount'] > 0].groupby('month')['amount'].sum()
+            monthly_data, split_by_currency = self._monthly_summary_rows(self.transactions_df)
             
             ws['G3'] = "Monthly Summary"
             ws['G3'].font = Font(bold=True)
-            
-            ws['G4'] = "Month"
-            ws['H4'] = "Income"
-            ws['I4'] = "Spending"
-            ws['J4'] = "Net"
-            
-            # Header formatting
-            for cell in [ws['G4'], ws['H4'], ws['I4'], ws['J4']]:
+
+            headers = ["Month"]
+            if split_by_currency:
+                headers.append("Currency")
+            headers.extend(["Income", "Spending", "Net"])
+            start_column = 7
+            for offset, header in enumerate(headers):
+                cell = ws.cell(row=4, column=start_column + offset, value=header)
                 cell.font = Font(bold=True)
                 cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             
             row = 5
-            for month in monthly_spending.index.union(monthly_income.index):
-                income = monthly_income.get(month, 0)
-                spending = monthly_spending.get(month, 0)
-                net = income - spending
-                
-                ws[f'G{row}'] = str(month)
-                ws[f'H{row}'] = income
-                ws[f'I{row}'] = spending
-                ws[f'J{row}'] = net
-                
-                # Format numbers
-                for col in ['H', 'I', 'J']:
-                    ws[f'{col}{row}'].number_format = '#,##0.00'
-                    if col == 'J' and net < 0:
-                        ws[f'{col}{row}'].font = Font(color="FF0000")
+            for monthly_row in monthly_data:
+                values = [monthly_row["Month"]]
+                if split_by_currency:
+                    values.append(monthly_row["Currency"])
+                values.extend([
+                    monthly_row["Total Credits"],
+                    monthly_row["Total Debits"],
+                    monthly_row["Net Amount"],
+                ])
+                for offset, value in enumerate(values):
+                    cell = ws.cell(row=row, column=start_column + offset, value=self._safe_excel_value(value))
+                    if headers[offset] in {"Income", "Spending", "Net"}:
+                        cell.number_format = '#,##0.00'
+                    if headers[offset] == "Net" and isinstance(value, Real) and not isinstance(value, bool) and value < 0:
+                        cell.font = Font(color="FF0000")
                 
                 row += 1
     
@@ -400,32 +483,11 @@ class ExcelGenerator:
             return
         
         # Process data
-        df_copy = self.transactions_df.copy()
-        df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
-        df_copy = df_copy.dropna(subset=['date'])
-        
-        if df_copy.empty:
+        monthly_data, split_by_currency = self._monthly_summary_rows(self.transactions_df)
+
+        if not monthly_data:
             ws['A1'] = "No valid dates found for monthly summary"
             return
-        
-        df_copy['year_month'] = df_copy['date'].dt.to_period('M')
-        
-        # Group by month and calculate summaries
-        monthly_data = []
-        for month, group in df_copy.groupby('year_month'):
-            credits = group[group['amount'] > 0]['amount'].sum()
-            debits = abs(group[group['amount'] < 0]['amount'].sum())
-            net = credits - debits
-            transaction_count = len(group)
-            
-            monthly_data.append({
-                'Month': str(month),
-                'Total Credits': credits,
-                'Total Debits': debits,
-                'Net Amount': net,
-                'Transaction Count': transaction_count,
-                'Average Transaction': group['amount'].mean()
-            })
         
         # Create DataFrame and add to sheet
         monthly_df = pd.DataFrame(monthly_data)
@@ -433,11 +495,11 @@ class ExcelGenerator:
         # Add title
         ws['A1'] = "Monthly Financial Summary"
         ws['A1'].font = Font(size=14, bold=True)
-        ws.merge_cells('A1:F1')
+        title_end_column = 'G' if split_by_currency else 'F'
+        ws.merge_cells(f'A1:{title_end_column}1')
         
         # Add data
-        for r in dataframe_to_rows(monthly_df, index=False, header=True):
-            ws.append(r)
+        self._append_dataframe_rows(ws, monthly_df)
         
         # Format header (row 2 since we only added a title row)
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
@@ -449,16 +511,29 @@ class ExcelGenerator:
             cell.alignment = Alignment(horizontal='center')
         
         # Format data rows
+        header_columns = {cell.value: cell.column for cell in ws[2]}
+        monetary_columns = {
+            column
+            for column in [
+                header_columns.get('Total Credits'),
+                header_columns.get('Total Debits'),
+                header_columns.get('Net Amount'),
+                header_columns.get('Average Transaction'),
+            ]
+            if column is not None
+        }
+        count_column = header_columns.get('Transaction Count')
+
         for row in ws.iter_rows(min_row=3):
             for cell in row:
                 # Format monetary columns
-                if cell.column_letter in ['B', 'C', 'D', 'F']:
+                if cell.column in monetary_columns:
                     cell.number_format = '#,##0.00'
-                    if cell.value and cell.value < 0:
+                    if isinstance(cell.value, Real) and not isinstance(cell.value, bool) and cell.value < 0:
                         cell.font = Font(color="FF0000")
                 
                 # Format count column
-                elif cell.column_letter == 'E':
+                elif cell.column == count_column:
                     cell.number_format = '#,##0'
         
         # Auto-adjust column widths

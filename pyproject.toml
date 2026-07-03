@@ -1,7 +1,7 @@
 [project]
-name = "repl-nix-workspace"
+name = "bank-statement-parser"
 version = "0.1.0"
-description = "Add your description here"
+description = "Convert bank statement PDFs into normalized Excel and CSV transaction exports."
 requires-python = ">=3.11"
 dependencies = [
     "openpyxl>=3.1.5",

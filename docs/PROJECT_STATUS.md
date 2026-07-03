@@ -12,9 +12,9 @@ El proyecto ya dejó de ser solo un prototipo con parsers sueltos. Hoy tiene:
 
 Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato.
 
-## Estado comprobado al 11 de abril de 2026
+## Estado comprobado al 3 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `55 passed, 4 skipped`
+- `python -m pytest -q` -> `71 passed, 4 skipped`
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 
 Procesamiento manual comprobado con assets reales:
@@ -46,6 +46,12 @@ Nota operativa:
 - El motor declarativo ya no deja `except/pass` silenciosos en la ruta específica de Roela.
 - El runtime ahora escribe logs rotados en `logs/app.log`.
 - La detección de banco ahora prioriza specs publicadas y señales del encabezado para evitar falsos positivos por menciones a otros bancos dentro de descripciones de transferencias.
+- La exportación Excel escapa textos no confiables que podrían convertirse en fórmulas, incluyendo nombres de archivo, descripciones, scopes y errores.
+- Las hojas de análisis mensual en Excel separan las agregaciones por moneda cuando hay movimientos de distintas monedas.
+- La generación de Excel ya no asume que la columna `balance` existe para aplicar formatos monetarios.
+- El workflow de entrenamiento valida `bank_id` y `format_id` como slugs seguros y verifica que los borradores queden bajo `parser_specs/`.
+- Los scripts de diagnóstico devuelven código de salida no cero ante errores operativos y evitan caracteres problemáticos para consolas Windows.
+- La metadata del paquete en `pyproject.toml` ya usa la identidad `bank-statement-parser`.
 
 ### Infraestructura de tests
 - `tests/` es la fuente de verdad.

@@ -44,7 +44,7 @@ def reconstruir_texto_desde_transacciones(
     return "\n".join(filas)
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Procesa un extracto PDF y muestra texto útil para depurar."
     )
@@ -67,8 +67,8 @@ def main() -> None:
 
     pdf_path = os.path.abspath(args.pdf)
     if not os.path.isfile(pdf_path):
-        print(f"❌ Archivo no encontrado: {pdf_path}")
-        return
+        print(f"Error: Archivo no encontrado: {pdf_path}")
+        return 1
 
     processor = PDFProcessor()
 
@@ -78,14 +78,14 @@ def main() -> None:
     )
 
     if not result.get("success"):
-        print("⚠️  No se extrajeron transacciones.")
+        print("Aviso: No se extrajeron transacciones.")
         if "error" in result:
             print("Error:", result["error"])
         if args.debug and "debug_log" in result:
             print("\n===== DEBUG LOG =====")
             for line in result["debug_log"]:
                 print(line)
-        return
+        return 1
 
     bank_id = result.get("bank_detected") or result.get("bank_name")
     bank_human = result.get("bank_name", bank_id)
@@ -121,6 +121,8 @@ def main() -> None:
             print(line)
         print("===== FIN DEBUG LOG =====")
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

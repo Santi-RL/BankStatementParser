@@ -66,15 +66,15 @@ def show_raw_text_by_column(pdf_path: str) -> None:
 # --------------------------------------------------------------------------- #
 # MODO NORMAL                                                                 #
 # --------------------------------------------------------------------------- #
-def process_pdf(pdf_path: str) -> None:
+def process_pdf(pdf_path: str) -> int:
     processor = PDFProcessor()
     result = processor.process_pdf(pdf_path, os.path.basename(pdf_path))
 
     if not result.get("success"):
-        print("⚠️  No se extrajo ninguna transacción.")
+        print("Aviso: No se extrajo ninguna transacción.")
         if "error" in result:
             print("Error:", result["error"])
-        return
+        return 1
 
     transacciones = result["transactions"]
 
@@ -87,11 +87,12 @@ def process_pdf(pdf_path: str) -> None:
         print(fila)
 
     print(f"\nTotal de transacciones: {len(transacciones)}")
+    return 0
 
 # --------------------------------------------------------------------------- #
 # MAIN                                                                        #
 # --------------------------------------------------------------------------- #
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description="Demo de extracción PDF")
     parser.add_argument("pdf", help="Ruta al archivo PDF")
     parser.add_argument("-r", "--raw", action="store_true",
@@ -106,7 +107,9 @@ def main() -> None:
     if args.raw:
         show_raw_text_by_column(pdf_path)
     else:
-        process_pdf(pdf_path)
+        return process_pdf(pdf_path)
+
+    return 0
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

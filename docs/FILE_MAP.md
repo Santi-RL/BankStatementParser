@@ -16,7 +16,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `format_engine.py` | Motor declarativo de specs | Código productivo |
 | `format_training.py` | Helpers de entrenamiento, sanitización y publicación | Código productivo |
 | `pdf_processor.py` | Orquestador de extracción, detección y validación | Código productivo |
-| `pyproject.toml` | Metadatos y configuración de `pytest` | Vigente |
+| `pyproject.toml` | Metadatos y configuración de `pytest` | Vigente; identidad de paquete `bank-statement-parser` |
 | `README.md` | Documentación pública base | Vigente |
 | `requirements.txt` | Dependencias para instalación con `pip` | Vigente |
 | `utils.py` | Helpers compartidos | Código productivo |
@@ -46,7 +46,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | Ruta | Rol | Estado / observación |
 | --- | --- | --- |
 | `tests/` | Fuente de verdad de la suite | Vigente |
-| `tests/unit/` | Tests unitarios | Vigente |
+| `tests/unit/` | Tests unitarios | Vigente; incluye endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
 | `tests/integration/` | Tests con PDFs y flujos reales | Vigente |
 | `tests/regression/` | Regresión de specs publicadas | Vigente |
 | `scripts/run_app.py` | Helper para levantar la app en puerto fijo | Vigente; acepta `--mode` y `--debug` |

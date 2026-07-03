@@ -12,6 +12,18 @@ from format_engine import FormatRegistry, FormatSpec, SPEC_ROOT, load_expected_t
 from pdf_processor import PDFProcessor
 
 
+SPEC_IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def validate_spec_identifier(field_name: str, value: str) -> str:
+    if not isinstance(value, str) or not SPEC_IDENTIFIER_PATTERN.fullmatch(value):
+        raise ValueError(
+            f"{field_name} must be a lowercase slug matching "
+            "^[a-z0-9][a-z0-9_-]*$"
+        )
+    return value
+
+
 def _mask_sensitive_chunk(chunk: str) -> str:
     protected: Dict[str, str] = {}
     structural_keywords = {
@@ -359,8 +371,19 @@ def build_initial_spec(
 
 
 def spec_directory(bank_id: str, format_id: str, root: Path | None = None) -> Path:
-    base_root = root or SPEC_ROOT
-    return base_root / bank_id / format_id
+    safe_bank_id = validate_spec_identifier("bank_id", bank_id)
+    safe_format_id = validate_spec_identifier("format_id", format_id)
+    base_root = Path(root) if root is not None else SPEC_ROOT
+    spec_dir = base_root / safe_bank_id / safe_format_id
+
+    resolved_root = base_root.resolve()
+    resolved_spec_dir = spec_dir.resolve()
+    try:
+        resolved_spec_dir.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError("spec directory must stay under parser_specs root") from exc
+
+    return spec_dir
 
 
 def save_draft(
