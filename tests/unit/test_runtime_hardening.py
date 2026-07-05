@@ -1,3 +1,4 @@
+import csv
 import io
 from pathlib import Path
 import tomllib
@@ -6,10 +7,10 @@ import pytest
 from openpyxl import load_workbook
 
 import pdf_processor as pdf_processor_module
-from app import _display_total_amount
+from app import _build_csv_export, _display_total_amount
 from excel_generator import ExcelGenerator
 from pdf_processor import PDFProcessor
-from utils import temporary_pdf_copy
+from utils import escape_spreadsheet_formula_value, temporary_pdf_copy
 
 
 def _build_summary(total_transactions: int, selected_scopes: list[dict] | None = None) -> dict:
@@ -30,6 +31,11 @@ def _find_summary_value(workbook, label: str):
         if row[0].value == label:
             return row[1].value
     raise AssertionError(f"Label not found in Summary sheet: {label}")
+
+
+@pytest.mark.parametrize("value", ["=1+1", "+1", "-1", "@cmd", "\tcmd", "\rcmd", "\ncmd"])
+def test_spreadsheet_formula_escape_covers_all_formula_triggers(value):
+    assert escape_spreadsheet_formula_value(value) == f"'{value}"
 
 
 class CountingProcessor(PDFProcessor):
@@ -189,36 +195,85 @@ def test_excel_export_escapes_formula_prefixed_text_cells():
             "description": "=1+1",
             "amount": 10.0,
             "balance": 10.0,
-            "transaction_type": "Credit",
-            "bank": "bbva",
-            "account": "1",
-            "currency": "ARS",
-            "scope_label": "=scope",
-            "product_type": "bank_account",
-            "linked_account": "",
-            "source_file": "=1+1.pdf",
+            "transaction_type": "+Credit",
+            "bank": "-bbva",
+            "account": "@1",
+            "currency": "\tARS",
+            "scope_label": "\rscope",
+            "product_type": "\nproduct",
+            "linked_account": "=linked",
+            "source_file": "+file.pdf",
         }
     ]
     summary = _build_summary(
         total_transactions=1,
         selected_scopes=[{"label": "=scope", "product_type": "@product", "currency": "+ARS"}],
     )
-    summary["errors"] = ["=bad"]
+    summary["errors"] = ["-bad"]
 
     workbook_bytes = ExcelGenerator().create_excel_file(transactions, summary)
     workbook = load_workbook(io.BytesIO(workbook_bytes), data_only=False)
     worksheet = workbook["All Transactions"]
     headers = [cell.value for cell in worksheet[1]]
-    description_cell = worksheet.cell(row=2, column=headers.index("Description") + 1)
-    source_file_cell = worksheet.cell(row=2, column=headers.index("Source File") + 1)
+    expected_values = {
+        "Description": "'=1+1",
+        "Type": "'+Credit",
+        "Bank": "'-bbva",
+        "Account": "'@1",
+        "Currency": "'\tARS",
+        "Scope": "'\nscope",
+        "Product Type": "'\nproduct",
+        "Linked Account": "'=linked",
+        "Source File": "'+file.pdf",
+    }
 
-    assert description_cell.data_type != "f"
-    assert description_cell.value == "'=1+1"
-    assert source_file_cell.data_type != "f"
-    assert source_file_cell.value == "'=1+1.pdf"
-    assert workbook["Summary"]["A18"].value == "'=scope"
-    assert workbook["Summary"]["B18"].value == "'@product"
-    assert workbook["Summary"]["C18"].value == "'+ARS"
+    for header, expected_value in expected_values.items():
+        cell = worksheet.cell(row=2, column=headers.index(header) + 1)
+        assert cell.data_type != "f"
+        assert cell.value == expected_value
+
+    summary_values = [cell.value for row in workbook["Summary"].iter_rows() for cell in row]
+    assert "'=scope" in summary_values
+    assert "'@product" in summary_values
+    assert "'+ARS" in summary_values
+    assert "'-bad" in summary_values
+
+
+def test_csv_export_escapes_formula_prefixed_text_cells():
+    transactions = [
+        {
+            "date": "2024-01-01",
+            "description": "=1+1",
+            "amount": 10.0,
+            "balance": 10.0,
+            "transaction_type": "+Credit",
+            "bank": "-bbva",
+            "account": "@1",
+            "currency": "\tARS",
+            "scope_label": "\rscope",
+            "product_type": "\nproduct",
+            "linked_account": "=linked",
+            "source_file": "+file.pdf",
+        }
+    ]
+
+    csv_data = _build_csv_export(transactions)
+    rows = list(csv.DictReader(io.StringIO(csv_data, newline="")))
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["date"] == "2024-01-01"
+    assert row["amount"] == "10.0"
+    assert row["balance"] == "10.0"
+    assert row["description"] == "'=1+1"
+    assert row["transaction_type"] == "'+Credit"
+    assert row["bank"] == "'-bbva"
+    assert row["account"] == "'@1"
+    assert row["currency"] == "'\tARS"
+    assert row["scope_label"] == "'\rscope"
+    assert row["product_type"] == "'\nproduct"
+    assert row["linked_account"] == "'=linked"
+    assert row["source_file"] == "'+file.pdf"
 
 
 def test_excel_transactions_sheet_formats_amounts_by_header_without_balance():

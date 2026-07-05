@@ -10,10 +10,8 @@ from numbers import Real
 from typing import List, Dict, Any
 from datetime import datetime
 
-from utils import format_currency, get_transaction_currencies, resolve_single_currency
+from utils import escape_spreadsheet_formula_value, format_currency, get_transaction_currencies, resolve_single_currency
 
-
-FORMULA_TRIGGER_CHARACTERS = ("=", "+", "-", "@", "\t", "\r", "\n")
 
 
 class ExcelGenerator:
@@ -75,9 +73,7 @@ class ExcelGenerator:
         return format_currency(amount, self._single_transaction_currency())
 
     def _safe_excel_value(self, value: Any) -> Any:
-        if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARACTERS):
-            return f"'{value}"
-        return value
+        return escape_spreadsheet_formula_value(value)
 
     def _set_cell_value(self, worksheet, coordinate: str, value: Any):
         worksheet[coordinate] = self._safe_excel_value(value)

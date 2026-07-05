@@ -8,6 +8,17 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any, Iterator, List, Optional
 
+
+FORMULA_TRIGGER_CHARACTERS = ("=", "+", "-", "@", "\t", "\r", "\n")
+
+
+def escape_spreadsheet_formula_value(value: Any) -> Any:
+    """Escape text that spreadsheet apps could interpret as a formula."""
+
+    if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARACTERS):
+        return f"'{value}"
+    return value
+
 def clean_text(text: str, preserve_lines: bool = False) -> str:
     """Clean and normalize text content.
 

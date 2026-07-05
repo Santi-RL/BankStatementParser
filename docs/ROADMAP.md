@@ -73,6 +73,8 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - Existe un modo `production-test` para correr la app sin backoffice ni debug interactivo.
 - Los errores inesperados quedan sanitizados en UI y registrados en `logs/app.log`.
 - La exportación Excel quedó endurecida contra inyección de fórmulas en textos no confiables.
+- La exportación CSV quedó endurecida contra inyección de fórmulas usando la misma política compartida que Excel.
+- Hay tests unitarios que validan Excel y CSV con textos iniciados en `=`, `+`, `-`, `@`, tabulaciones y saltos de línea.
 - Los resúmenes mensuales de Excel separan totales por moneda cuando hay movimientos multi-moneda.
 - El formato monetario de Excel se aplica por encabezado y ya no depende de que `Balance` exista físicamente como columna D.
 - El entrenamiento de specs valida slugs y contención bajo `parser_specs/` antes de escribir borradores.
@@ -106,8 +108,6 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 ### Prioridad 0: correcciones funcionales y de salida
 Estas tareas van primero porque afectan la confiabilidad del resultado entregado al usuario, incluso en una prueba controlada.
 
-- Sanitizar también la exportación CSV contra inyección de fórmulas, usando la misma política que ya protege Excel.
-- Revalidar la salida Excel/CSV con descripciones, nombres de archivo, scopes y errores que empiecen con `=`, `+`, `-`, `@`, tabulaciones o saltos de línea.
 - Recuperar o reemplazar con fixture sanitizada la muestra BBVA consolidada que hoy falta en este workspace, para que los tests multi-entidad no queden salteados.
 - Ejecutar y actualizar el smoke e2e real con el flujo actual: `Analizar Extractos` antes de `Procesar Extractos`.
 - Corregir o documentar la advertencia de `datetime.strptime` para formatos sin año antes de que Python 3.15 cambie el comportamiento.
@@ -158,9 +158,8 @@ Esta prioridad queda deliberadamente después de las mejoras funcionales. No deb
 - Preparar documentación pública final cuando la cobertura funcional y los flujos principales estén cerrados.
 
 ## Hitos recomendados siguientes
-1. Corregir la exportación CSV para aplicar sanitización anti-fórmulas.
-2. Recuperar o reemplazar la muestra BBVA consolidada para eliminar los `skipped` multi-entidad.
-3. Actualizar y ejecutar el smoke e2e con el flujo `Analizar Extractos` -> `Procesar Extractos`.
-4. Agregar fixtures alteradas por banco para endurecer `format_changed`.
-5. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
-6. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.
+1. Recuperar o reemplazar la muestra BBVA consolidada para eliminar los `skipped` multi-entidad.
+2. Actualizar y ejecutar el smoke e2e con el flujo `Analizar Extractos` -> `Procesar Extractos`.
+3. Agregar fixtures alteradas por banco para endurecer `format_changed`.
+4. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
+5. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.

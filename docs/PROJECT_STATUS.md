@@ -15,7 +15,7 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 5 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `71 passed, 4 skipped`
+- `python -m pytest -q` -> `79 passed, 4 skipped, 18 warnings` (warnings conocidas por `datetime.strptime` sin año, pendiente en Prioridad 0)
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`
 - Smoke mínimo de `production-test` -> Streamlit respondió `HTTP 200` en `http://127.0.0.1:8501`
@@ -49,7 +49,7 @@ Nota operativa:
 - El motor declarativo ya no deja `except/pass` silenciosos en la ruta específica de Roela.
 - El runtime ahora escribe logs rotados en `logs/app.log`.
 - La detección de banco ahora prioriza specs publicadas y señales del encabezado para evitar falsos positivos por menciones a otros bancos dentro de descripciones de transferencias.
-- La exportación Excel escapa textos no confiables que podrían convertirse en fórmulas, incluyendo nombres de archivo, descripciones, scopes y errores.
+- Las exportaciones Excel y CSV escapan textos no confiables que podrían convertirse en fórmulas, incluyendo nombres de archivo, descripciones, scopes y errores en Excel, y campos transaccionales en CSV.
 - Las hojas de análisis mensual en Excel separan las agregaciones por moneda cuando hay movimientos de distintas monedas.
 - La generación de Excel ya no asume que la columna `balance` existe para aplicar formatos monetarios.
 - El workflow de entrenamiento valida `bank_id` y `format_id` como slugs seguros y verifica que los borradores queden bajo `parser_specs/`.
@@ -62,6 +62,7 @@ Nota operativa:
 - Existen fixtures sanitizadas versionadas junto con las specs.
 - Hay runbook y helper para smoke e2e con Streamlit + Playwright.
 - Hay workflow de GitHub Actions que ejecuta `python -m pytest -q` y `python format_cli.py regress`.
+- Los tests de endurecimiento cubren la política anti-fórmulas compartida para Excel y CSV.
 
 ### Motor declarativo
 - Existe `format_engine.py` con registro de specs TOML.
@@ -102,8 +103,6 @@ Nota operativa:
 ## Lo que todavía falta
 
 ### Prioridad 0: correcciones funcionales y de salida
-- Sanitizar la descarga CSV contra inyección de fórmulas. Excel ya escapa textos no confiables, pero el CSV todavía se genera directo desde `DataFrame.to_csv()`.
-- Agregar pruebas que cubran Excel y CSV con valores que empiecen con `=`, `+`, `-`, `@`, tabulaciones o saltos de línea.
 - Recuperar o reemplazar con fixture sanitizada la muestra BBVA consolidada para que los tests multi-entidad no queden en `skipped`.
 - Actualizar y ejecutar el smoke e2e real con navegador usando el flujo actual: primero `Analizar Extractos`, después `Procesar Extractos`.
 - Resolver o documentar la advertencia de parseo de fechas sin año antes del cambio previsto en Python 3.15.
@@ -141,13 +140,12 @@ Esta prioridad queda al final. No debe frenar las mejoras funcionales anteriores
 - Definir despliegue, autenticación, límites de uso y monitoreo si se habilitan usuarios externos.
 
 ## Riesgo técnico principal actual
-El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida es que CSV todavía no tiene la misma protección anti-fórmulas que Excel. El riesgo operativo más importante antes de compartir el proyecto públicamente es la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
+El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida ya no está en CSV; ahora quedan como pendientes funcionales inmediatos eliminar los `skipped` multi-entidad de BBVA, actualizar el smoke e2e real y resolver o documentar la advertencia de fechas sin año antes de Python 3.15. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:
-1. corregir la sanitización de CSV,
-2. recuperar o reemplazar la muestra BBVA consolidada para eliminar skips multi-entidad,
-3. actualizar y ejecutar el smoke e2e con el flujo actual,
-4. sumar fixtures de `format_changed` por banco,
-5. mejorar diagnósticos del backoffice para specs multi-entidad,
-6. elegir el siguiente banco o formato a publicar.
+1. recuperar o reemplazar la muestra BBVA consolidada para eliminar skips multi-entidad,
+2. actualizar y ejecutar el smoke e2e con el flujo actual,
+3. sumar fixtures de `format_changed` por banco,
+4. mejorar diagnósticos del backoffice para specs multi-entidad,
+5. elegir el siguiente banco o formato a publicar.

@@ -14,6 +14,7 @@ from format_training import build_initial_spec, extract_text_from_pdf, publish_s
 from pdf_processor import PDFProcessor
 from excel_generator import ExcelGenerator
 from utils import (
+    escape_spreadsheet_formula_value,
     format_currency,
     get_supported_banks,
     get_transaction_currencies,
@@ -167,6 +168,12 @@ def _uploaded_file_id(uploaded_file: Any) -> str:
 
 def _uploaded_files_signature(uploaded_files: List[Any]) -> tuple[str, ...]:
     return tuple(f"{uploaded_file.name}:{len(uploaded_file.getvalue())}:{_uploaded_file_id(uploaded_file)}" for uploaded_file in uploaded_files)
+
+
+def _build_csv_export(transactions: List[Dict[str, Any]]) -> str:
+    dataframe = pd.DataFrame(transactions)
+    safe_dataframe = dataframe.map(escape_spreadsheet_formula_value)
+    return safe_dataframe.to_csv(index=False)
 
 
 def _clear_scope_selection_state(file_id: Optional[str] = None):
@@ -927,8 +934,7 @@ def display_results(mode: str = "local"):
     with col2:
         # CSV download as backup
         if transactions:
-            df = pd.DataFrame(transactions)
-            csv_data = df.to_csv(index=False)
+            csv_data = _build_csv_export(transactions)
             st.download_button(
                 label=tr("download_csv"),
                 data=csv_data,
