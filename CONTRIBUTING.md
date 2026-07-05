@@ -16,6 +16,18 @@ BankStatementParser convierte extractos bancarios en PDF a tablas normalizadas (
 
 (*) Ver la sección "Detección de banco" más abajo para un caso excepcional menor.
 
+## Política de tests para cambios nuevos
+
+Toda implementación que cambie comportamiento debe traer tests nuevos o actualizar tests existentes. La cobertura debe ser proporcional al riesgo:
+
+- Cambios en specs: fixture sanitizada, `expected_transactions.json` actualizado y `python format_cli.py regress` verde.
+- Cambios en `format_engine.py`, `pdf_processor.py`, exportadores o helpers compartidos: test unitario o de integración que falle sin el cambio.
+- Cambios en UI o flujo Streamlit: al menos test de la lógica extraída cuando exista y actualización del smoke/manual QA correspondiente.
+- Cambios de seguridad, validación de PDFs, temporales, sanitización o exportaciones: tests de casos adversos.
+- Cambios puramente documentales o de wording pueden omitir tests, indicando esa razón en el cierre del cambio.
+
+El CI remoto ejecuta `python -m pytest -q` y `python format_cli.py regress` en push/PR a `main`.
+
 ---
 
 ## Agregar un banco nuevo: paso a paso
@@ -185,6 +197,7 @@ parser_specs/<bank_id>/default/
 - [ ] Las fixtures están **sanitizadas** (sin nombres reales, sin CBU/CUIT reales, sin montos reales)
 - [ ] `python format_cli.py regress` pasa incluyendo la spec nueva
 - [ ] `python -m pytest -q` sigue verde (todos los tests previos pasan)
+- [ ] El cambio incluye tests nuevos o actualizados cuando modifica comportamiento
 - [ ] El `bank_id` es descriptivo y sigue la convención: minúsculas, snake_case, con sufijo de país si aplica (ej: `santander_ar`, `bbva_es`)
 - [ ] El `display_name` es legible para el usuario final
 - [ ] Los `required_keywords` son distintivos del banco (no genéricos como "cuenta" o "fecha")
@@ -359,10 +372,11 @@ Las fixtures que acompañan la spec **no deben contener datos personales reales*
 3. Editar spec.toml                 → refinar regex y configuración
 4. format_cli.py validate-draft ... → verificar cobertura
 5. format_cli.py publish ...        → marcar como publicada
-6. pytest -q                        → toda la suite verde
-7. format_cli.py regress            → regresión verde incluyendo la nueva
-8. Commit y push
-9. Abrir PR con el checklist completado
+6. Agregar/actualizar tests          → cubrir el comportamiento nuevo o corregido
+7. pytest -q                        → toda la suite verde
+8. format_cli.py regress            → regresión verde incluyendo la nueva
+9. Commit y push
+10. Abrir PR con el checklist completado
 ```
 
 ---

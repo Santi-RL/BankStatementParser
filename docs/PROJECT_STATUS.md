@@ -7,15 +7,18 @@ El proyecto ya dejó de ser solo un prototipo con parsers sueltos. Hoy tiene:
 - motor declarativo versionado en `parser_specs/`,
 - CLI para entrenar, validar, publicar y correr regresión,
 - suite `pytest` estable,
+- CI remoto de GitHub Actions para tests y regresión declarativa,
 - smoke real con navegador documentado,
 - soporte multi-entidad para PDFs consolidados.
 
-Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato.
+Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato. La aplicación está lista para pruebas controladas con datasets acotados; todavía no debe tratarse como lista para público general.
 
-## Estado comprobado al 3 de julio de 2026
+## Estado comprobado al 5 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
 - `python -m pytest -q` -> `71 passed, 4 skipped`
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
+- CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`
+- Smoke mínimo de `production-test` -> Streamlit respondió `HTTP 200` en `http://127.0.0.1:8501`
 
 Procesamiento manual comprobado con assets reales:
 - `attached_assets/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
@@ -58,6 +61,7 @@ Nota operativa:
 - Hay tests unitarios, de integración y de regresión.
 - Existen fixtures sanitizadas versionadas junto con las specs.
 - Hay runbook y helper para smoke e2e con Streamlit + Playwright.
+- Hay workflow de GitHub Actions que ejecuta `python -m pytest -q` y `python format_cli.py regress`.
 
 ### Motor declarativo
 - Existe `format_engine.py` con registro de specs TOML.
@@ -97,25 +101,53 @@ Nota operativa:
 
 ## Lo que todavía falta
 
-### Prioridad alta
+### Prioridad 0: correcciones funcionales y de salida
+- Sanitizar la descarga CSV contra inyección de fórmulas. Excel ya escapa textos no confiables, pero el CSV todavía se genera directo desde `DataFrame.to_csv()`.
+- Agregar pruebas que cubran Excel y CSV con valores que empiecen con `=`, `+`, `-`, `@`, tabulaciones o saltos de línea.
+- Recuperar o reemplazar con fixture sanitizada la muestra BBVA consolidada para que los tests multi-entidad no queden en `skipped`.
+- Actualizar y ejecutar el smoke e2e real con navegador usando el flujo actual: primero `Analizar Extractos`, después `Procesar Extractos`.
+- Resolver o documentar la advertencia de parseo de fechas sin año antes del cambio previsto en Python 3.15.
+
+### Prioridad 1: robustez del parser y detección de cambios
 - Blindar mejor la detección de cambio de formato con más fixtures alteradas por banco.
-- Ejecutar la primera prueba controlada en `production-test` con usuarios/datasets reales acotados.
-- Mantener clara la diferencia entre banco detectado, banco soportado y documento consolidado.
+- Agregar casos donde el banco sea conocido pero la tabla cambie parcialmente.
+- Mejorar los diagnósticos de `format_changed` para mostrar umbrales fallidos, cobertura, candidatos y secciones afectadas.
+- Mantener clara en UI y diagnósticos la diferencia entre banco detectado, banco soportado, formato publicado y documento consolidado.
 
-### Prioridad media
-- Seguir migrando bancos nuevos al sistema de specs.
-- Mejorar la sanitización de fixtures para preservar estructura sin exponer datos sensibles.
+### Prioridad 2: cobertura funcional real
+- Seguir migrando bancos nuevos al sistema de specs declarativas.
+- Elegir el próximo banco o formato según impacto real, disponibilidad de muestras y posibilidad de fixtures sanitizadas.
+- Revisar si Brubank multi-cuenta debe quedar cubierto con fixture versionada sanitizada, no solo con validación manual externa.
+- Reutilizar el patrón multi-entidad en nuevos formatos consolidados sin hardcode por banco.
 
-### Prioridad estructural
-- Sacar del repo restos históricos y artefactos que todavía no aportan al flujo actual.
-- Mantener `docs/ROADMAP.md` sincronizado después de cada bloque grande de cambios.
+### Prioridad 3: backoffice y mantenimiento operativo
+- Endurecer diagnósticos del backoffice para specs multi-entidad.
+- Mostrar con más claridad por qué una spec no alcanza `min_transactions` o `min_match_ratio`.
+- Mejorar la vista previa de scopes en `validate-draft` y en el backoffice.
+- Mantener `docs/ROADMAP.md` y `docs/PROJECT_STATUS.md` sincronizados después de cada bloque grande.
+
+### Prioridad 4: consistencia documental y de experiencia local
+- Corregir la desalineación de `docs/E2E_PLAYWRIGHT.md`, que todavía describe un flujo sin la etapa previa de análisis.
+- Alinear la lista de bancos soportados en `README.md`; una sección omite Mercado Pago y Brubank mientras otra sí los declara.
+- Decidir si la interfaz queda solo en español por ahora o si se completa realmente `--lang en`; hoy hay mezcla de `tr()` con textos hardcodeados.
+- Sostener la higiene del repo para no reintroducir legacy fuera del runtime declarativo.
+
+### Prioridad 5: preparación para exposición pública
+Esta prioridad queda al final. No debe frenar las mejoras funcionales anteriores.
+
+- Retirar PDFs reales versionados o reemplazarlos por muestras sintéticas/sanitizadas.
+- Revisar fixtures existentes para eliminar nombres, direcciones, teléfonos, cuentas, CVU/CBU/CUIT/DNI u otros identificadores reales que todavía puedan quedar.
+- Definir política de privacidad, manejo de datos bancarios, retención de logs y responsabilidades operativas.
+- Definir despliegue, autenticación, límites de uso y monitoreo si se habilitan usuarios externos.
 
 ## Riesgo técnico principal actual
-El mayor riesgo principal sigue siendo la cobertura funcional: el runtime quedó más limpio y ya separa entidades dentro de PDFs consolidados, pero cualquier banco o formato nuevo exige publicar una spec antes de quedar soportado.
+El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida es que CSV todavía no tiene la misma protección anti-fórmulas que Excel. El riesgo operativo más importante antes de compartir el proyecto públicamente es la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:
-1. correr la primera prueba controlada con `production-test`,
-2. sumar más fixtures de `format_changed` por banco,
-3. endurecer diagnósticos del backoffice para specs multi-entidad,
-4. formalizar el criterio de “formato soportado” en UI y documentación.
+1. corregir la sanitización de CSV,
+2. recuperar o reemplazar la muestra BBVA consolidada para eliminar skips multi-entidad,
+3. actualizar y ejecutar el smoke e2e con el flujo actual,
+4. sumar fixtures de `format_changed` por banco,
+5. mejorar diagnósticos del backoffice para specs multi-entidad,
+6. elegir el siguiente banco o formato a publicar.

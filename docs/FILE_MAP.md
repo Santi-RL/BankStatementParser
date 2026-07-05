@@ -8,6 +8,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | Archivo | Rol | Estado / observación |
 | --- | --- | --- |
 | `.gitignore` | Exclusiones locales | Cubre cachés, `.env*`, logs y artefactos locales de pruebas |
+| `.github/workflows/ci.yml` | CI remoto | Ejecuta `pytest` y regresión declarativa en push/PR a `main` |
 | `AGENTS.md` | Guía breve para futuros agentes | Contexto operativo rápido |
 | `CONTRIBUTING.md` | Guía de contribución para colaboradores externos | Procedimiento para agregar bancos nuevos vía PR |
 | `app.py` | Entrada principal Streamlit | Código productivo; soporta `local` y `production-test` |

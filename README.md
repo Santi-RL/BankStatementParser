@@ -22,7 +22,7 @@ Actualmente hay formatos declarativos publicados para:
 
 Si el banco es detectado pero no tiene una spec publicada, el resultado esperado es `unknown_format`.
 
-## Instalacion de Dependencias
+## Instalación de Dependencias
 
 Antes de ejecutar la aplicación instala las dependencias con pip:
 
@@ -76,16 +76,28 @@ venv\Scripts\python.exe format_cli.py regress
 
 ## Tests
 
-El runner oficial de tests es:
+El runner oficial de tests local es:
 
 ```bash
 venv\Scripts\python.exe -m pytest -q
 ```
 
+La regresión declarativa se ejecuta con:
+
+```bash
+venv\Scripts\python.exe format_cli.py regress
+```
+
 Hay tres capas:
-- unit tests,
-- integration tests con PDFs reales ya presentes en el repo,
-- regression tests para specs declarativas.
+- tests unitarios,
+- tests de integración con PDFs reales ya presentes en el repo,
+- tests de regresión para specs declarativas.
+
+El CI remoto está configurado en `.github/workflows/ci.yml` y corre en push/PR a `main`:
+- `python -m pytest -q`
+- `python format_cli.py regress`
+
+Toda implementación nueva que cambie comportamiento, parsing, specs, exportaciones, UI o seguridad debe agregar o actualizar tests proporcionales al riesgo. Los cambios puramente documentales pueden omitir tests.
 
 El smoke E2E con navegador queda documentado en `docs/E2E_PLAYWRIGHT.md`.
 

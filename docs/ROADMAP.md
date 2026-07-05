@@ -28,6 +28,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - Existe runbook para smoke real con navegador en `docs/E2E_PLAYWRIGHT.md`.
 - Existe helper para levantar Streamlit en puerto fijo: `scripts/run_app.py`.
 - Se validó la app con Playwright MCP sobre el flujo real de carga y procesamiento.
+- Existe CI remoto en `.github/workflows/ci.yml` para correr `python -m pytest -q` y `python format_cli.py regress` en push/PR a `main`.
 
 ### Fase 3: motor declarativo de formatos
 - Existe `format_engine.py`.
@@ -71,7 +72,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 ### Fase 6: endurecimiento para primeras pruebas en producción
 - Existe un modo `production-test` para correr la app sin backoffice ni debug interactivo.
 - Los errores inesperados quedan sanitizados en UI y registrados en `logs/app.log`.
-- La exportación Excel quedó endurecida contra fórmula injection en textos no confiables.
+- La exportación Excel quedó endurecida contra inyección de fórmulas en textos no confiables.
 - Los resúmenes mensuales de Excel separan totales por moneda cuando hay movimientos multi-moneda.
 - El formato monetario de Excel se aplica por encabezado y ya no depende de que `Balance` exista físicamente como columna D.
 - El entrenamiento de specs valida slugs y contención bajo `parser_specs/` antes de escribir borradores.
@@ -102,28 +103,64 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 
 ## Pendiente
 
-### Prioridad 1: completar la migración declarativa
-- Elegir qué banco nuevo aporta más valor para la siguiente spec publicada.
+### Prioridad 0: correcciones funcionales y de salida
+Estas tareas van primero porque afectan la confiabilidad del resultado entregado al usuario, incluso en una prueba controlada.
+
+- Sanitizar también la exportación CSV contra inyección de fórmulas, usando la misma política que ya protege Excel.
+- Revalidar la salida Excel/CSV con descripciones, nombres de archivo, scopes y errores que empiecen con `=`, `+`, `-`, `@`, tabulaciones o saltos de línea.
+- Recuperar o reemplazar con fixture sanitizada la muestra BBVA consolidada que hoy falta en este workspace, para que los tests multi-entidad no queden salteados.
+- Ejecutar y actualizar el smoke e2e real con el flujo actual: `Analizar Extractos` antes de `Procesar Extractos`.
+- Corregir o documentar la advertencia de `datetime.strptime` para formatos sin año antes de que Python 3.15 cambie el comportamiento.
+
+### Prioridad 1: robustez del parser y detección de cambios
+Estas tareas fortalecen el motor existente antes de sumar más superficie.
+
+- Agregar más fixtures alteradas por banco para endurecer `format_changed`.
+- Añadir casos donde el banco sea conocido pero la tabla cambie parcialmente, no solo casos donde desaparece por completo.
+- Hacer que los diagnósticos de `format_changed` expliquen mejor qué umbral falló: keywords, cantidad de candidatos, cobertura, transacciones encontradas y secciones afectadas.
+- Mantener clara en UI y diagnósticos la diferencia entre banco detectado, banco soportado, formato publicado y documento consolidado.
+- Validar que el override manual de formato no oculte errores reales de cambio de formato cuando el usuario fuerza una spec incorrecta.
+
+### Prioridad 2: ampliar cobertura funcional real
+Estas tareas agregan valor de producto sin cambiar el principio de runtime declarativo.
+
+- Elegir qué banco o formato nuevo aporta más valor para la siguiente spec publicada.
 - Mantener el runtime exclusivamente declarativo al sumar soporte nuevo.
 - Reutilizar el patrón multi-entidad en nuevos formatos consolidados sin hardcode por banco.
+- Priorizar bancos nuevos según impacto, disponibilidad de muestras y posibilidad de crear fixtures sanitizadas confiables.
+- Revisar si Brubank multi-cuenta debe pasar de validación manual externa a fixture versionada sanitizada.
 
-### Prioridad 2: detección más fuerte de cambios de formato
-- Agregar más fixtures alteradas por banco.
-- Hacer que los diagnósticos de `format_changed` sean más explicativos para el backoffice.
-- Añadir más casos donde el banco sea conocido pero la tabla cambie sin desaparecer por completo.
+### Prioridad 3: backoffice y flujo de entrenamiento
+Estas tareas hacen más práctico mantener y ampliar la aplicación.
 
-### Prioridad 3: ampliar cobertura real
-- Priorizar bancos nuevos según impacto y disponibilidad de muestras.
-- ~~Añadir convenciones de naming y validación para specs nuevas.~~ → resuelto en `CONTRIBUTING.md`.
-- ~~Definir criterio explícito de "banco soportado".~~ → resuelto en `CONTRIBUTING.md`.
-- Publicar `CONTRIBUTING.md` como guía oficial para PRs de bancos nuevos. ✅
+- Endurecer diagnósticos del backoffice para specs multi-entidad.
+- Mostrar en el backoffice el motivo concreto por el que una spec no alcanza `min_transactions` o `min_match_ratio`.
+- Mejorar la vista previa de scopes descubiertos durante `validate-draft` y en el backoffice.
+- Hacer más visible cuándo una fixture quedó sanitizada pero perdió estructura útil para regresión.
+- Mantener `CONTRIBUTING.md` como guía oficial para specs nuevas. Convenciones de naming, criterio de banco soportado y flujo de PR ya están resueltos allí.
 
-### Prioridad 4: producto y mantenimiento
-- Mantener el roadmap y el estado del proyecto sincronizados con cada bloque grande.
+### Prioridad 4: consistencia de producto local
+Estas tareas no bloquean el parser, pero reducen confusión durante uso interno o pruebas controladas.
+
+- Alinear `README.md`, `docs/E2E_PLAYWRIGHT.md`, `docs/PRODUCTION_TEST_RUNBOOK.md` y la UI con el flujo actual.
+- Corregir la lista pública de bancos soportados para que no haya contradicción entre secciones.
+- Decidir si la app será solo español por ahora o si `--lang en` debe quedar realmente completo; hoy la UI mezcla `tr()` con textos hardcodeados en español.
+- Mantener el roadmap y el estado del proyecto sincronizados después de cada bloque grande.
 - Sostener la higiene del repo para no reintroducir legacy fuera del runtime declarativo.
 
+### Prioridad 5: preparación para exposición pública
+Esta prioridad queda deliberadamente después de las mejoras funcionales. No debe bloquear el trabajo de parser, cobertura y salida.
+
+- Retirar PDFs reales versionados o reemplazarlos por muestras sintéticas/sanitizadas.
+- Revisar fixtures existentes para eliminar nombres, direcciones, teléfonos, cuentas, CVU/CBU/CUIT/DNI u otros identificadores reales que todavía puedan quedar.
+- Definir política de privacidad y manejo de datos bancarios.
+- Definir despliegue, autenticación, límites de uso, monitoreo y retención de logs si se habilitan usuarios externos.
+- Preparar documentación pública final cuando la cobertura funcional y los flujos principales estén cerrados.
+
 ## Hitos recomendados siguientes
-1. Ejecutar la primera prueba controlada con `production-test`.
-2. Agregar más fixtures alteradas por banco para endurecer `format_changed`.
-3. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
-4. Elegir el siguiente banco a publicar con criterio de impacto y calidad.
+1. Corregir la exportación CSV para aplicar sanitización anti-fórmulas.
+2. Recuperar o reemplazar la muestra BBVA consolidada para eliminar los `skipped` multi-entidad.
+3. Actualizar y ejecutar el smoke e2e con el flujo `Analizar Extractos` -> `Procesar Extractos`.
+4. Agregar fixtures alteradas por banco para endurecer `format_changed`.
+5. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
+6. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.
