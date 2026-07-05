@@ -68,6 +68,8 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - La salida conserva compatibilidad con el modelo actual y agrega metadatos opcionales por scope.
 - Excel ahora mantiene `All Transactions` y agrega hojas por entidad cuando se procesan múltiples scopes.
 - La CLI `validate-draft` ya reporta scopes descubiertos.
+- La cobertura multi-entidad ya no depende del PDF real BBVA faltante: `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
+- `CONTRIBUTING.md` documenta el patrón común para agregar bancos con resumen multi-cuenta: scopes declarativos, fixture sanitizada y caso en `MULTI_SCOPE_FIXTURE_CASES`.
 
 ### Fase 6: endurecimiento para primeras pruebas en producción
 - Existe un modo `production-test` para correr la app sin backoffice ni debug interactivo.
@@ -101,14 +103,13 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `bbva/default`
 - `bbva/account_summary`
 - `mercado_pago/default`
-- `brubank/default` v2, con soporte para resumen multi-cuenta: caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos
+- `brubank/default` v2, con soporte para resumen multi-cuenta cubierto por fixture sanitizada: caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos
 
 ## Pendiente
 
 ### Prioridad 0: correcciones funcionales y de salida
 Estas tareas van primero porque afectan la confiabilidad del resultado entregado al usuario, incluso en una prueba controlada.
 
-- Recuperar o reemplazar con fixture sanitizada la muestra BBVA consolidada que hoy falta en este workspace, para que los tests multi-entidad no queden salteados.
 - Ejecutar y actualizar el smoke e2e real con el flujo actual: `Analizar Extractos` antes de `Procesar Extractos`.
 - Corregir o documentar la advertencia de `datetime.strptime` para formatos sin año antes de que Python 3.15 cambie el comportamiento.
 
@@ -128,7 +129,6 @@ Estas tareas agregan valor de producto sin cambiar el principio de runtime decla
 - Mantener el runtime exclusivamente declarativo al sumar soporte nuevo.
 - Reutilizar el patrón multi-entidad en nuevos formatos consolidados sin hardcode por banco.
 - Priorizar bancos nuevos según impacto, disponibilidad de muestras y posibilidad de crear fixtures sanitizadas confiables.
-- Revisar si Brubank multi-cuenta debe pasar de validación manual externa a fixture versionada sanitizada.
 
 ### Prioridad 3: backoffice y flujo de entrenamiento
 Estas tareas hacen más práctico mantener y ampliar la aplicación.
@@ -158,8 +158,7 @@ Esta prioridad queda deliberadamente después de las mejoras funcionales. No deb
 - Preparar documentación pública final cuando la cobertura funcional y los flujos principales estén cerrados.
 
 ## Hitos recomendados siguientes
-1. Recuperar o reemplazar la muestra BBVA consolidada para eliminar los `skipped` multi-entidad.
-2. Actualizar y ejecutar el smoke e2e con el flujo `Analizar Extractos` -> `Procesar Extractos`.
-3. Agregar fixtures alteradas por banco para endurecer `format_changed`.
-4. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
-5. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.
+1. Actualizar y ejecutar el smoke e2e con el flujo `Analizar Extractos` -> `Procesar Extractos`.
+2. Agregar fixtures alteradas por banco para endurecer `format_changed`.
+3. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
+4. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.

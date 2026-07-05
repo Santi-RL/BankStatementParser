@@ -39,7 +39,9 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `parser_specs/bbva/account_summary/spec.toml` | Formato publicado de BBVA para resumen simple de cuenta | Vigente |
 | `parser_specs/mercado_pago/default/spec.toml` | Formato publicado de Mercado Pago para resumen de cuenta wallet | Vigente |
 | `parser_specs/brubank/default/spec.toml` | Formato publicado de Brubank para resumen de cuenta | Vigente |
-| `parser_specs/*/*/fixtures/sample_text.txt` | Fixture sanitizada de texto | Vigente |
+| `parser_specs/bbva/default/fixtures/sample_text.txt` | Fixture sanitizada de BBVA consolidado | Vigente; cubre cuentas, tarjeta de crédito y tarjeta de débito sin depender del PDF real faltante |
+| `parser_specs/brubank/default/fixtures/multi_account_sample_text.txt` | Fixture sanitizada de Brubank multi-cuenta | Vigente; cubre caja de ahorro ARS, cuenta remunerada ARS y cuenta USD sin movimientos |
+| `parser_specs/*/*/fixtures/sample_text.txt` | Fixture sanitizada principal de texto | Vigente; base para regresión declarativa por formato |
 | `parser_specs/*/*/fixtures/expected_transactions.json` | Salida esperada sanitizada | Vigente |
 
 ## Tests y diagnóstico
@@ -48,7 +50,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | --- | --- | --- |
 | `tests/` | Fuente de verdad de la suite | Vigente |
 | `tests/unit/` | Tests unitarios | Vigente; incluye endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
-| `tests/integration/` | Tests con PDFs y flujos reales | Vigente |
+| `tests/integration/` | Tests con PDFs reales disponibles y fixtures sanitizadas para flujos multi-entidad | Vigente |
 | `tests/regression/` | Regresión de specs publicadas | Vigente |
 | `scripts/run_app.py` | Helper para levantar la app en puerto fijo | Vigente; acepta `--mode` y `--debug` |
 | `scripts/diagnostics/` | Scripts manuales de depuración | Vigente |
@@ -64,7 +66,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `attached_assets/TestBancoRoelaArg.txt` | Texto de muestra de Roela | Soporte manual útil |
 | `attached_assets/TestGalicia.pdf` | Muestra real de Galicia | Se procesa con 52 transacciones |
 | `attached_assets/TestGalicia.png` | Captura visual de Galicia | Soporte visual |
-| `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | Muestra real de BBVA consolidado | Se procesa con 5 scopes y 192 transacciones |
+| `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | Muestra real histórica de BBVA consolidado | No disponible en este workspace; la cobertura CI actual usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
 | `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | Muestra real de BBVA resumen simple | Se procesa con 1 scope y 12 transacciones |
 | `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | Muestra real de Mercado Pago | Se procesa con 1 scope y 232 transacciones |
 

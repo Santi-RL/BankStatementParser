@@ -15,7 +15,7 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 5 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `79 passed, 4 skipped, 18 warnings` (warnings conocidas por `datetime.strptime` sin año, pendiente en Prioridad 0)
+- `python -m pytest -q -rs` -> `89 passed, 29 warnings` (sin tests omitidos; warnings conocidas por `datetime.strptime` sin año, pendiente en Prioridad 0)
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`
 - Smoke mínimo de `production-test` -> Streamlit respondió `HTTP 200` en `http://127.0.0.1:8501`
@@ -25,14 +25,14 @@ Procesamiento manual comprobado con assets reales:
 - `attached_assets/BancoRoela.Argentina.Test.pdf` -> `roela_ar`, 4913 transacciones, vía spec declarativa.
 - `attached_assets/BANCO CH 2024 1.pdf` -> `chase`, 12 transacciones, vía spec declarativa.
 - `attached_assets/BANCO CH 2024 2.pdf` -> `chase`, 10 transacciones, vía spec declarativa.
-- `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` -> `bbva`, documento consolidado con 5 scopes detectados y 192 transacciones.
+- `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` -> validación histórica de `bbva` consolidado con 5 scopes detectados y 192 transacciones; en este workspace la cobertura automatizada usa fixture sanitizada.
 - `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
 - `Estado de cuenta Brubank [2026-01-01 al 2026-02-28]` -> `brubank`, 34 transacciones, vía spec declarativa publicada.
 - `Estado de cuenta Brubank junio 2026 multi-cuenta (PDF externo no versionado)` -> `brubank`, documento multi-cuenta con 3 scopes detectados y 47 movimientos procesados al seleccionar todos los scopes; la cuenta en dólares queda detectada sin movimientos.
 
 Nota operativa:
-- En este workspace faltaba `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf`, por eso las integraciones que dependen de ese asset quedaron condicionadas y hoy aparecen como `skipped` cuando el archivo no está disponible.
+- La cobertura multi-entidad automatizada ya no depende del PDF real BBVA consolidado faltante. `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
 
 ## Lo que ya está resuelto
 
@@ -63,6 +63,7 @@ Nota operativa:
 - Hay runbook y helper para smoke e2e con Streamlit + Playwright.
 - Hay workflow de GitHub Actions que ejecuta `python -m pytest -q` y `python format_cli.py regress`.
 - Los tests de endurecimiento cubren la política anti-fórmulas compartida para Excel y CSV.
+- Los tests de integración multi-entidad cubren BBVA consolidado y Brubank multi-cuenta con fixtures sanitizadas, selección explícita de scopes, filtrado por grupo/scope individual y generación de Excel.
 
 ### Motor declarativo
 - Existe `format_engine.py` con registro de specs TOML.
@@ -98,12 +99,11 @@ Nota operativa:
 - `bbva/default` publicado y cubierto por regresión/integración.
 - `bbva/account_summary` publicado y cubierto por regresión/integración.
 - `mercado_pago/default` publicado y cubierto por regresión/integración.
-- `brubank/default` publicado y cubierto por regresión + validación manual con PDFs reales, incluyendo resumen multi-cuenta con caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos.
+- `brubank/default` publicado y cubierto por regresión, fixture sanitizada multi-cuenta y validación manual con PDFs reales, incluyendo caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos.
 
 ## Lo que todavía falta
 
 ### Prioridad 0: correcciones funcionales y de salida
-- Recuperar o reemplazar con fixture sanitizada la muestra BBVA consolidada para que los tests multi-entidad no queden en `skipped`.
 - Actualizar y ejecutar el smoke e2e real con navegador usando el flujo actual: primero `Analizar Extractos`, después `Procesar Extractos`.
 - Resolver o documentar la advertencia de parseo de fechas sin año antes del cambio previsto en Python 3.15.
 
@@ -116,8 +116,8 @@ Nota operativa:
 ### Prioridad 2: cobertura funcional real
 - Seguir migrando bancos nuevos al sistema de specs declarativas.
 - Elegir el próximo banco o formato según impacto real, disponibilidad de muestras y posibilidad de fixtures sanitizadas.
-- Revisar si Brubank multi-cuenta debe quedar cubierto con fixture versionada sanitizada, no solo con validación manual externa.
 - Reutilizar el patrón multi-entidad en nuevos formatos consolidados sin hardcode por banco.
+- Al sumar un formato consolidado, seguir la metodología documentada en `CONTRIBUTING.md`: scopes declarativos, fixture sanitizada multi-cuenta y caso en `MULTI_SCOPE_FIXTURE_CASES`.
 
 ### Prioridad 3: backoffice y mantenimiento operativo
 - Endurecer diagnósticos del backoffice para specs multi-entidad.
@@ -140,12 +140,11 @@ Esta prioridad queda al final. No debe frenar las mejoras funcionales anteriores
 - Definir despliegue, autenticación, límites de uso y monitoreo si se habilitan usuarios externos.
 
 ## Riesgo técnico principal actual
-El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida ya no está en CSV; ahora quedan como pendientes funcionales inmediatos eliminar los `skipped` multi-entidad de BBVA, actualizar el smoke e2e real y resolver o documentar la advertencia de fechas sin año antes de Python 3.15. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
+El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida está en actualizar el smoke e2e real con el flujo actual y resolver o documentar la advertencia de fechas sin año antes de Python 3.15. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:
-1. recuperar o reemplazar la muestra BBVA consolidada para eliminar skips multi-entidad,
-2. actualizar y ejecutar el smoke e2e con el flujo actual,
-3. sumar fixtures de `format_changed` por banco,
-4. mejorar diagnósticos del backoffice para specs multi-entidad,
-5. elegir el siguiente banco o formato a publicar.
+1. actualizar y ejecutar el smoke e2e con el flujo actual,
+2. sumar fixtures de `format_changed` por banco,
+3. mejorar diagnósticos del backoffice para specs multi-entidad,
+4. elegir el siguiente banco o formato a publicar.

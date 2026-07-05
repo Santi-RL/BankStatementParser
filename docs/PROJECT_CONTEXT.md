@@ -102,7 +102,7 @@ Se procesaron localmente estos archivos con `venv\Scripts\python.exe`:
 | `attached_assets/BancoRoela.Argentina.Test.pdf` | `roela_ar` | 4913 transacciones |
 | `attached_assets/BANCO CH 2024 1.pdf` | `chase` | 12 transacciones |
 | `attached_assets/BANCO CH 2024 2.pdf` | `chase` | 10 transacciones |
-| `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | `bbva` | Documento consolidado, 5 scopes detectados y 192 transacciones |
+| `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | `bbva` | Validación histórica de documento consolidado con 5 scopes y 192 transacciones; en este workspace la cobertura CI usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
 | `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
 | `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | `mercado_pago` | Resumen de cuenta wallet, 1 scope detectado y 232 transacciones |
 | `Brubank ene-feb 2026 (PDF externo no versionado)` | `brubank` | Resumen de cuenta con 34 transacciones, vía spec declarativa |
@@ -116,6 +116,7 @@ Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estáti
 - Existe un helper `scripts/run_app.py` y un runbook en `docs/E2E_PLAYWRIGHT.md` para smoke real con navegador.
 - Existe un runbook específico de primera salida en `docs/PRODUCTION_TEST_RUNBOOK.md`.
 - La suite actual valida formatos declarativos publicados para Galicia, Chase, Roela, BBVA, Mercado Pago y Brubank.
+- La cobertura multi-entidad de integración usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta, incluyendo entidades sin movimientos.
 
 ## Límites explícitos del producto actual
 - Solo soporta PDFs basados en texto. No hay OCR.

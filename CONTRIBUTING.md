@@ -349,7 +349,43 @@ Para ejemplos de estos patrones, consultá las specs existentes:
 - Roela (`parser_specs/roela_ar/default/`) — multiline, sign_rules, columns
 - BBVA (`parser_specs/bbva/default/`) — scopes multi-entidad
 - Mercado Pago (`parser_specs/mercado_pago/default/`) — x_band_table
-- Brubank (`parser_specs/brubank/default/`) — columnas débito/crédito
+- Brubank (`parser_specs/brubank/default/`) — columnas débito/crédito y resumen multi-cuenta
+
+---
+
+## Formatos multi-entidad o multi-cuenta
+
+Cuando un extracto consolidado incluye varias cuentas, tarjetas, wallets o subcuentas, debe implementarse siempre con la misma metodología. El objetivo es que BBVA, Brubank y cualquier banco futuro usen el mismo contrato de scopes, selección explícita y regresión automatizada.
+
+### Patrón de spec
+
+1. Mantener el runtime declarativo. No agregar lógica Python específica del banco para elegir entidades, mezclar cuentas o filtrar movimientos.
+2. Declarar scopes en la spec con `[[scopes]]` cuando las entidades aparecen como catálogo del documento, o con `[[extract.sections.context_rules]]` y `action = "activate_scope"` cuando cada bloque activa una entidad.
+3. Definir siempre `scope_id_template`, `label_template`, `product_type`, `account_template` y moneda (`currency` o `currency_template`). Si una sección solo completa datos de un scope ya descubierto, usar `action = "update_scope"` con `create_if_missing = false`.
+4. Preservar entidades sin movimientos como `available_scopes` cuando el resumen las informa. La UI debe poder mostrarlas aunque no generen transacciones.
+5. Usar `selected_scope_ids` como único mecanismo de filtrado. No crear flags, heurísticas o reglas paralelas por banco para decidir qué cuenta se procesa.
+
+### Convenciones prácticas
+
+- `scope_id_template` debe generar IDs estables con prefijo de producto, por ejemplo `bank_account:<id>`, `credit_card:<id>`, `debit_card:<id>` o `wallet:<id>`.
+- `label_template` debe ser legible para el usuario final y suficientemente corto para hojas de Excel.
+- `product_type` debe usar categorías consistentes: `bank_account`, `credit_card`, `debit_card`, `wallet` u otra categoría explícita si el producto no encaja.
+- `account_template` debe conservar el identificador normalizado que luego aparece en las transacciones.
+- La moneda debe resolverse por scope cuando el documento mezcla monedas. No asumir la moneda default del banco si el scope informa otra.
+- Los scopes descubiertos sin movimientos deben quedar disponibles en `analysis["available_scopes"]`, pero no deben crear transacciones vacías.
+
+### Fixtures y cobertura obligatoria
+
+1. Guardar una fixture sanitizada representativa en `parser_specs/<bank_id>/<format_id>/fixtures/`.
+2. Si el formato tiene una variante simple y otra multi-cuenta, usar una fixture explícita como `multi_account_sample_text.txt` para el caso consolidado.
+3. Agregar el banco/formato a `MULTI_SCOPE_FIXTURE_CASES` en `tests/integration/test_bank_parsing.py`.
+4. Ese caso debe declarar scopes esperados, monedas esperadas, selección de todos los scopes, selección de un grupo y selección de un scope individual.
+5. Validar que `analyze_pdf()` marque `multi_scope = true`, que `process_pdf()` falle sin selección explícita, que el filtrado por scopes devuelva solo lo pedido y que `ExcelGenerator` cree hojas por entidad sin nombres inválidos.
+6. Ejecutar `venv\Scripts\python.exe -m pytest -q` y `venv\Scripts\python.exe format_cli.py regress` antes de publicar o commitear.
+
+Referencias actuales:
+- BBVA consolidado: `parser_specs/bbva/default/` y `parser_specs/bbva/default/fixtures/sample_text.txt`.
+- Brubank multi-cuenta: `parser_specs/brubank/default/` y `parser_specs/brubank/default/fixtures/multi_account_sample_text.txt`.
 
 ---
 
