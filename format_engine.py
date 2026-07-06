@@ -692,17 +692,32 @@ class FormatSpec:
 
         for fmt in self.date_formats:
             try:
-                parsed_date = datetime.strptime(normalized_date, fmt)
-                if parsed_date.year == 1900 and statement_year:
-                    inferred_year = statement_year
-                    if statement_month and parsed_date.month > statement_month:
-                        inferred_year -= 1
-                    parsed_date = parsed_date.replace(year=inferred_year)
+                parsed_date = self._parse_normalized_date(normalized_date, fmt, statement_year, statement_month)
                 return parsed_date.strftime("%Y-%m-%d")
             except ValueError:
                 continue
 
         return parse_date(date_str)
+
+    def _parse_normalized_date(
+        self,
+        normalized_date: str,
+        fmt: str,
+        statement_year: Optional[int],
+        statement_month: Optional[int],
+    ) -> datetime:
+        if self._date_format_has_year(fmt):
+            return datetime.strptime(normalized_date, fmt)
+
+        inferred_year = statement_year or 2000
+        parsed_date = datetime.strptime(f"{normalized_date};{inferred_year}", f"{fmt};%Y")
+        if statement_year and statement_month and parsed_date.month > statement_month:
+            parsed_date = parsed_date.replace(year=statement_year - 1)
+        return parsed_date
+
+    @staticmethod
+    def _date_format_has_year(fmt: str) -> bool:
+        return any(token in fmt for token in ("%Y", "%y", "%G"))
 
     def _extract_statement_year(self, text: str) -> Optional[int]:
         if not self.statement_year_regex:

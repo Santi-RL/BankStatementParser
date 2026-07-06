@@ -101,7 +101,7 @@ Se procesaron localmente estos archivos con `venv\Scripts\python.exe`:
 | `attached_assets/TestGalicia.pdf` | `galicia_ar` | 52 transacciones |
 | `attached_assets/BancoRoela.Argentina.Test.pdf` | `roela_ar` | 4913 transacciones |
 | `attached_assets/BANCO CH 2024 1.pdf` | `chase` | 12 transacciones |
-| `attached_assets/BANCO CH 2024 2.pdf` | `chase` | 10 transacciones |
+| `attached_assets/BANCO CH 2024 2.pdf` | `chase` | 11 transacciones, incluyendo 29/02/2024 |
 | `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | `bbva` | Validación histórica de documento consolidado con 5 scopes y 192 transacciones; en este workspace la cobertura CI usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
 | `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
 | `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | `mercado_pago` | Resumen de cuenta wallet, 1 scope detectado y 232 transacciones |

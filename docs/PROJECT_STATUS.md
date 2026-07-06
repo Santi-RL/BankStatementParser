@@ -13,9 +13,9 @@ El proyecto ya dejó de ser solo un prototipo con parsers sueltos. Hoy tiene:
 
 Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato. La aplicación está lista para pruebas controladas con datasets acotados; todavía no debe tratarse como lista para público general.
 
-## Estado comprobado al 5 de julio de 2026
+## Estado comprobado al 6 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q -rs` -> `89 passed, 29 warnings` (sin tests omitidos; warnings conocidas por `datetime.strptime` sin año, pendiente en Prioridad 0)
+- `python -m pytest -q -rs` -> `91 passed` (sin tests omitidos ni warnings de pytest)
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`, incluyendo tests Python, regresión declarativa y smoke E2E
 - `npm run test:e2e` -> `1 passed`; smoke Playwright en `production-test` con PDF sanitizado generado desde fixture Galicia
@@ -24,7 +24,7 @@ Procesamiento manual comprobado con assets reales:
 - `attached_assets/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
 - `attached_assets/BancoRoela.Argentina.Test.pdf` -> `roela_ar`, 4913 transacciones, vía spec declarativa.
 - `attached_assets/BANCO CH 2024 1.pdf` -> `chase`, 12 transacciones, vía spec declarativa.
-- `attached_assets/BANCO CH 2024 2.pdf` -> `chase`, 10 transacciones, vía spec declarativa.
+- `attached_assets/BANCO CH 2024 2.pdf` -> `chase`, 11 transacciones, vía spec declarativa, incluyendo la operación del 29/02/2024.
 - `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` -> validación histórica de `bbva` consolidado con 5 scopes detectados y 192 transacciones; en este workspace la cobertura automatizada usa fixture sanitizada.
 - `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
@@ -46,6 +46,7 @@ Nota operativa:
 - Garantizada la limpieza de PDFs temporales en análisis, procesamiento y backoffice.
 - `process_pdf()` ya no reextrae texto ni rematchea la spec dentro de la misma ejecución.
 - El fallback secundario de PDF pasó de `PyPDF2` a `pypdf`.
+- Corregido el parseo declarativo de fechas sin año para no depender del año implícito 1900 de `strptime`; esto elimina el warning previsto para Python 3.15 y recupera fechas bisiestas como 29/02/2024.
 - El motor declarativo ya no deja `except/pass` silenciosos en la ruta específica de Roela.
 - El runtime ahora escribe logs rotados en `logs/app.log`.
 - La detección de banco ahora prioriza specs publicadas y señales del encabezado para evitar falsos positivos por menciones a otros bancos dentro de descripciones de transferencias.
@@ -104,7 +105,7 @@ Nota operativa:
 ## Lo que todavía falta
 
 ### Prioridad 0: correcciones funcionales y de salida
-- Resolver o documentar la advertencia de parseo de fechas sin año antes del cambio previsto en Python 3.15.
+- Sin pendientes abiertos en esta prioridad después de corregir el parseo de fechas sin año.
 
 ### Prioridad 1: robustez del parser y detección de cambios
 - Blindar mejor la detección de cambio de formato con más fixtures alteradas por banco.
@@ -139,11 +140,11 @@ Esta prioridad queda al final. No debe frenar las mejoras funcionales anteriores
 - Definir despliegue, autenticación, límites de uso y monitoreo si se habilitan usuarios externos.
 
 ## Riesgo técnico principal actual
-El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida está en resolver o documentar la advertencia de fechas sin año antes de Python 3.15. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
+El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:
-1. resolver o documentar la advertencia de fechas sin año,
-2. sumar fixtures de `format_changed` por banco,
+1. sumar fixtures de `format_changed` por banco,
+2. agregar casos donde el banco sea conocido pero la tabla cambie parcialmente,
 3. mejorar diagnósticos del backoffice para specs multi-entidad,
 4. elegir el siguiente banco o formato a publicar.

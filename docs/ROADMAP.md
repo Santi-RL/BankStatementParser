@@ -86,6 +86,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - Los temporales PDF quedan centralizados y se limpian incluso ante excepciones.
 - `process_pdf()` ya no duplica extracción, matching y preparación de texto.
 - El fallback PDF secundario ya usa `pypdf`.
+- El parseo de fechas sin año ya no depende del año implícito 1900 de `strptime`; inyecta un año explícito, conserva la inferencia del resumen y permite fechas bisiestas como 29/02/2024.
 - El repo dejó de depender de artefactos históricos de Replit y del lockfile legacy de `uv`.
 - La detección de banco ahora prioriza el match de specs publicadas y señales estructurales antes que menciones sueltas dentro del detalle de movimientos.
 
@@ -111,7 +112,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 ### Prioridad 0: correcciones funcionales y de salida
 Estas tareas van primero porque afectan la confiabilidad del resultado entregado al usuario, incluso en una prueba controlada.
 
-- Corregir o documentar la advertencia de `datetime.strptime` para formatos sin año antes de que Python 3.15 cambie el comportamiento.
+- Sin pendientes funcionales abiertos en esta prioridad después de corregir el parseo de fechas sin año.
 
 ### Prioridad 1: robustez del parser y detección de cambios
 Estas tareas fortalecen el motor existente antes de sumar más superficie.
@@ -158,7 +159,7 @@ Esta prioridad queda deliberadamente después de las mejoras funcionales. No deb
 - Preparar documentación pública final cuando la cobertura funcional y los flujos principales estén cerrados.
 
 ## Hitos recomendados siguientes
-1. Corregir o documentar la advertencia de `datetime.strptime` sin año.
-2. Agregar fixtures alteradas por banco para endurecer `format_changed`.
-3. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
+1. Agregar fixtures alteradas por banco para endurecer `format_changed`.
+2. Añadir casos donde el banco sea conocido pero la tabla cambie parcialmente.
+3. Mejorar diagnósticos de `format_changed` y del backoffice para entrenamiento y publicación.
 4. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.

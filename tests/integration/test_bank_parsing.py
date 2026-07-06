@@ -265,8 +265,9 @@ def test_chase_second_pdf_matches_same_published_spec():
     assert result["parse_status"] == "ok"
     assert result["bank_detected"] == "chase"
     assert result["format_id"] == "default"
-    assert result["total_transactions"] == 10
+    assert result["total_transactions"] == 11
     assert result["transactions"][0]["date"] == "2024-02-05"
+    assert result["transactions"][-1]["date"] == "2024-02-29"
     assert result["transactions"][0]["account"] == "000000771927196"
 
 

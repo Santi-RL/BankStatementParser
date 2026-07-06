@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 import tomllib
 
 import pytest
@@ -137,6 +138,31 @@ def test_chase_spec_infers_statement_year_and_section_signs():
     assert len(transactions) == 12
     assert transactions[0]["date"] == "2024-01-02"
     assert transactions[4]["amount"] < 0
+
+
+@pytest.mark.parametrize(
+    ("spec_path", "fixture_path"),
+    [
+        (
+            Path("parser_specs/chase/default/spec.toml"),
+            Path("parser_specs/chase/default/fixtures/sample_text.txt"),
+        ),
+        (
+            Path("parser_specs/bbva/account_summary/spec.toml"),
+            Path("parser_specs/bbva/account_summary/fixtures/sample_text.txt"),
+        ),
+    ],
+)
+def test_yearless_date_formats_do_not_emit_strptime_deprecation_warning(spec_path, fixture_path):
+    text = fixture_path.read_text(encoding="utf-8")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        transactions, diagnostics, ok = validate_spec(spec_path, text)
+
+    assert ok is True
+    assert diagnostics["statement_year"] is not None
+    assert transactions
 
 
 def test_roela_spec_handles_rule_based_signs():

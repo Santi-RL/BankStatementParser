@@ -64,7 +64,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | Archivo | Rol | Estado / observación |
 | --- | --- | --- |
 | `attached_assets/BANCO CH 2024 1.pdf` | Muestra real de Chase | Se procesa con 12 transacciones |
-| `attached_assets/BANCO CH 2024 2.pdf` | Segunda muestra real de Chase | Se procesa con 10 transacciones |
+| `attached_assets/BANCO CH 2024 2.pdf` | Segunda muestra real de Chase | Se procesa con 11 transacciones, incluyendo 29/02/2024 |
 | `attached_assets/BancoRoela.Argentina.Test.pdf` | Muestra grande de Roela | Se procesa con 4913 transacciones |
 | `attached_assets/BancoRoela.Argentina.Test.png` | Captura visual de Roela | Soporte visual |
 | `attached_assets/TestBancoRoelaArg.txt` | Texto de muestra de Roela | Soporte manual útil |
