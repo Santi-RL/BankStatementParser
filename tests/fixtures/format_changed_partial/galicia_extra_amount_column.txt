@@ -1,0 +1,8 @@
+Resumen de Caja de Ahorro en Pesos
+Datos de la cuenta
+Número de cuenta
+N 4046017-6 335-0
+Movimientos
+Fecha Descripción Origen Crédito Débito Saldo
+25/08/23 TRANSFERENCIA RECIBIDA 100,00 0,00 100,00
+Banco de Galicia y Buenos Aires S.A.U.

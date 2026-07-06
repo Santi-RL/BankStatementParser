@@ -97,6 +97,7 @@ Editá `spec.toml` directamente hasta que el parseo sea correcto. Los campos cla
 | `extract.ignore_patterns` | Patrones de líneas a ignorar (headers, footers) | Si se incluyen líneas basura |
 | `extract.stop_patterns` | Patrones que marcan el fin de las transacciones | Si se captura texto después de la tabla |
 | `extract.section_start_patterns` | Patrones que marcan el inicio de secciones | Si las transacciones tienen secciones separadas |
+| `extract.reject_description_amount_tail` | Rechaza filas cuya descripción termina en un monto | Si una columna monetaria nueva podría quedar absorbida como descripción |
 | `fields.date` / `description` / `amount` | Nombres de los grupos capturados en `line_pattern` | Si los campos no mapean bien |
 | `normalize.date_formats` | Formatos de fecha Python (`strptime`) | Si las fechas no se parsean |
 | `change_detection.min_transactions` | Mínimo de transacciones esperadas | Si el extracto de ejemplo es pequeño |
@@ -129,6 +130,10 @@ Iterá hasta que:
 - `coverage` >= el `min_match_ratio` de tu spec
 - `transactions_found` >= `min_transactions` de tu spec
 - Las transacciones tengan sentido (revisá fechas, montos, descripciones)
+
+Si la tabla termina con columnas monetarias (`amount`, `balance`, `debit`, `credit`) y las descripciones reales no deberían terminar con importes, activá `extract.reject_description_amount_tail = true`. Esta protección evita que un layout nuevo con una columna monetaria extra sea parseado como si el primer monto fuera parte de la descripción. No la actives en formatos donde las descripciones válidas pueden terminar en importes; Roela es un ejemplo cubierto por regresión.
+
+Para cada spec publicada o modificada, agregá al menos una prueba de `format_changed` cuando sea razonable. Las fixtures sanitizadas de cambios parciales viven en `tests/fixtures/format_changed_partial/` y deben conservar señales reales del banco, encabezados reconocibles y una alteración concreta de tabla.
 
 ### Paso 5: Publicar la spec
 

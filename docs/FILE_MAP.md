@@ -54,6 +54,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `tests/` | Fuente de verdad de la suite | Vigente |
 | `tests/unit/` | Tests unitarios | Vigente; incluye endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
 | `tests/integration/` | Tests con PDFs reales disponibles y fixtures sanitizadas para flujos multi-entidad | Vigente |
+| `tests/fixtures/format_changed_partial/` | Fixtures sanitizadas de cambios parciales de tabla | Vigente; cubren `format_changed` por banco sin usar PDFs reales |
 | `tests/e2e/` | Smoke E2E con Playwright | Vigente; genera PDF sanitizado temporal y valida `production-test` |
 | `tests/regression/` | Regresión de specs publicadas | Vigente |
 | `scripts/run_app.py` | Helper para levantar la app en puerto fijo | Vigente; acepta `--mode` y `--debug` |

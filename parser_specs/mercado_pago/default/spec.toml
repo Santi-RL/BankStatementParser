@@ -30,6 +30,7 @@ source_sections = ["movements"]
 
 [extract]
 strategy = "line_regex"
+reject_description_amount_tail = true
 pdf_text_strategy = "x_band_table"
 
 [extract.pdf_text_options]

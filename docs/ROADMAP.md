@@ -41,6 +41,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
   - `format_version`
   - `diagnostics`
 - Ya existe fallo cerrado como `format_changed` para bancos con spec publicada que dejan de matchear.
+- La regresión de `format_changed` ya incluye fixtures sanitizadas de cambios parciales de tabla por banco: Galicia, Chase, Roela, BBVA account summary, Mercado Pago y Brubank.
 - El core declarativo ya soporta:
   - regex por línea,
   - secciones múltiples,
@@ -117,9 +118,8 @@ Estas tareas van primero porque afectan la confiabilidad del resultado entregado
 ### Prioridad 1: robustez del parser y detección de cambios
 Estas tareas fortalecen el motor existente antes de sumar más superficie.
 
-- Agregar más fixtures alteradas por banco para endurecer `format_changed`.
-- Añadir casos donde el banco sea conocido pero la tabla cambie parcialmente, no solo casos donde desaparece por completo.
 - Hacer que los diagnósticos de `format_changed` expliquen mejor qué umbral falló: keywords, cantidad de candidatos, cobertura, transacciones encontradas y secciones afectadas.
+- Seguir agregando fixtures parciales de `format_changed` cada vez que se publique o modifique una spec.
 - Mantener clara en UI y diagnósticos la diferencia entre banco detectado, banco soportado, formato publicado y documento consolidado.
 - Validar que el override manual de formato no oculte errores reales de cambio de formato cuando el usuario fuerza una spec incorrecta.
 
@@ -159,7 +159,7 @@ Esta prioridad queda deliberadamente después de las mejoras funcionales. No deb
 - Preparar documentación pública final cuando la cobertura funcional y los flujos principales estén cerrados.
 
 ## Hitos recomendados siguientes
-1. Agregar fixtures alteradas por banco para endurecer `format_changed`.
-2. Añadir casos donde el banco sea conocido pero la tabla cambie parcialmente.
-3. Mejorar diagnósticos de `format_changed` y del backoffice para entrenamiento y publicación.
-4. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.
+1. Mejorar diagnósticos de `format_changed` para explicar umbrales fallidos y secciones afectadas.
+2. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
+3. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.
+4. Seguir ampliando fixtures parciales cuando se agreguen formatos nuevos.

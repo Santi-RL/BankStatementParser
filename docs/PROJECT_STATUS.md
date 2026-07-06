@@ -15,7 +15,7 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 6 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q -rs` -> `91 passed` (sin tests omitidos ni warnings de pytest)
+- `python -m pytest -q -rs` -> `106 passed` (sin tests omitidos ni warnings de pytest)
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`, incluyendo tests Python, regresión declarativa y smoke E2E
 - `npm run test:e2e` -> `1 passed`; smoke Playwright en `production-test` con PDF sanitizado generado desde fixture Galicia
@@ -74,6 +74,9 @@ Nota operativa:
 - `PDFProcessor` expone `list_available_formats()` para listar dinámicamente los formatos publicados visibles en UI.
 - `process_pdf()` ya devuelve `parse_status`, `format_id`, `format_version` y `diagnostics`.
 - Hay detección cerrada de `format_changed` cuando un banco con specs publicadas deja de matchear.
+- La regresión de `format_changed` ya cubre cambios parciales de tabla por banco con fixtures sanitizadas: Galicia, Chase, Roela, BBVA account summary, Mercado Pago y Brubank.
+- Las specs pueden activar `extract.reject_description_amount_tail` para rechazar filas donde una columna monetaria nueva fue absorbida como descripción.
+- Los rechazos de esa guardia se exponen en `diagnostics.rejected_matches` y fuerzan `format_changed`, incluso si el resto del extracto todavía alcanza `min_transactions`.
 - El core declarativo ya soporta preextracción específica desde PDF y reglas de signo basadas en códigos para formatos complejos como Roela.
 - El core declarativo ya soporta también derivar `amount` desde columnas separadas de `debit`/`credit`, como en Brubank.
 - El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
@@ -108,9 +111,8 @@ Nota operativa:
 - Sin pendientes abiertos en esta prioridad después de corregir el parseo de fechas sin año.
 
 ### Prioridad 1: robustez del parser y detección de cambios
-- Blindar mejor la detección de cambio de formato con más fixtures alteradas por banco.
-- Agregar casos donde el banco sea conocido pero la tabla cambie parcialmente.
 - Mejorar los diagnósticos de `format_changed` para mostrar umbrales fallidos, cobertura, candidatos y secciones afectadas.
+- Seguir ampliando fixtures parciales de `format_changed` cuando se publique o modifique una spec.
 - Mantener clara en UI y diagnósticos la diferencia entre banco detectado, banco soportado, formato publicado y documento consolidado.
 
 ### Prioridad 2: cobertura funcional real
@@ -144,7 +146,7 @@ El riesgo principal sigue siendo la cobertura funcional por formato: el runtime 
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:
-1. sumar fixtures de `format_changed` por banco,
-2. agregar casos donde el banco sea conocido pero la tabla cambie parcialmente,
-3. mejorar diagnósticos del backoffice para specs multi-entidad,
-4. elegir el siguiente banco o formato a publicar.
+1. mejorar diagnósticos de `format_changed` para explicar umbrales fallidos y secciones afectadas,
+2. mejorar diagnósticos del backoffice para specs multi-entidad,
+3. elegir el siguiente banco o formato a publicar,
+4. seguir ampliando fixtures parciales cuando se agreguen formatos nuevos.

@@ -1,0 +1,12 @@
+JPMorgan Chase Bank, N.A.
+000000771927196
+Statement through February 29, 2024
+DEPOSITS AND ADDITIONS
+02/05 Zelle Payment From Person A $1,900.00 Posted
+02/08 Deposit 2096462829 $300.00 Posted
+02/23 Deposit 2096462943 $2,300.00 Posted
+Total Deposits and Additions $4,500.00
+ELECTRONIC WITHDRAWALS
+02/06 Zelle Payment To Person B $680.00 Posted
+02/29 Zelle Payment To Person C $290.00 Posted
+Total Electronic Withdrawals $970.00

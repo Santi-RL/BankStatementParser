@@ -18,6 +18,7 @@ min_score = 0.66
 
 [extract]
 strategy = "line_regex"
+reject_description_amount_tail = true
 
 [[extract.sections]]
 name = "deposits"

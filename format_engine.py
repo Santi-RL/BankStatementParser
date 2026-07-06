@@ -136,6 +136,9 @@ class FormatSpec:
             "multiline": bool(section.get("multiline", self.multiline)),
             "amount_sign": section.get("amount_sign", "as_is"),
             "sign_rules": section.get("sign_rules", self.extract.get("sign_rules", {})),
+            "reject_description_amount_tail": bool(
+                section.get("reject_description_amount_tail", self.extract.get("reject_description_amount_tail", False))
+            ),
             "default_scope_id": section.get("default_scope_id", ""),
             "default_scope_product_type": section.get("default_scope_product_type", ""),
             "context_rules": [self._compile_context_rule(rule) for rule in section.get("context_rules", [])],
@@ -346,6 +349,7 @@ class FormatSpec:
         transactions: List[Dict[str, Any]] = []
         candidate_lines = 0
         matched_starts = 0
+        rejected_matches = 0
         stop_reason = ""
         section_diagnostics: List[Dict[str, Any]] = []
         available_scopes = self.discover_scopes(text)
@@ -362,6 +366,7 @@ class FormatSpec:
                 "multiline": self.multiline,
                 "amount_sign": self.extract.get("amount_sign", "as_is"),
                 "sign_rules": self.extract.get("sign_rules", {}),
+                "reject_description_amount_tail": bool(self.extract.get("reject_description_amount_tail", False)),
                 "default_scope_id": "",
                 "default_scope_product_type": "",
                 "context_rules": [],
@@ -381,17 +386,23 @@ class FormatSpec:
             transactions.extend(scope_transactions)
             candidate_lines += scope_diagnostics["candidate_lines"]
             matched_starts += scope_diagnostics["matched_starts"]
+            rejected_matches += scope_diagnostics["rejected_matches"]
             if scope_diagnostics["stop_reason"] and not stop_reason:
                 stop_reason = scope_diagnostics["stop_reason"]
             section_diagnostics.append(scope_diagnostics)
 
         coverage = matched_starts / candidate_lines if candidate_lines else 0.0
-        passes_change_detection = len(transactions) >= self.min_transactions and coverage >= self.min_match_ratio
+        passes_change_detection = (
+            rejected_matches == 0
+            and len(transactions) >= self.min_transactions
+            and coverage >= self.min_match_ratio
+        )
         diagnostics = {
             "matched_starts": matched_starts,
             "candidate_lines": candidate_lines,
             "coverage": round(coverage, 4),
             "transactions_found": len(transactions),
+            "rejected_matches": rejected_matches,
             "min_transactions": self.min_transactions,
             "min_match_ratio": self.min_match_ratio,
             "stop_reason": stop_reason,
@@ -427,6 +438,7 @@ class FormatSpec:
         transactions: List[Dict[str, Any]] = []
         candidate_lines = 0
         matched_starts = 0
+        rejected_matches = 0
         stop_reason = ""
 
         for line in lines:
@@ -471,7 +483,7 @@ class FormatSpec:
             if match:
                 matched_starts += 1
                 if current_match:
-                    parsed = self._build_transaction(
+                    parsed, rejected = self._build_transaction(
                         current_match,
                         desc_lines,
                         account,
@@ -480,8 +492,11 @@ class FormatSpec:
                         statement_month,
                         scope["amount_sign"],
                         scope["sign_rules"],
+                        scope["reject_description_amount_tail"],
                         current_scope_for_match,
                     )
+                    if rejected:
+                        rejected_matches += 1
                     if parsed and self._scope_is_selected(parsed, selected_scope_ids):
                         transactions.append(parsed)
                 if line_date:
@@ -498,7 +513,7 @@ class FormatSpec:
                 desc_lines.append(clean_text(working_line))
 
         if current_match:
-            parsed = self._build_transaction(
+            parsed, rejected = self._build_transaction(
                 current_match,
                 desc_lines,
                 account,
@@ -507,8 +522,11 @@ class FormatSpec:
                 statement_month,
                 scope["amount_sign"],
                 scope["sign_rules"],
+                scope["reject_description_amount_tail"],
                 current_scope_for_match,
             )
+            if rejected:
+                rejected_matches += 1
             if parsed and self._scope_is_selected(parsed, selected_scope_ids):
                 transactions.append(parsed)
 
@@ -517,6 +535,7 @@ class FormatSpec:
             "matched_starts": matched_starts,
             "candidate_lines": candidate_lines,
             "transactions_found": len(transactions),
+            "rejected_matches": rejected_matches,
             "stop_reason": stop_reason,
         }
 
@@ -530,14 +549,21 @@ class FormatSpec:
         statement_month: Optional[int],
         amount_sign: str,
         sign_rules: Dict[str, Any],
+        reject_description_amount_tail: bool,
         active_scope: Optional[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Tuple[Optional[Dict[str, Any]], bool]:
         groups = match.groupdict()
         date_field = self.fields.get("date", "date")
         date_str = groups.get(date_field, "") or current_date or ""
         description = self._build_description(groups)
+        base_description = description
         if desc_lines:
             description = clean_text(f"{description} {' '.join(desc_lines)}")
+        if reject_description_amount_tail and (
+            self._description_ends_with_amount_token(base_description)
+            or self._description_ends_with_amount_token(description)
+        ):
+            return None, True
 
         amount = self._extract_transaction_amount(groups, amount_sign, sign_rules)
         balance_key = self.fields.get("balance", "balance")
@@ -545,7 +571,7 @@ class FormatSpec:
 
         parsed_date = self._parse_spec_date(date_str, statement_year, statement_month)
         if not parsed_date or not description or amount is None:
-            return None
+            return None, False
 
         balance: Any = ""
         if balance_str:
@@ -575,7 +601,7 @@ class FormatSpec:
             transaction["product_type"] = active_scope.get("product_type", "")
             if active_scope.get("linked_account"):
                 transaction["linked_account"] = active_scope["linked_account"]
-        return transaction
+        return transaction, False
 
     def _extract_transaction_amount(
         self,
@@ -629,6 +655,11 @@ class FormatSpec:
             values = {key: groups.get(key, "") for key in groups}
             return clean_text(template.format(**values))
         return clean_text(groups.get(self.fields.get("description", "description"), ""))
+
+    @staticmethod
+    def _description_ends_with_amount_token(description: str) -> bool:
+        amount_tail_pattern = r"(?:^|\s)-?(?:U\$S|\$)?\s*-?(?:\d{1,3}(?:[.,]\d{3})+|\d+)[.,]\d{2}$"
+        return bool(re.search(amount_tail_pattern, description.strip()))
 
     def _apply_amount_sign(
         self,

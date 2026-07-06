@@ -30,6 +30,7 @@ source_sections = ["account_movements"]
 
 [extract]
 strategy = "line_regex"
+reject_description_amount_tail = true
 
 [[extract.sections]]
 name = "account_movements"
