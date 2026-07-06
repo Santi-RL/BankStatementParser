@@ -40,3 +40,42 @@ jobs:
 
       - name: Run published spec regressions
         run: python format_cli.py regress
+
+  e2e:
+    name: Smoke E2E
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure Git default branch
+        run: git config --global init.defaultBranch main
+
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run production smoke E2E
+        run: npm run test:e2e

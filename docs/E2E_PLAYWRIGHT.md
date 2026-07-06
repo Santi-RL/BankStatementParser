@@ -1,45 +1,76 @@
-# Smoke E2E con Playwright MCP
+# Smoke E2E con Playwright
 
 ## Objetivo
-Validar el flujo real de la app Streamlit en un navegador con dos escenarios mínimos:
+Validar en un navegador real que la app Streamlit en modo `production-test` cubre el flujo productivo actual:
 
-1. procesamiento exitoso de un PDF conocido en `production-test`,
-2. acceso al backoffice de formatos y visibilidad del registro declarativo en `local`.
+1. carga de un PDF sanitizado,
+2. análisis previo con `Analizar Extractos`,
+3. procesamiento final con `Procesar Extractos`,
+4. resumen visible y descargas Excel/CSV disponibles,
+5. backoffice `Aprender Formatos` oculto.
 
-## Preparación
-1. Levantar la app endurecida para la prueba controlada con:
+El smoke automatizado no usa PDFs reales de `attached_assets/`. Genera un PDF temporal desde `parser_specs/galicia_ar/default/fixtures/sample_text.txt`, por lo que queda preparado para CI sin exponer datos bancarios privados.
+
+## Preparación local
+Instalar dependencias Python si todavía no están instaladas:
+
+```bash
+venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Instalar dependencias Node del smoke:
+
+```bash
+npm install
+```
+
+Instalar Chromium para Playwright:
+
+```bash
+npx playwright install chromium
+```
+
+Si Node falla con `UNABLE_TO_VERIFY_LEAF_SIGNATURE` en Windows, reintentar usando la CA del sistema:
+
+```powershell
+$env:NODE_OPTIONS='--use-system-ca'; npx playwright install chromium
+```
+
+## Ejecución automatizada
+Ejecutar el smoke oficial:
+
+```bash
+npm run test:e2e
+```
+
+`playwright.config.js` levanta automáticamente la app con:
 
 ```bash
 venv\Scripts\python.exe scripts/run_app.py --mode production-test
 ```
 
-2. Esperar a que la app quede escuchando en `http://127.0.0.1:8501`.
-
-## Escenario 1: PDF conocido
-1. Abrir `http://127.0.0.1:8501`.
-2. Ir a la pestaña `Procesar Extractos`.
-3. Subir `attached_assets/TestGalicia.pdf`.
-4. Ejecutar `Procesar Extractos`.
-5. Verificar:
-   - mensaje de procesamiento completado,
-   - preview de transacciones,
-   - botón de descarga Excel,
-   - resumen con 52 transacciones,
-   - ausencia de la pestaña `Aprender Formatos`.
-
-## Escenario 2: backoffice
-1. Reiniciar la app en modo local:
+En Linux/macOS o CI usa `python scripts/run_app.py --mode production-test` por defecto. También se puede sobrescribir con:
 
 ```bash
-venv\Scripts\python.exe scripts/run_app.py --mode local
+BANK_STATEMENT_E2E_SERVER_CMD="python scripts/run_app.py --mode production-test" npm run test:e2e
 ```
 
-2. Ir a la pestaña `Aprender Formatos`.
-2. Verificar:
-   - contador de publicados mayor o igual a 1,
-   - aparición de `galicia_ar/default`,
-   - formulario de entrenamiento visible,
-   - posibilidad de cargar un PDF y ver texto extraído sin guardar el borrador.
+## Qué valida el smoke
+El test `tests/e2e/production_smoke.spec.js` verifica que:
 
-## Nota
-Los tests de regresión y cambio de formato quedan automatizados en `pytest`; este smoke con MCP cubre la integración real UI + navegador.
+- `Aprender Formatos` no aparece en `production-test`,
+- el PDF sanitizado se carga como archivo válido,
+- `Analizar Extractos` detecta Banco Galicia,
+- el documento simple queda listo sin selección de scopes,
+- `Procesar Extractos` genera resultados,
+- aparecen `Resumen del Proceso`, `Vista Previa de Transacciones`, `Descargar Archivo Excel` y `Descargar Archivo CSV`,
+- el total de transacciones es `3`, según la fixture sanitizada.
+
+## Alcance
+Este smoke cubre integración UI + navegador + Streamlit + parsing + exportaciones visibles. No reemplaza:
+
+- `venv\Scripts\python.exe -m pytest -q`,
+- `venv\Scripts\python.exe format_cli.py regress`,
+- pruebas manuales con PDFs reales cuando se valida un banco nuevo.
+
+El CI remoto ejecuta este smoke como job separado en `.github/workflows/ci.yml` con instalación de Node, `npm ci`, `npx playwright install --with-deps chromium` y `npm run test:e2e`.

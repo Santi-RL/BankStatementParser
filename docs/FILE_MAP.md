@@ -8,7 +8,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | Archivo | Rol | Estado / observación |
 | --- | --- | --- |
 | `.gitignore` | Exclusiones locales | Cubre cachés, `.env*`, logs y artefactos locales de pruebas |
-| `.github/workflows/ci.yml` | CI remoto | Ejecuta `pytest` y regresión declarativa en push/PR a `main` |
+| `.github/workflows/ci.yml` | CI remoto | Ejecuta `pytest`, regresión declarativa y smoke E2E en push/PR a `main` |
 | `AGENTS.md` | Guía breve para futuros agentes | Contexto operativo rápido |
 | `CONTRIBUTING.md` | Guía de contribución para colaboradores externos | Procedimiento para agregar bancos nuevos vía PR |
 | `app.py` | Entrada principal Streamlit | Código productivo; soporta `local` y `production-test` |
@@ -18,6 +18,9 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `format_training.py` | Helpers de entrenamiento, sanitización y publicación | Código productivo |
 | `pdf_processor.py` | Orquestador de extracción, detección y validación | Código productivo |
 | `pyproject.toml` | Metadatos y configuración de `pytest` | Vigente; identidad de paquete `bank-statement-parser` |
+| `package.json` | Dependencias y scripts Node para Playwright | Vigente; expone `npm run test:e2e` |
+| `package-lock.json` | Lockfile Node para Playwright | Vigente |
+| `playwright.config.js` | Configuración del smoke E2E | Vigente; levanta Streamlit en `production-test` |
 | `README.md` | Documentación pública base | Vigente |
 | `requirements.txt` | Dependencias para instalación con `pip` | Vigente |
 | `utils.py` | Helpers compartidos | Código productivo |
@@ -51,6 +54,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `tests/` | Fuente de verdad de la suite | Vigente |
 | `tests/unit/` | Tests unitarios | Vigente; incluye endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
 | `tests/integration/` | Tests con PDFs reales disponibles y fixtures sanitizadas para flujos multi-entidad | Vigente |
+| `tests/e2e/` | Smoke E2E con Playwright | Vigente; genera PDF sanitizado temporal y valida `production-test` |
 | `tests/regression/` | Regresión de specs publicadas | Vigente |
 | `scripts/run_app.py` | Helper para levantar la app en puerto fijo | Vigente; acepta `--mode` y `--debug` |
 | `scripts/diagnostics/` | Scripts manuales de depuración | Vigente |
@@ -76,3 +80,5 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | --- | --- | --- |
 | `logs/app.log` | Log rotado de runtime | Generado localmente, no versionado |
 | `.coverage*`, `htmlcov/` | Cobertura local | Generado localmente, no versionado |
+| `node_modules/` | Dependencias Node locales | Generado por `npm install`, no versionado |
+| `playwright-report/`, `test-results/` | Reportes y artefactos Playwright | Generados por `npm run test:e2e`, no versionados |

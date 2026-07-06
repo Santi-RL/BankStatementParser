@@ -11,3 +11,4 @@ htmlcov/
 playwright-report/
 test-results/
 .clawpatch/
+node_modules/

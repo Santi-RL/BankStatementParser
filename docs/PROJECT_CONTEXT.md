@@ -113,7 +113,7 @@ Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estáti
 ## Tests y regresión
 - `pytest` ya corre sobre `tests/` como fuente de verdad.
 - Hay regresión offline para los formatos declarativos publicados.
-- Existe un helper `scripts/run_app.py` y un runbook en `docs/E2E_PLAYWRIGHT.md` para smoke real con navegador.
+- Existe un helper `scripts/run_app.py`, configuración Playwright, runbook en `docs/E2E_PLAYWRIGHT.md` y job de CI para smoke real automatizado con navegador.
 - Existe un runbook específico de primera salida en `docs/PRODUCTION_TEST_RUNBOOK.md`.
 - La suite actual valida formatos declarativos publicados para Galicia, Chase, Roela, BBVA, Mercado Pago y Brubank.
 - La cobertura multi-entidad de integración usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta, incluyendo entidades sin movimientos.

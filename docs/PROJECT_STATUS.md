@@ -17,8 +17,8 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 Validación local ejecutada con `venv\Scripts\python.exe`:
 - `python -m pytest -q -rs` -> `89 passed, 29 warnings` (sin tests omitidos; warnings conocidas por `datetime.strptime` sin año, pendiente en Prioridad 0)
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
-- CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`
-- Smoke mínimo de `production-test` -> Streamlit respondió `HTTP 200` en `http://127.0.0.1:8501`
+- CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`, incluyendo tests Python, regresión declarativa y smoke E2E
+- `npm run test:e2e` -> `1 passed`; smoke Playwright en `production-test` con PDF sanitizado generado desde fixture Galicia
 
 Procesamiento manual comprobado con assets reales:
 - `attached_assets/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
@@ -60,8 +60,8 @@ Nota operativa:
 - `tests/` es la fuente de verdad.
 - Hay tests unitarios, de integración y de regresión.
 - Existen fixtures sanitizadas versionadas junto con las specs.
-- Hay runbook y helper para smoke e2e con Streamlit + Playwright.
-- Hay workflow de GitHub Actions que ejecuta `python -m pytest -q` y `python format_cli.py regress`.
+- Hay runbook, configuración Playwright y smoke e2e automatizado con Streamlit + navegador real.
+- Hay workflow de GitHub Actions que ejecuta `python -m pytest -q`, `python format_cli.py regress` y `npm run test:e2e`.
 - Los tests de endurecimiento cubren la política anti-fórmulas compartida para Excel y CSV.
 - Los tests de integración multi-entidad cubren BBVA consolidado y Brubank multi-cuenta con fixtures sanitizadas, selección explícita de scopes, filtrado por grupo/scope individual y generación de Excel.
 
@@ -104,7 +104,6 @@ Nota operativa:
 ## Lo que todavía falta
 
 ### Prioridad 0: correcciones funcionales y de salida
-- Actualizar y ejecutar el smoke e2e real con navegador usando el flujo actual: primero `Analizar Extractos`, después `Procesar Extractos`.
 - Resolver o documentar la advertencia de parseo de fechas sin año antes del cambio previsto en Python 3.15.
 
 ### Prioridad 1: robustez del parser y detección de cambios
@@ -126,8 +125,8 @@ Nota operativa:
 - Mantener `docs/ROADMAP.md` y `docs/PROJECT_STATUS.md` sincronizados después de cada bloque grande.
 
 ### Prioridad 4: consistencia documental y de experiencia local
-- Corregir la desalineación de `docs/E2E_PLAYWRIGHT.md`, que todavía describe un flujo sin la etapa previa de análisis.
-- Alinear la lista de bancos soportados en `README.md`; una sección omite Mercado Pago y Brubank mientras otra sí los declara.
+- Mantener alineada la documentación E2E si cambia el flujo `Analizar Extractos` -> `Procesar Extractos`.
+- Mantener alineada la lista pública de bancos soportados entre `README.md`, specs publicadas y estado del proyecto.
 - Decidir si la interfaz queda solo en español por ahora o si se completa realmente `--lang en`; hoy hay mezcla de `tr()` con textos hardcodeados.
 - Sostener la higiene del repo para no reintroducir legacy fuera del runtime declarativo.
 
@@ -140,11 +139,11 @@ Esta prioridad queda al final. No debe frenar las mejoras funcionales anteriores
 - Definir despliegue, autenticación, límites de uso y monitoreo si se habilitan usuarios externos.
 
 ## Riesgo técnico principal actual
-El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida está en actualizar el smoke e2e real con el flujo actual y resolver o documentar la advertencia de fechas sin año antes de Python 3.15. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
+El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo inmediato de salida está en resolver o documentar la advertencia de fechas sin año antes de Python 3.15. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:
-1. actualizar y ejecutar el smoke e2e con el flujo actual,
+1. resolver o documentar la advertencia de fechas sin año,
 2. sumar fixtures de `format_changed` por banco,
 3. mejorar diagnósticos del backoffice para specs multi-entidad,
 4. elegir el siguiente banco o formato a publicar.

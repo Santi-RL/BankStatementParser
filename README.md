@@ -18,7 +18,9 @@ Actualmente hay formatos declarativos publicados para:
 - Banco Galicia (Argentina)
 - Banco Roela (Argentina)
 - Chase / JPMorgan Chase
-- BBVA (extracto consolidado con múltiples tarjetas y cuentas)
+- BBVA (extracto consolidado con múltiples tarjetas y cuentas, y resumen simple)
+- Mercado Pago
+- Brubank
 
 Si el banco es detectado pero no tiene una spec publicada, el resultado esperado es `unknown_format`.
 
@@ -88,10 +90,11 @@ La regresión declarativa se ejecuta con:
 venv\Scripts\python.exe format_cli.py regress
 ```
 
-Hay tres capas:
+Hay cuatro capas:
 - tests unitarios,
-- tests de integración con PDFs reales ya presentes en el repo,
-- tests de regresión para specs declarativas.
+- tests de integración con PDFs reales ya presentes en el repo y fixtures sanitizadas,
+- tests de regresión para specs declarativas,
+- smoke E2E con navegador sobre `production-test`.
 
 El CI remoto está configurado en `.github/workflows/ci.yml` y corre en push/PR a `main`:
 - `python -m pytest -q`
@@ -99,7 +102,15 @@ El CI remoto está configurado en `.github/workflows/ci.yml` y corre en push/PR 
 
 Toda implementación nueva que cambie comportamiento, parsing, specs, exportaciones, UI o seguridad debe agregar o actualizar tests proporcionales al riesgo. Los cambios puramente documentales pueden omitir tests.
 
-El smoke E2E con navegador queda documentado en `docs/E2E_PLAYWRIGHT.md`.
+El smoke E2E con navegador se ejecuta con:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+La guía completa queda en `docs/E2E_PLAYWRIGHT.md`.
 
 ## Primera prueba en producción
 

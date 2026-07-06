@@ -28,7 +28,8 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - Existe runbook para smoke real con navegador en `docs/E2E_PLAYWRIGHT.md`.
 - Existe helper para levantar Streamlit en puerto fijo: `scripts/run_app.py`.
 - Se validó la app con Playwright MCP sobre el flujo real de carga y procesamiento.
-- Existe CI remoto en `.github/workflows/ci.yml` para correr `python -m pytest -q` y `python format_cli.py regress` en push/PR a `main`.
+- Existe smoke E2E automatizado con Playwright Test: genera un PDF sanitizado desde fixture, levanta `production-test` y valida `Analizar Extractos` -> `Procesar Extractos` -> descargas.
+- Existe CI remoto en `.github/workflows/ci.yml` para correr `python -m pytest -q`, `python format_cli.py regress` y `npm run test:e2e` en push/PR a `main`.
 
 ### Fase 3: motor declarativo de formatos
 - Existe `format_engine.py`.
@@ -110,7 +111,6 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 ### Prioridad 0: correcciones funcionales y de salida
 Estas tareas van primero porque afectan la confiabilidad del resultado entregado al usuario, incluso en una prueba controlada.
 
-- Ejecutar y actualizar el smoke e2e real con el flujo actual: `Analizar Extractos` antes de `Procesar Extractos`.
 - Corregir o documentar la advertencia de `datetime.strptime` para formatos sin año antes de que Python 3.15 cambie el comportamiento.
 
 ### Prioridad 1: robustez del parser y detección de cambios
@@ -142,8 +142,8 @@ Estas tareas hacen más práctico mantener y ampliar la aplicación.
 ### Prioridad 4: consistencia de producto local
 Estas tareas no bloquean el parser, pero reducen confusión durante uso interno o pruebas controladas.
 
-- Alinear `README.md`, `docs/E2E_PLAYWRIGHT.md`, `docs/PRODUCTION_TEST_RUNBOOK.md` y la UI con el flujo actual.
-- Corregir la lista pública de bancos soportados para que no haya contradicción entre secciones.
+- Mantener `README.md`, `docs/E2E_PLAYWRIGHT.md`, `docs/PRODUCTION_TEST_RUNBOOK.md` y la UI alineados con el flujo actual.
+- Mantener alineada la lista pública de bancos soportados entre README, specs publicadas y estado del proyecto.
 - Decidir si la app será solo español por ahora o si `--lang en` debe quedar realmente completo; hoy la UI mezcla `tr()` con textos hardcodeados en español.
 - Mantener el roadmap y el estado del proyecto sincronizados después de cada bloque grande.
 - Sostener la higiene del repo para no reintroducir legacy fuera del runtime declarativo.
@@ -158,7 +158,7 @@ Esta prioridad queda deliberadamente después de las mejoras funcionales. No deb
 - Preparar documentación pública final cuando la cobertura funcional y los flujos principales estén cerrados.
 
 ## Hitos recomendados siguientes
-1. Actualizar y ejecutar el smoke e2e con el flujo `Analizar Extractos` -> `Procesar Extractos`.
+1. Corregir o documentar la advertencia de `datetime.strptime` sin año.
 2. Agregar fixtures alteradas por banco para endurecer `format_changed`.
 3. Mejorar diagnósticos del backoffice para entrenamiento y publicación.
 4. Elegir el siguiente banco o formato a publicar con criterio de impacto y calidad.
