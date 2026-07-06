@@ -105,13 +105,15 @@ class ExcelGenerator:
         df_copy['year_month'] = df_copy['date'].dt.to_period('M')
         df_copy['currency_bucket'] = self._currency_bucket_series(df_copy)
         split_by_currency = df_copy['currency_bucket'].nunique(dropna=False) > 1
-        group_columns = ['year_month', 'currency_bucket'] if split_by_currency else ['year_month']
+        group_columns = ['year_month', 'currency_bucket'] if split_by_currency else 'year_month'
 
         monthly_data = []
         for group_key, group in df_copy.groupby(group_columns, sort=True):
             if split_by_currency:
                 month, currency = group_key
             else:
+                if isinstance(group_key, tuple) and len(group_key) == 1:
+                    group_key = group_key[0]
                 month = group_key
                 currency = None
 

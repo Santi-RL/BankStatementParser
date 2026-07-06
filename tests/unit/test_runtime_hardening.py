@@ -364,6 +364,37 @@ def test_excel_monthly_summaries_keep_currencies_separate():
     assert [cell.value for cell in analysis_sheet[4][6:11]] == ["Month", "Currency", "Income", "Spending", "Net"]
 
 
+def test_excel_monthly_summaries_format_single_currency_month_as_text():
+    transactions = [
+        {
+            "date": "2026-06-01",
+            "description": "Ingreso",
+            "amount": 12388.823,
+            "balance": 12388.823,
+            "transaction_type": "Credit",
+            "bank": "brubank",
+            "account": "1",
+            "currency": "ARS",
+        },
+        {
+            "date": "2026-06-02",
+            "description": "Debito",
+            "amount": -6237.815,
+            "balance": 6151.008,
+            "transaction_type": "Debit",
+            "bank": "brubank",
+            "account": "1",
+            "currency": "ARS",
+        },
+    ]
+
+    workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=2))
+    workbook = load_workbook(io.BytesIO(workbook_bytes))
+
+    assert workbook["Analysis"]["G5"].value == "2026-06"
+    assert workbook["Monthly Summary"]["A3"].value == "2026-06"
+
+
 def test_project_metadata_uses_product_identity():
     with Path("pyproject.toml").open("rb") as handle:
         pyproject = tomllib.load(handle)
