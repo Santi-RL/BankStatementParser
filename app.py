@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 import argparse
 import logging
 import hashlib
+import importlib
 from pathlib import Path
 import re
 import toml
@@ -12,7 +13,18 @@ import toml
 from format_engine import FormatRegistry, FormatSpec
 from format_training import build_initial_spec, extract_text_from_pdf, publish_spec, save_draft
 from pdf_processor import PDFProcessor
-from excel_generator import ExcelGenerator
+import utils as _utils
+
+# Streamlit Cloud may rerun app.py after pulling code without clearing cached helper modules.
+if not hasattr(_utils, "user_facing_product_type"):
+    _utils = importlib.reload(_utils)
+
+import excel_generator as _excel_generator
+
+if not hasattr(_excel_generator.ExcelGenerator, "_prepare_transaction_export_dataframe"):
+    _excel_generator = importlib.reload(_excel_generator)
+
+ExcelGenerator = _excel_generator.ExcelGenerator
 from utils import (
     escape_spreadsheet_formula_value,
     format_currency,
