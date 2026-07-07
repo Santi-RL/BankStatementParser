@@ -202,7 +202,7 @@ def test_multi_scope_fixture_excel_generation_succeeds(case):
     scope_sheet_names = [
         name
         for name in workbook.sheetnames
-        if name not in {"Summary", "All Transactions", "Analysis", "Monthly Summary"}
+        if name not in {"Resumen", "Movimientos", "Análisis", "Resumen Mensual"}
     ]
     transaction_scope_groups = {
         (transaction["bank"], transaction["scope_label"])
@@ -210,8 +210,8 @@ def test_multi_scope_fixture_excel_generation_succeeds(case):
     }
 
     assert result["success"] is True
-    assert "Summary" in workbook.sheetnames
-    assert "All Transactions" in workbook.sheetnames
+    assert "Resumen" in workbook.sheetnames
+    assert "Movimientos" in workbook.sheetnames
     assert len(scope_sheet_names) == len(transaction_scope_groups)
     assert all(re.search(r'[:\\/?*\[\]]', name) is None for name in workbook.sheetnames)
 

@@ -68,7 +68,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - Existe una etapa de `Analizar Extractos` previa al parseo final cuando el documento tiene múltiples cuentas o tarjetas.
 - La UI exige selección explícita por entidad concreta antes de procesar documentos consolidados.
 - La salida conserva compatibilidad con el modelo actual y agrega metadatos opcionales por scope.
-- Excel ahora mantiene `All Transactions` y agrega hojas por entidad cuando se procesan múltiples scopes.
+- Excel ahora mantiene `Movimientos` como hoja consolidada y agrega hojas por entidad cuando se procesan múltiples scopes.
 - La CLI `validate-draft` ya reporta scopes descubiertos.
 - La cobertura multi-entidad ya no depende del PDF real BBVA faltante: `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
 - `CONTRIBUTING.md` documenta el patrón común para agregar bancos con resumen multi-cuenta: scopes declarativos, fixture sanitizada y caso en `MULTI_SCOPE_FIXTURE_CASES`.
@@ -80,7 +80,8 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - La exportación CSV quedó endurecida contra inyección de fórmulas usando la misma política compartida que Excel.
 - Hay tests unitarios que validan Excel y CSV con textos iniciados en `=`, `+`, `-`, `@`, tabulaciones y saltos de línea.
 - Los resúmenes mensuales de Excel separan totales por moneda cuando hay movimientos multi-moneda.
-- El formato monetario de Excel se aplica por encabezado y ya no depende de que `Balance` exista físicamente como columna D.
+- El formato monetario de Excel se aplica por encabezado y ya no depende de que `Saldo` exista físicamente como columna D.
+- Las salidas visibles para usuario quedan en español: hojas, títulos, columnas, tipos de movimiento/producto, CSV, vista previa y nombres de descarga.
 - El entrenamiento de specs valida slugs y contención bajo `parser_specs/` antes de escribir borradores.
 - Los scripts diagnósticos devuelven estados de salida útiles para mantenimiento y CI.
 - La metadata de paquete dejó de usar la identidad de template de Replit.

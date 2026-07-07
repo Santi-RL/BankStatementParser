@@ -51,6 +51,7 @@ Nota operativa:
 - El runtime ahora escribe logs rotados en `logs/app.log`.
 - La detección de banco ahora prioriza specs publicadas y señales del encabezado para evitar falsos positivos por menciones a otros bancos dentro de descripciones de transferencias.
 - Las exportaciones Excel y CSV escapan textos no confiables que podrían convertirse en fórmulas, incluyendo nombres de archivo, descripciones, scopes y errores en Excel, y campos transaccionales en CSV.
+- Las salidas visibles para usuario quedan en español: nombres de hojas, títulos, columnas y valores de tipo en Excel, CSV y vista previa de Streamlit, manteniendo claves técnicas internas en inglés.
 - Las hojas de análisis mensual en Excel separan las agregaciones por moneda cuando hay movimientos de distintas monedas.
 - La generación de Excel ya no asume que la columna `balance` existe para aplicar formatos monetarios.
 - El workflow de entrenamiento valida `bank_id` y `format_id` como slugs seguros y verifica que los borradores queden bajo `parser_specs/`.

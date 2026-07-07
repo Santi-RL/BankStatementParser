@@ -51,12 +51,12 @@ Contiene el registro declarativo versionado por banco/formato. Cada formato tien
 
 ### `excel_generator.py`
 Arma el Excel final. Hoy crea cuatro hojas base:
-- `Summary`
-- `All Transactions`
-- `Analysis`
-- `Monthly Summary`
+- `Resumen`
+- `Movimientos`
+- `Análisis`
+- `Resumen Mensual`
 
-Cuando se seleccionan múltiples entidades, agrega también una hoja por cuenta o tarjeta extraída.
+Cuando se seleccionan múltiples entidades, agrega también una hoja por cuenta o tarjeta extraída. Las hojas, títulos, columnas y valores visibles de exportación se muestran en español; las claves internas del modelo siguen en inglés.
 
 ### `utils.py`
 Centraliza helpers reutilizados por varios módulos: limpieza de texto, parseo de montos, parseo de fechas, validación de PDFs, logging y listado de bancos soportados.

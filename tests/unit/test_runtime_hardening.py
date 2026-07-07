@@ -26,11 +26,11 @@ def _build_summary(total_transactions: int, selected_scopes: list[dict] | None =
 
 
 def _find_summary_value(workbook, label: str):
-    worksheet = workbook["Summary"]
+    worksheet = workbook["Resumen"]
     for row in worksheet.iter_rows(min_col=1, max_col=2):
         if row[0].value == label:
             return row[1].value
-    raise AssertionError(f"Label not found in Summary sheet: {label}")
+    raise AssertionError(f"Label not found in Resumen sheet: {label}")
 
 
 @pytest.mark.parametrize("value", ["=1+1", "+1", "-1", "@cmd", "\tcmd", "\rcmd", "\ncmd"])
@@ -114,7 +114,7 @@ def test_display_total_amount_flags_multiple_currencies():
         {"amount": -40.0, "currency": "USD"},
     ]
 
-    assert _display_total_amount(transactions) == "N/A (múltiples monedas)"
+    assert _display_total_amount(transactions) == "No aplica (múltiples monedas)"
 
 
 def test_excel_scope_sheet_titles_are_sanitized_and_deduplicated():
@@ -184,9 +184,9 @@ def test_excel_summary_flags_multiple_currencies():
     workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=2))
     workbook = load_workbook(io.BytesIO(workbook_bytes))
 
-    assert _find_summary_value(workbook, "Total Credits:") == "N/A (multiple currencies)"
-    assert _find_summary_value(workbook, "Total Debits:") == "N/A (multiple currencies)"
-    assert _find_summary_value(workbook, "Net Amount:") == "N/A (multiple currencies)"
+    assert _find_summary_value(workbook, "Total de créditos:") == "No aplica (múltiples monedas)"
+    assert _find_summary_value(workbook, "Total de débitos:") == "No aplica (múltiples monedas)"
+    assert _find_summary_value(workbook, "Monto neto:") == "No aplica (múltiples monedas)"
 
 def test_excel_export_escapes_formula_prefixed_text_cells():
     transactions = [
@@ -213,18 +213,18 @@ def test_excel_export_escapes_formula_prefixed_text_cells():
 
     workbook_bytes = ExcelGenerator().create_excel_file(transactions, summary)
     workbook = load_workbook(io.BytesIO(workbook_bytes), data_only=False)
-    worksheet = workbook["All Transactions"]
+    worksheet = workbook["Movimientos"]
     headers = [cell.value for cell in worksheet[1]]
     expected_values = {
-        "Description": "'=1+1",
-        "Type": "'+Credit",
-        "Bank": "'-bbva",
-        "Account": "'@1",
-        "Currency": "'\tARS",
-        "Scope": "'\nscope",
-        "Product Type": "'\nproduct",
-        "Linked Account": "'=linked",
-        "Source File": "'+file.pdf",
+        "Descripción": "'=1+1",
+        "Tipo": "'+Credit",
+        "Banco": "'-bbva",
+        "Cuenta": "'@1",
+        "Moneda": "'\tARS",
+        "Entidad": "'\nscope",
+        "Tipo de producto": "'\nproduct",
+        "Cuenta vinculada": "'=linked",
+        "Archivo de origen": "'+file.pdf",
     }
 
     for header, expected_value in expected_values.items():
@@ -232,7 +232,7 @@ def test_excel_export_escapes_formula_prefixed_text_cells():
         assert cell.data_type != "f"
         assert cell.value == expected_value
 
-    summary_values = [cell.value for row in workbook["Summary"].iter_rows() for cell in row]
+    summary_values = [cell.value for row in workbook["Resumen"].iter_rows() for cell in row]
     assert "'=scope" in summary_values
     assert "'@product" in summary_values
     assert "'+ARS" in summary_values
@@ -262,18 +262,18 @@ def test_csv_export_escapes_formula_prefixed_text_cells():
 
     assert len(rows) == 1
     row = rows[0]
-    assert row["date"] == "2024-01-01"
-    assert row["amount"] == "10.0"
-    assert row["balance"] == "10.0"
-    assert row["description"] == "'=1+1"
-    assert row["transaction_type"] == "'+Credit"
-    assert row["bank"] == "'-bbva"
-    assert row["account"] == "'@1"
-    assert row["currency"] == "'\tARS"
-    assert row["scope_label"] == "'\rscope"
-    assert row["product_type"] == "'\nproduct"
-    assert row["linked_account"] == "'=linked"
-    assert row["source_file"] == "'+file.pdf"
+    assert row["Fecha"] == "2024-01-01"
+    assert row["Monto"] == "10.0"
+    assert row["Saldo"] == "10.0"
+    assert row["Descripción"] == "'=1+1"
+    assert row["Tipo"] == "'+Credit"
+    assert row["Banco"] == "'-bbva"
+    assert row["Cuenta"] == "'@1"
+    assert row["Moneda"] == "'\tARS"
+    assert row["Entidad"] == "'\rscope"
+    assert row["Tipo de producto"] == "'\nproduct"
+    assert row["Cuenta vinculada"] == "'=linked"
+    assert row["Archivo de origen"] == "'+file.pdf"
 
 
 def test_excel_transactions_sheet_formats_amounts_by_header_without_balance():
@@ -291,14 +291,14 @@ def test_excel_transactions_sheet_formats_amounts_by_header_without_balance():
 
     workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=1))
     workbook = load_workbook(io.BytesIO(workbook_bytes))
-    worksheet = workbook["All Transactions"]
+    worksheet = workbook["Movimientos"]
     headers = [cell.value for cell in worksheet[1]]
 
-    assert "Balance" not in headers
-    assert headers[2] == "Amount"
-    assert headers[3] == "Type"
+    assert "Saldo" not in headers
+    assert headers[2] == "Monto"
+    assert headers[3] == "Tipo"
     assert worksheet["C2"].number_format == "#,##0.00"
-    assert worksheet["D2"].value == "Debit"
+    assert worksheet["D2"].value == "Débito"
     assert worksheet["D2"].number_format == "General"
 
 
@@ -338,30 +338,30 @@ def test_excel_monthly_summaries_keep_currencies_separate():
 
     workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=3))
     workbook = load_workbook(io.BytesIO(workbook_bytes))
-    monthly_sheet = workbook["Monthly Summary"]
+    monthly_sheet = workbook["Resumen Mensual"]
     headers = [cell.value for cell in monthly_sheet[2]]
     rows_by_currency = {
-        row[headers.index("Currency")].value: row
+        row[headers.index("Moneda")].value: row
         for row in monthly_sheet.iter_rows(min_row=3, max_row=4)
     }
 
     assert headers == [
-        "Month",
-        "Currency",
-        "Total Credits",
-        "Total Debits",
-        "Net Amount",
-        "Transaction Count",
-        "Average Transaction",
+        "Mes",
+        "Moneda",
+        "Total de créditos",
+        "Total de débitos",
+        "Monto neto",
+        "Cantidad de movimientos",
+        "Promedio por movimiento",
     ]
-    assert rows_by_currency["ARS"][headers.index("Total Credits")].value == 100000.0
-    assert rows_by_currency["ARS"][headers.index("Net Amount")].value == 100000.0
-    assert rows_by_currency["USD"][headers.index("Total Credits")].value == 100.0
-    assert rows_by_currency["USD"][headers.index("Total Debits")].value == 10.0
-    assert rows_by_currency["USD"][headers.index("Net Amount")].value == 90.0
+    assert rows_by_currency["ARS"][headers.index("Total de créditos")].value == 100000.0
+    assert rows_by_currency["ARS"][headers.index("Monto neto")].value == 100000.0
+    assert rows_by_currency["USD"][headers.index("Total de créditos")].value == 100.0
+    assert rows_by_currency["USD"][headers.index("Total de débitos")].value == 10.0
+    assert rows_by_currency["USD"][headers.index("Monto neto")].value == 90.0
 
-    analysis_sheet = workbook["Analysis"]
-    assert [cell.value for cell in analysis_sheet[4][6:11]] == ["Month", "Currency", "Income", "Spending", "Net"]
+    analysis_sheet = workbook["Análisis"]
+    assert [cell.value for cell in analysis_sheet[4][6:11]] == ["Mes", "Moneda", "Ingresos", "Egresos", "Neto"]
 
 
 def test_excel_monthly_summaries_format_single_currency_month_as_text():
@@ -391,8 +391,8 @@ def test_excel_monthly_summaries_format_single_currency_month_as_text():
     workbook_bytes = ExcelGenerator().create_excel_file(transactions, _build_summary(total_transactions=2))
     workbook = load_workbook(io.BytesIO(workbook_bytes))
 
-    assert workbook["Analysis"]["G5"].value == "2026-06"
-    assert workbook["Monthly Summary"]["A3"].value == "2026-06"
+    assert workbook["Análisis"]["G5"].value == "2026-06"
+    assert workbook["Resumen Mensual"]["A3"].value == "2026-06"
 
 
 def test_project_metadata_uses_product_identity():

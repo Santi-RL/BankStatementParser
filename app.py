@@ -22,6 +22,8 @@ from utils import (
     set_logging_level,
     setup_logging,
     temporary_pdf_copy,
+    user_facing_product_type,
+    user_facing_transaction_records,
     validate_pdf_files,
 )
 
@@ -50,7 +52,7 @@ TRANSLATIONS = {
     "sample_header": {"en": "\U0001f4ca Sample Output Structure", "es": "\U0001f4ca Ejemplo de Estructura de Salida"},
     "sample_text": {
         "en": """\n        **Columns in Excel:**\n        - Date\n        - Description\n        - Amount\n        - Balance\n        - Bank\n        - Account\n        - Transaction Type\n        """,
-        "es": """\n        **Columnas en Excel:**\n        - Fecha\n        - Descripci\u00F3n\n        - Monto\n        - Balance\n        - Banco\n        - Cuenta\n        - Tipo de Transacci\u00F3n\n        """,
+        "es": """\n        **Columnas en Excel:**\n        - Fecha\n        - Descripci\u00F3n\n        - Monto\n        - Saldo\n        - Banco\n        - Cuenta\n        - Tipo de movimiento\n        """,
     },
     "upload_header": {"en": "\U0001f4c1 Upload Bank Statements", "es": "\U0001f4c1 Sube Extractos Bancarios"},
     "file_uploader_label": {"en": "Choose PDF files", "es": "Elige archivos PDF"},
@@ -116,7 +118,7 @@ TRANSLATIONS = {
     "metric_transactions": {"en": "Total Transactions", "es": "Transacciones Totales"},
     "metric_banks": {"en": "Banks Detected", "es": "Bancos Detectados"},
     "metric_amount": {"en": "Total Amount", "es": "Monto Total"},
-    "metric_amount_multiple_currencies": {"en": "N/A (multiple currencies)", "es": "N/A (m\u00FAltiples monedas)"},
+    "metric_amount_multiple_currencies": {"en": "N/A (multiple currencies)", "es": "No aplica (m\u00FAltiples monedas)"},
     "banks_detected_header": {"en": "\U0001f3db\ufe0f Banks Detected", "es": "\U0001f3db\ufe0f Bancos Detectados"},
     "processing_errors": {"en": "\u26a0\ufe0f Processing Errors", "es": "\u26a0\ufe0f Errores de Proceso"},
     "preview_header": {"en": "\U0001f4cb Transaction Preview", "es": "\U0001f4cb Vista Previa de Transacciones"},
@@ -170,8 +172,12 @@ def _uploaded_files_signature(uploaded_files: List[Any]) -> tuple[str, ...]:
     return tuple(f"{uploaded_file.name}:{len(uploaded_file.getvalue())}:{_uploaded_file_id(uploaded_file)}" for uploaded_file in uploaded_files)
 
 
+def _build_user_facing_dataframe(transactions: List[Dict[str, Any]]) -> pd.DataFrame:
+    return pd.DataFrame(user_facing_transaction_records(transactions))
+
+
 def _build_csv_export(transactions: List[Dict[str, Any]]) -> str:
-    dataframe = pd.DataFrame(transactions)
+    dataframe = _build_user_facing_dataframe(transactions)
     safe_dataframe = dataframe.map(escape_spreadsheet_formula_value)
     return safe_dataframe.to_csv(index=False)
 
@@ -376,9 +382,9 @@ def _scope_chip(scope: Dict[str, Any]) -> str:
         "credit_card": "tarjeta de crédito",
         "debit_card": "tarjeta de débito",
         "bank_account": "cuenta bancaria",
-    }.get(product_type, product_type or "scope")
+    }.get(product_type, user_facing_product_type(product_type) or "entidad")
     linked = f" -> {scope['linked_account']}" if scope.get("linked_account") else ""
-    return f"{scope.get('label', scope.get('id', 'scope'))} ({product_label}){linked}"
+    return f"{scope.get('label', scope.get('id', 'entidad'))} ({product_label}){linked}"
 
 
 def _is_production_test(mode: str) -> bool:
@@ -885,7 +891,7 @@ def display_results(mode: str = "local"):
         st.write(banks_text)
 
     if summary.get("selected_scopes"):
-        st.subheader("Scopes seleccionados")
+        st.subheader("Entidades seleccionadas")
         for scope in summary["selected_scopes"]:
             st.write(f"- {_scope_chip(scope)}")
     
@@ -898,7 +904,7 @@ def display_results(mode: str = "local"):
     # Transaction preview
     if transactions:
         st.subheader(tr("preview_header"))
-        df = pd.DataFrame(transactions)
+        df = _build_user_facing_dataframe(transactions)
         if scope_groups:
             tab_labels = ["Todo"] + [f"{group['bank']} · {group['scope_label']}" for group in scope_groups]
             tabs = st.tabs(tab_labels)
@@ -906,8 +912,8 @@ def display_results(mode: str = "local"):
                 st.dataframe(df.head(10), use_container_width=True, hide_index=True)
             for index, group in enumerate(scope_groups, start=1):
                 with tabs[index]:
-                    scope_df = pd.DataFrame(group["transactions"])
-                    st.caption(f"{group['bank']} · {group['product_type'] or 'scope'}")
+                    scope_df = _build_user_facing_dataframe(group["transactions"])
+                    st.caption(f"{group['bank']} · {user_facing_product_type(group['product_type']) or 'entidad'}")
                     st.dataframe(scope_df.head(10), use_container_width=True, hide_index=True)
         else:
             st.dataframe(df.head(10), use_container_width=True, hide_index=True)
@@ -925,7 +931,7 @@ def display_results(mode: str = "local"):
             st.download_button(
                 label=tr("download_excel"),
                 data=data['excel_data'],
-                file_name=f"bank_statements_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                file_name=f"extractos_bancarios_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 type="primary",
                 use_container_width=True
@@ -938,7 +944,7 @@ def display_results(mode: str = "local"):
             st.download_button(
                 label=tr("download_csv"),
                 data=csv_data,
-                file_name=f"bank_statements_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"extractos_bancarios_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
                 use_container_width=True
             )

@@ -6,10 +6,49 @@ from contextlib import contextmanager
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Iterator, List, Optional
+from typing import Any, Iterable, Iterator, List, Optional
 
 
 FORMULA_TRIGGER_CHARACTERS = ("=", "+", "-", "@", "\t", "\r", "\n")
+TRANSACTION_PRESENTATION_COLUMN_ORDER = [
+    "date",
+    "description",
+    "amount",
+    "balance",
+    "transaction_type",
+    "bank",
+    "account",
+    "currency",
+    "scope_label",
+    "product_type",
+    "linked_account",
+    "source_file",
+]
+TRANSACTION_COLUMN_LABELS_ES = {
+    "date": "Fecha",
+    "description": "Descripción",
+    "amount": "Monto",
+    "balance": "Saldo",
+    "transaction_type": "Tipo",
+    "bank": "Banco",
+    "account": "Cuenta",
+    "currency": "Moneda",
+    "scope_label": "Entidad",
+    "product_type": "Tipo de producto",
+    "linked_account": "Cuenta vinculada",
+    "source_file": "Archivo de origen",
+}
+TRANSACTION_TYPE_LABELS_ES = {
+    "Credit": "Crédito",
+    "Debit": "Débito",
+    "Neutral": "Neutral",
+}
+PRODUCT_TYPE_LABELS_ES = {
+    "bank_account": "Cuenta bancaria",
+    "credit_card": "Tarjeta de crédito",
+    "debit_card": "Tarjeta de débito",
+    "wallet_account": "Cuenta virtual",
+}
 
 
 def escape_spreadsheet_formula_value(value: Any) -> Any:
@@ -18,6 +57,58 @@ def escape_spreadsheet_formula_value(value: Any) -> Any:
     if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARACTERS):
         return f"'{value}"
     return value
+
+
+def user_facing_column_order(columns: Iterable[str]) -> List[str]:
+    """Return known transaction columns first, preserving unknown columns after them."""
+
+    available_columns = list(columns)
+    ordered_columns = [column for column in TRANSACTION_PRESENTATION_COLUMN_ORDER if column in available_columns]
+    ordered_columns.extend(column for column in available_columns if column not in ordered_columns)
+    return ordered_columns
+
+
+def user_facing_column_label(column: str) -> str:
+    """Return the Spanish label for a transaction column shown to users."""
+
+    return TRANSACTION_COLUMN_LABELS_ES.get(column, column)
+
+
+def user_facing_transaction_type(value: Any) -> Any:
+    """Return the Spanish label for internal transaction type values."""
+
+    return TRANSACTION_TYPE_LABELS_ES.get(value, value)
+
+
+def user_facing_product_type(value: Any) -> Any:
+    """Return the Spanish label for internal product type values."""
+
+    return PRODUCT_TYPE_LABELS_ES.get(value, value)
+
+
+def user_facing_transaction_value(column: str, value: Any) -> Any:
+    """Localize a transaction field value only for presentation/export surfaces."""
+
+    if column == "transaction_type":
+        return user_facing_transaction_type(value)
+    if column == "product_type":
+        return user_facing_product_type(value)
+    return value
+
+
+def user_facing_transaction_record(transaction: dict[str, Any]) -> dict[str, Any]:
+    """Build a Spanish-labeled transaction record for UI, CSV, and spreadsheets."""
+
+    return {
+        user_facing_column_label(column): user_facing_transaction_value(column, transaction.get(column))
+        for column in user_facing_column_order(transaction.keys())
+    }
+
+
+def user_facing_transaction_records(transactions: List[dict[str, Any]]) -> List[dict[str, Any]]:
+    """Build Spanish-labeled transaction records for UI, CSV, and spreadsheets."""
+
+    return [user_facing_transaction_record(transaction) for transaction in transactions]
 
 def clean_text(text: str, preserve_lines: bool = False) -> str:
     """Clean and normalize text content.
@@ -187,19 +278,22 @@ def validate_pdf_files(uploaded_files: List[Any]) -> dict:
     
     # Check number of files
     if len(uploaded_files) > max_files:
-        errors.append(f"Too many files uploaded. Maximum allowed: {max_files}")
+        errors.append(f"Demasiados archivos cargados. Máximo permitido: {max_files}")
     
     # Check each file
     for file in uploaded_files:
         # Check file type
         if not file.name.lower().endswith('.pdf'):
-            errors.append(f"Invalid file type for {file.name}. Only PDF files are allowed.")
+            errors.append(f"Tipo de archivo inválido para {file.name}. Solo se permiten archivos PDF.")
             continue
         
         # Check file size
         file_size_mb = len(file.getvalue()) / (1024 * 1024)
         if file_size_mb > max_size_mb:
-            errors.append(f"File {file.name} is too large ({file_size_mb:.1f}MB). Maximum allowed: {max_size_mb}MB")
+            errors.append(
+                f"El archivo {file.name} es demasiado grande ({file_size_mb:.1f}MB). "
+                f"Máximo permitido: {max_size_mb}MB"
+            )
         
         # Reset file pointer after reading
         file.seek(0)

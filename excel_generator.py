@@ -10,7 +10,16 @@ from numbers import Real
 from typing import List, Dict, Any
 from datetime import datetime
 
-from utils import escape_spreadsheet_formula_value, format_currency, get_transaction_currencies, resolve_single_currency
+from utils import (
+    escape_spreadsheet_formula_value,
+    format_currency,
+    get_transaction_currencies,
+    resolve_single_currency,
+    user_facing_column_label,
+    user_facing_column_order,
+    user_facing_product_type,
+    user_facing_transaction_value,
+)
 
 
 
@@ -82,6 +91,68 @@ class ExcelGenerator:
         for row in dataframe_to_rows(dataframe, index=False, header=True):
             worksheet.append([self._safe_excel_value(value) for value in row])
 
+    def _prepare_transaction_export_dataframe(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        df_export = dataframe.copy()
+        if 'date' in df_export.columns:
+            df_export['date'] = pd.to_datetime(df_export['date'], errors='coerce')
+
+        existing_columns = user_facing_column_order(df_export.columns)
+        df_export = df_export[existing_columns]
+        for column in df_export.columns:
+            df_export[column] = df_export[column].map(
+                lambda value, column=column: user_facing_transaction_value(column, value)
+            )
+        return df_export.rename(columns={column: user_facing_column_label(column) for column in df_export.columns})
+
+    def _format_transaction_worksheet(self, worksheet):
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_font = Font(color="FFFFFF", bold=True)
+
+        for cell in worksheet[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        header_columns = {cell.value: cell.column for cell in worksheet[1]}
+        amount_columns = {
+            column
+            for column in [
+                header_columns.get(user_facing_column_label('amount')),
+                header_columns.get(user_facing_column_label('balance')),
+            ]
+            if column is not None
+        }
+        date_column = header_columns.get(user_facing_column_label('date'))
+
+        for row in worksheet.iter_rows(min_row=2):
+            for cell in row:
+                thin_border = Border(
+                    left=Side(style='thin'),
+                    right=Side(style='thin'),
+                    top=Side(style='thin'),
+                    bottom=Side(style='thin')
+                )
+                cell.border = thin_border
+
+                if cell.column in amount_columns:
+                    cell.number_format = '#,##0.00'
+                    if isinstance(cell.value, Real) and not isinstance(cell.value, bool) and cell.value < 0:
+                        cell.font = Font(color="FF0000")
+
+                if cell.column == date_column and cell.value:
+                    cell.number_format = 'DD/MM/YYYY'
+
+        self._auto_adjust_columns(worksheet, max_width=50)
+        worksheet.freeze_panes = 'A2'
+
+    def _auto_adjust_columns(self, worksheet, max_width: int):
+        for column in worksheet.columns:
+            first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
+            col_letter = get_column_letter(first.column)
+            lengths = [len(str(c.value)) for c in column if c.value]
+            max_length = max(lengths) if lengths else 0
+            worksheet.column_dimensions[col_letter].width = min(max_length + 2, max_width)
+
     def _currency_bucket_series(self, dataframe: pd.DataFrame) -> pd.Series:
         if 'currency' not in dataframe.columns:
             return pd.Series(["N/A"] * len(dataframe), index=dataframe.index)
@@ -140,62 +211,62 @@ class ExcelGenerator:
     
     def _create_summary_sheet(self, summary: Dict[str, Any]):
         """Create summary sheet with processing information."""
-        ws = self.workbook.create_sheet("Summary", 0)
+        ws = self.workbook.create_sheet("Resumen", 0)
         
         # Title
-        ws['A1'] = "Bank Statement Processing Summary"
+        ws['A1'] = "Resumen de Procesamiento de Extractos Bancarios"
         ws['A1'].font = Font(size=16, bold=True)
         ws['A1'].alignment = Alignment(horizontal='center')
         ws.merge_cells('A1:D1')
         
         # Processing date
-        ws['A3'] = "Processing Date:"
+        ws['A3'] = "Fecha de procesamiento:"
         ws['B3'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # File statistics
-        ws['A5'] = "File Statistics"
+        ws['A5'] = "Archivos"
         ws['A5'].font = Font(bold=True, size=12)
         
-        ws['A6'] = "Total Files Uploaded:"
+        ws['A6'] = "Total de archivos cargados:"
         ws['B6'] = summary['total_files']
         
-        ws['A7'] = "Successfully Processed:"
+        ws['A7'] = "Procesados correctamente:"
         ws['B7'] = summary['successful_files']
         
-        ws['A8'] = "Failed Files:"
+        ws['A8'] = "Archivos con error:"
         ws['B8'] = summary['failed_files']
         
         # Transaction statistics
-        ws['A10'] = "Transaction Statistics"
+        ws['A10'] = "Movimientos"
         ws['A10'].font = Font(bold=True, size=12)
         
-        ws['A11'] = "Total Transactions:"
+        ws['A11'] = "Total de movimientos:"
         ws['B11'] = summary['total_transactions']
         
-        ws['A12'] = "Banks Detected:"
+        ws['A12'] = "Bancos detectados:"
         ws['B12'] = len(summary['banks_detected'])
         
-        ws['A13'] = "Bank Names:"
+        ws['A13'] = "Nombres de bancos:"
         self._set_cell_value(ws, 'B13', ", ".join(sorted(summary['banks_detected'])))
 
         currencies = self._transaction_currency_list()
-        ws['A14'] = "Currencies Detected:"
+        ws['A14'] = "Monedas detectadas:"
         self._set_cell_value(ws, 'B14', ", ".join(currencies) if currencies else "N/A")
 
         selected_scopes = summary.get('selected_scopes', [])
         if selected_scopes:
-            ws['A16'] = "Selected Scopes"
+            ws['A16'] = "Entidades seleccionadas"
             ws['A16'].font = Font(bold=True, size=12)
-            ws['A17'] = "Label"
-            ws['B17'] = "Type"
-            ws['C17'] = "Currency"
+            ws['A17'] = "Entidad"
+            ws['B17'] = "Tipo"
+            ws['C17'] = "Moneda"
             for cell in [ws['A17'], ws['B17'], ws['C17']]:
                 cell.font = Font(bold=True)
 
             row = 18
             for scope in selected_scopes:
                 self._set_cell_value(ws, f'A{row}', scope.get('label', ''))
-                self._set_cell_value(ws, f'B{row}', scope.get('product_type', ''))
+                self._set_cell_value(ws, f'B{row}', user_facing_product_type(scope.get('product_type', '')))
                 self._set_cell_value(ws, f'C{row}', scope.get('currency', ''))
                 row += 1
         else:
@@ -208,27 +279,27 @@ class ExcelGenerator:
             net_amount = total_credits - total_debits
             
             summary_row = row if selected_scopes else 16
-            ws[f'A{summary_row}'] = "Financial Summary"
+            ws[f'A{summary_row}'] = "Resumen financiero"
             ws[f'A{summary_row}'].font = Font(bold=True, size=12)
             
-            ws[f'A{summary_row + 1}'] = "Total Credits:"
+            ws[f'A{summary_row + 1}'] = "Total de créditos:"
             self._set_cell_value(
                 ws,
                 f'B{summary_row + 1}',
-                self._display_financial_amount(total_credits, "N/A (multiple currencies)"),
+                self._display_financial_amount(total_credits, "No aplica (múltiples monedas)"),
             )
             
-            ws[f'A{summary_row + 2}'] = "Total Debits:"
+            ws[f'A{summary_row + 2}'] = "Total de débitos:"
             self._set_cell_value(
                 ws,
                 f'B{summary_row + 2}',
-                self._display_financial_amount(total_debits, "N/A (multiple currencies)"),
+                self._display_financial_amount(total_debits, "No aplica (múltiples monedas)"),
             )
             
-            ws[f'A{summary_row + 3}'] = "Net Amount:"
-            net_display = self._display_financial_amount(net_amount, "N/A (multiple currencies)")
+            ws[f'A{summary_row + 3}'] = "Monto neto:"
+            net_display = self._display_financial_amount(net_amount, "No aplica (múltiples monedas)")
             self._set_cell_value(ws, f'B{summary_row + 3}', net_display)
-            if isinstance(net_display, str) and net_display.startswith("N/A"):
+            if net_display == "No aplica (múltiples monedas)":
                 pass
             elif net_amount < 0:
                 ws[f'B{summary_row + 3}'].font = Font(color="FF0000")
@@ -238,7 +309,7 @@ class ExcelGenerator:
         # Errors section
         if summary['errors']:
             error_row = max(20, row + 6)
-            ws[f'A{error_row}'] = "Processing Errors"
+            ws[f'A{error_row}'] = "Errores de procesamiento"
             ws[f'A{error_row}'].font = Font(bold=True, size=12, color="FF0000")
             
             row = error_row + 1
@@ -257,97 +328,15 @@ class ExcelGenerator:
     
     def _create_transactions_sheet(self):
         """Create main transactions sheet."""
-        ws = self.workbook.create_sheet("All Transactions")
+        ws = self.workbook.create_sheet("Movimientos")
         
         if self.transactions_df.empty:
-            ws['A1'] = "No transactions found"
+            ws['A1'] = "No se encontraron movimientos"
             return
         
-        # Prepare data for Excel
-        df_excel = self.transactions_df.copy()
-        
-        # Format date column
-        if 'date' in df_excel.columns:
-            df_excel['date'] = pd.to_datetime(df_excel['date'], errors='coerce')
-        
-        # Reorder columns for better presentation
-        column_order = ['date', 'description', 'amount', 'balance', 'transaction_type', 'bank', 'account', 'currency']
-        column_order.extend(['scope_label', 'product_type', 'linked_account', 'source_file'])
-        existing_columns = [col for col in column_order if col in df_excel.columns]
-        df_excel = df_excel[existing_columns]
-        
-        # Rename columns for better readability
-        column_names = {
-            'date': 'Date',
-            'description': 'Description',
-            'amount': 'Amount',
-            'balance': 'Balance',
-            'transaction_type': 'Type',
-            'bank': 'Bank',
-            'account': 'Account',
-            'currency': 'Currency',
-            'scope_label': 'Scope',
-            'product_type': 'Product Type',
-            'linked_account': 'Linked Account',
-            'source_file': 'Source File',
-        }
-        df_excel = df_excel.rename(columns=column_names)
-        
-        # Add data to worksheet
+        df_excel = self._prepare_transaction_export_dataframe(self.transactions_df)
         self._append_dataframe_rows(ws, df_excel)
-        
-        # Format header row
-        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-        header_font = Font(color="FFFFFF", bold=True)
-        
-        for cell in ws[1]:
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal='center')
-        
-        # Format data rows
-        header_columns = {cell.value: cell.column for cell in ws[1]}
-        amount_columns = {
-            column
-            for column in [
-                header_columns.get('Amount'),
-                header_columns.get('Balance'),
-            ]
-            if column is not None
-        }
-        date_column = header_columns.get('Date')
-
-        for row in ws.iter_rows(min_row=2):
-            for cell in row:
-                # Add borders
-                thin_border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-                cell.border = thin_border
-                
-                # Format amount columns
-                if cell.column in amount_columns:
-                    cell.number_format = '#,##0.00'
-                    if isinstance(cell.value, Real) and not isinstance(cell.value, bool) and cell.value < 0:
-                        cell.font = Font(color="FF0000")  # Red for negative amounts
-                
-                # Format date column
-                if cell.column == date_column and cell.value:
-                    cell.number_format = 'DD/MM/YYYY'
-        
-        # Auto-adjust column widths
-        for column in ws.columns:
-            first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
-            col_letter = get_column_letter(first.column)
-            lengths = [len(str(c.value)) for c in column if c.value]
-            max_length = max(lengths) if lengths else 0
-            ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
-        
-        # Freeze header row
-        ws.freeze_panes = 'A2'
+        self._format_transaction_worksheet(ws)
 
     def _create_scope_transaction_sheets(self):
         if self.transactions_df is None or self.transactions_df.empty:
@@ -362,34 +351,14 @@ class ExcelGenerator:
             title = self._unique_sheet_title(f"{bank[:8]} {scope_label}", used_titles)
             used_titles.add(title)
             ws = self.workbook.create_sheet(title)
-            df_scope = group.copy()
-            if 'date' in df_scope.columns:
-                df_scope['date'] = pd.to_datetime(df_scope['date'], errors='coerce')
-
-            column_order = ['date', 'description', 'amount', 'balance', 'transaction_type', 'bank', 'account', 'currency', 'scope_label', 'product_type', 'linked_account', 'source_file']
-            existing_columns = [col for col in column_order if col in df_scope.columns]
-            df_scope = df_scope[existing_columns]
+            df_scope = self._prepare_transaction_export_dataframe(group)
             self._append_dataframe_rows(ws, df_scope)
-
-            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-            header_font = Font(color="FFFFFF", bold=True)
-            for cell in ws[1]:
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal='center')
-
-            for column in ws.columns:
-                first = next((c for c in column if not isinstance(c, MergedCell)), column[0])
-                col_letter = get_column_letter(first.column)
-                lengths = [len(str(c.value)) for c in column if c.value]
-                max_length = max(lengths) if lengths else 0
-                ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
-            ws.freeze_panes = 'A2'
+            self._format_transaction_worksheet(ws)
 
     def _unique_sheet_title(self, base_title: str, used_titles: set[str]) -> str:
         cleaned = "".join(" " if character in '[]:*?/\\\\' else character for character in base_title)
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip() or "Scope"
-        cleaned = cleaned[:31].rstrip() or "Scope"
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip() or "Entidad"
+        cleaned = cleaned[:31].rstrip() or "Entidad"
         candidate = cleaned
         index = 2
         normalized_used_titles = {title.lower() for title in used_titles}
@@ -401,25 +370,25 @@ class ExcelGenerator:
     
     def _create_analysis_sheet(self):
         """Create analysis sheet with charts and insights."""
-        ws = self.workbook.create_sheet("Analysis")
+        ws = self.workbook.create_sheet("Análisis")
         
         if self.transactions_df.empty:
-            ws['A1'] = "No data available for analysis"
+            ws['A1'] = "No hay datos disponibles para analizar"
             return
         
         # Transaction type analysis
-        ws['A1'] = "Transaction Analysis"
+        ws['A1'] = "Análisis de Movimientos"
         ws['A1'].font = Font(size=14, bold=True)
         
         # Count by transaction type
         type_counts = self.transactions_df['transaction_type'].value_counts()
         
-        ws['A3'] = "Transaction Type Summary"
+        ws['A3'] = "Resumen por tipo de movimiento"
         ws['A3'].font = Font(bold=True)
         
         row = 4
         for trans_type, count in type_counts.items():
-            self._set_cell_value(ws, f'A{row}', trans_type)
+            self._set_cell_value(ws, f'A{row}', user_facing_transaction_value("transaction_type", trans_type))
             ws[f'B{row}'] = count
             row += 1
         
@@ -427,7 +396,7 @@ class ExcelGenerator:
         if 'bank' in self.transactions_df.columns:
             bank_counts = self.transactions_df['bank'].value_counts()
             
-            ws['D3'] = "Transactions by Bank"
+            ws['D3'] = "Movimientos por banco"
             ws['D3'].font = Font(bold=True)
             
             row = 4
@@ -440,13 +409,13 @@ class ExcelGenerator:
         if 'date' in self.transactions_df.columns:
             monthly_data, split_by_currency = self._monthly_summary_rows(self.transactions_df)
             
-            ws['G3'] = "Monthly Summary"
+            ws['G3'] = "Resumen mensual"
             ws['G3'].font = Font(bold=True)
 
-            headers = ["Month"]
+            headers = ["Mes"]
             if split_by_currency:
-                headers.append("Currency")
-            headers.extend(["Income", "Spending", "Net"])
+                headers.append("Moneda")
+            headers.extend(["Ingresos", "Egresos", "Neto"])
             start_column = 7
             for offset, header in enumerate(headers):
                 cell = ws.cell(row=4, column=start_column + offset, value=header)
@@ -465,33 +434,41 @@ class ExcelGenerator:
                 ])
                 for offset, value in enumerate(values):
                     cell = ws.cell(row=row, column=start_column + offset, value=self._safe_excel_value(value))
-                    if headers[offset] in {"Income", "Spending", "Net"}:
+                    if headers[offset] in {"Ingresos", "Egresos", "Neto"}:
                         cell.number_format = '#,##0.00'
-                    if headers[offset] == "Net" and isinstance(value, Real) and not isinstance(value, bool) and value < 0:
+                    if headers[offset] == "Neto" and isinstance(value, Real) and not isinstance(value, bool) and value < 0:
                         cell.font = Font(color="FF0000")
                 
                 row += 1
     
     def _create_monthly_summary_sheet(self):
         """Create monthly summary sheet."""
-        ws = self.workbook.create_sheet("Monthly Summary")
+        ws = self.workbook.create_sheet("Resumen Mensual")
         
         if self.transactions_df.empty:
-            ws['A1'] = "No data available for monthly summary"
+            ws['A1'] = "No hay datos disponibles para el resumen mensual"
             return
         
         # Process data
         monthly_data, split_by_currency = self._monthly_summary_rows(self.transactions_df)
 
         if not monthly_data:
-            ws['A1'] = "No valid dates found for monthly summary"
+            ws['A1'] = "No se encontraron fechas válidas para el resumen mensual"
             return
         
         # Create DataFrame and add to sheet
-        monthly_df = pd.DataFrame(monthly_data)
+        monthly_df = pd.DataFrame(monthly_data).rename(columns={
+            "Month": "Mes",
+            "Currency": "Moneda",
+            "Total Credits": "Total de créditos",
+            "Total Debits": "Total de débitos",
+            "Net Amount": "Monto neto",
+            "Transaction Count": "Cantidad de movimientos",
+            "Average Transaction": "Promedio por movimiento",
+        })
         
         # Add title
-        ws['A1'] = "Monthly Financial Summary"
+        ws['A1'] = "Resumen Financiero Mensual"
         ws['A1'].font = Font(size=14, bold=True)
         title_end_column = 'G' if split_by_currency else 'F'
         ws.merge_cells(f'A1:{title_end_column}1')
@@ -513,14 +490,14 @@ class ExcelGenerator:
         monetary_columns = {
             column
             for column in [
-                header_columns.get('Total Credits'),
-                header_columns.get('Total Debits'),
-                header_columns.get('Net Amount'),
-                header_columns.get('Average Transaction'),
+                header_columns.get('Total de créditos'),
+                header_columns.get('Total de débitos'),
+                header_columns.get('Monto neto'),
+                header_columns.get('Promedio por movimiento'),
             ]
             if column is not None
         }
-        count_column = header_columns.get('Transaction Count')
+        count_column = header_columns.get('Cantidad de movimientos')
 
         for row in ws.iter_rows(min_row=3):
             for cell in row:
