@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover - optional dependency
     pdfplumber = None
 
 from utils import clean_text, parse_amount, parse_date
+from reconciliation import build_reconciliations, compile_reconciliation_config
 
 
 SPEC_ROOT = Path("parser_specs")
@@ -41,6 +42,7 @@ class SpecParseResult:
     diagnostics: Dict[str, Any]
     passes_change_detection: bool
     available_scopes: List[Dict[str, Any]]
+    reconciliations: List[Dict[str, Any]]
 
 
 class _DefaultTemplateDict(dict):
@@ -59,6 +61,7 @@ class FormatSpec:
         self.fields = data.get("fields", {})
         self.normalize = data.get("normalize", {})
         self.change_detection = data.get("change_detection", {})
+        self.reconciliation_config = compile_reconciliation_config(data.get("reconciliation", {}))
 
         self.bank_id: str = self.meta["bank_id"]
         self.format_id: str = self.meta["format_id"]
@@ -116,6 +119,7 @@ class FormatSpec:
                 for section in self.section_configs
             )
         )
+        self.supports_reconciliation = bool(self.reconciliation_config.get("supported"))
 
     @property
     def fixture_dir(self) -> Path:
@@ -391,6 +395,15 @@ class FormatSpec:
                 stop_reason = scope_diagnostics["stop_reason"]
             section_diagnostics.append(scope_diagnostics)
 
+        sorted_scopes = sorted(scope_registry.values(), key=self._scope_sort_key)
+        reconciliations = build_reconciliations(
+            self.reconciliation_config,
+            text,
+            transactions,
+            sorted_scopes,
+            selected_scope_ids,
+        )
+
         coverage = matched_starts / candidate_lines if candidate_lines else 0.0
         passes_change_detection = (
             rejected_matches == 0
@@ -410,13 +423,16 @@ class FormatSpec:
             "statement_year": statement_year,
             "statement_month": statement_month,
             "sections": section_diagnostics,
-            "available_scopes": sorted(scope_registry.values(), key=self._scope_sort_key),
+            "available_scopes": sorted_scopes,
+            "reconciliation_supported": self.supports_reconciliation,
+            "reconciliations_found": len(reconciliations),
         }
         return SpecParseResult(
             transactions=transactions,
             diagnostics=diagnostics,
             passes_change_detection=passes_change_detection,
-            available_scopes=sorted(scope_registry.values(), key=self._scope_sort_key),
+            available_scopes=sorted_scopes,
+            reconciliations=reconciliations,
         )
 
     def _parse_scope(

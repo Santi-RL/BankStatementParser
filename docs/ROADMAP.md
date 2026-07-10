@@ -69,6 +69,8 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - La UI exige selección explícita por entidad concreta antes de procesar documentos consolidados.
 - La salida conserva compatibilidad con el modelo actual y agrega metadatos opcionales por scope.
 - Excel ahora mantiene `Movimientos` como hoja consolidada y agrega hojas por entidad cuando se procesan múltiples scopes.
+- Se incorporó conciliación declarativa opcional y no bloqueante, inicialmente para Brubank: calcula por scope y moneda `saldo inicial + neto de movimientos` contra saldo final, y exporta estados `passed`, `failed` o `not_available` en una hoja auxiliar.
+- Los formatos sin saldos compatibles continúan procesándose normalmente y quedan identificados como conciliación no disponible; la adopción puede avanzar banco por banco sin bloquear la salida.
 - La CLI `validate-draft` ya reporta scopes descubiertos.
 - La cobertura multi-entidad ya no depende del PDF real BBVA faltante: `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
 - `CONTRIBUTING.md` documenta el patrón común para agregar bancos con resumen multi-cuenta: scopes declarativos, fixture sanitizada y caso en `MULTI_SCOPE_FIXTURE_CASES`.
@@ -108,7 +110,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `bbva/default`
 - `bbva/account_summary`
 - `mercado_pago/default`
-- `brubank/default` v2, con soporte para resumen multi-cuenta cubierto por fixture sanitizada: caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos
+- `brubank/default` v3, con soporte para resumen multi-cuenta y conciliación declarativa cubiertos por fixture sanitizada: caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos
 
 ## Pendiente
 

@@ -396,6 +396,21 @@ Referencias actuales:
 
 ---
 
+## Conciliación opcional
+
+La conciliación es un control auxiliar de salida y nunca una condición para aceptar o exportar movimientos. Sólo debe habilitarse en una spec cuando el extracto informa valores de resumen confiables.
+
+- Declarar `[reconciliation]` y una `[[reconciliation.sections]]` por scope/moneda que pueda conciliarse.
+- Mantener estables los `scope_id` y alinearlos con los scopes usados por las transacciones.
+- Extraer por regex `opening_balance` y `closing_balance`; `credits` y `debits` informados pueden conservarse como evidencia auxiliar.
+- Calcular el control con los movimientos normalizados: `saldo inicial + neto de movimientos` contra saldo final.
+- Declarar `tolerance`, `precision`, período y formatos de fecha en la spec; no incorporar lógica Python específica del banco.
+- Si faltan los saldos o el formato todavía no soporta el control, devolver `not_available`. Una diferencia devuelve `failed`, pero ambos estados deben preservar `success = true`, `parse_status = "ok"` y la exportación.
+- Cubrir con fixtures sanitizadas los estados conciliado, con diferencia, no disponible y la selección individual de scope.
+
+Brubank `default` es la referencia inicial de este contrato.
+
+---
 ## Sanitización de fixtures
 
 Las fixtures que acompañan la spec **no deben contener datos personales reales**. La CLI `train` sanitiza automáticamente, pero revisá manualmente que:

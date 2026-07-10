@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from format_engine import FormatRegistry, SpecMatch, SpecParseResult
+from reconciliation import aggregate_reconciliation_status, prepare_reconciliation_output
 import re
 from utils import clean_text, parse_amount
 
@@ -229,6 +230,18 @@ class PDFProcessor:
             for transaction in valid_transactions:
                 transaction['source_file'] = filename
 
+            reconciliations = prepare_reconciliation_output(
+                scoped_result.reconciliations,
+                supports_reconciliation=spec_match.spec.supports_reconciliation,
+                available_scopes=analysis.get('available_scopes', []),
+                transactions=valid_transactions,
+                selected_scope_ids=requested_scope_ids or None,
+                source_file=filename,
+                bank_name=spec_match.spec.display_name,
+                format_id=spec_match.spec.format_id,
+            )
+            reconciliation_status = aggregate_reconciliation_status(reconciliations)
+
             result = {
                 'success': True,
                 'transactions': valid_transactions,
@@ -241,6 +254,8 @@ class PDFProcessor:
                 'format_id': spec_match.spec.format_id,
                 'format_version': spec_match.spec.version,
                 'diagnostics': scoped_result.diagnostics,
+                'reconciliations': reconciliations,
+                'reconciliation_status': reconciliation_status,
             }
             if debug and debug_log is not None:
                 result['debug_log'] = debug_log

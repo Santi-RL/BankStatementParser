@@ -29,6 +29,7 @@ Streamlit UI
   -> selección explícita de scopes si el documento es consolidado
   -> spec.parse_transactions
   -> PDFProcessor._validate_transactions
+  -> conciliación opcional y no bloqueante cuando la spec la soporta
   -> ExcelGenerator.create_excel_file
   -> descarga Excel / CSV
 ```
@@ -50,11 +51,14 @@ Es el orquestador real del dominio. Se encarga de:
 Contiene el registro declarativo versionado por banco/formato. Cada formato tiene su `spec.toml` y sus fixtures sanitizadas. Hoy Galicia, Chase, Roela, BBVA, Mercado Pago y Brubank ya están migrados a este modelo, incluyendo dos variantes publicadas de BBVA.
 
 ### `excel_generator.py`
-Arma el Excel final. Hoy crea cuatro hojas base:
+Arma el Excel final. Hoy crea cinco hojas base:
 - `Resumen`
+- `Conciliación`
 - `Movimientos`
 - `Análisis`
 - `Resumen Mensual`
+
+La hoja `Conciliación` informa por extracto, scope, moneda y período si el saldo inicial más el neto de movimientos coincide con el saldo final. Es un control auxiliar: una diferencia o la ausencia de saldos no bloquea el procesamiento ni la exportación.
 
 Cuando se seleccionan múltiples entidades, agrega también una hoja por cuenta o tarjeta extraída. Las hojas, títulos, columnas y valores visibles de exportación se muestran en español; las claves internas del modelo siguen en inglés.
 

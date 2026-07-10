@@ -24,6 +24,12 @@ Actualmente hay formatos declarativos publicados para:
 
 Si el banco es detectado pero no tiene una spec publicada, el resultado esperado es `unknown_format`.
 
+## Conciliación auxiliar
+
+Los formatos que declaren saldos de resumen pueden incluir en el Excel una hoja `Conciliación`. El control compara, por extracto, cuenta, moneda y período, el saldo inicial más el neto de movimientos contra el saldo final informado.
+
+La conciliación es opcional y no bloqueante. Si un formato todavía no la soporta, si faltan saldos o si existe una diferencia, la aplicación igualmente procesa los movimientos y genera el archivo; el estado y el detalle quedan informados en el Excel. Brubank es el primer formato con este control declarativo.
+
 ## Muestras PDF locales
 
 Los extractos bancarios reales usados para validación manual deben guardarse siempre en:

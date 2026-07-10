@@ -15,7 +15,7 @@ Sigue siendo, de todos modos, una base en consolidación y no un producto cerrad
 
 ## Estado comprobado al 10 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `113 passed`
+- `python -m pytest -q` -> `119 passed`
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`, incluyendo tests Python, regresión declarativa y smoke E2E
 - `npm run test:e2e` -> `1 passed`; smoke Playwright en `production-test` con PDF sanitizado generado desde fixture Galicia
@@ -29,7 +29,7 @@ Procesamiento manual comprobado con muestras reales locales:
 - `local_samples/bbva/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
 - `Estado de cuenta Brubank [2026-01-01 al 2026-02-28]` -> `brubank`, 34 transacciones, vía spec declarativa publicada.
-- `local_samples/brubank/<extracto junio 2026>.pdf` -> `brubank`, documento multi-cuenta validado desde la nueva ruta local con 3 scopes y 47 movimientos al seleccionar todos; la cuenta en dólares queda detectada sin movimientos.
+- `local_samples/brubank/<extracto junio 2026>.pdf` -> `brubank`, documento multi-cuenta validado desde la nueva ruta local con 3 scopes y 47 movimientos al seleccionar todos; las 3 conciliaciones resultan correctas, incluida la cuenta en dólares sin movimientos.
 
 Nota operativa:
 - La cobertura multi-entidad automatizada ya no depende del PDF real BBVA consolidado faltante. `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
@@ -54,6 +54,8 @@ Nota operativa:
 - Las salidas visibles para usuario quedan en español: nombres de hojas, títulos, columnas y valores de tipo en Excel, CSV y vista previa de Streamlit, manteniendo claves técnicas internas en inglés.
 - Las hojas de análisis mensual en Excel separan las agregaciones por moneda cuando hay movimientos de distintas monedas.
 - La generación de Excel ya no asume que la columna `balance` existe para aplicar formatos monetarios.
+- Incorporada una conciliación auxiliar, opcional y no bloqueante: compara saldo inicial más movimientos normalizados contra saldo final, sin alterar `parse_status` ni impedir la exportación.
+- Brubank `default` v3 es el primer formato con conciliación declarativa por scope y moneda; el Excel agrega la hoja `Conciliación` y el resumen general, mientras la UI muestra solo un estado compacto posterior al procesamiento.
 - El workflow de entrenamiento valida `bank_id` y `format_id` como slugs seguros y verifica que los borradores queden bajo `parser_specs/`.
 - Los scripts de diagnóstico devuelven código de salida no cero ante errores operativos y evitan caracteres problemáticos para consolas Windows.
 - La metadata del paquete en `pyproject.toml` ya usa la identidad `bank-statement-parser`.

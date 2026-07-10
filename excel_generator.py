@@ -10,6 +10,8 @@ from numbers import Real
 from typing import List, Dict, Any
 from datetime import datetime
 
+from reconciliation_excel import append_reconciliation_summary, create_reconciliation_sheet
+
 from utils import (
     escape_spreadsheet_formula_value,
     format_currency,
@@ -29,8 +31,14 @@ class ExcelGenerator:
     def __init__(self):
         self.workbook = None
         self.transactions_df = None
+        self.reconciliations: List[Dict[str, Any]] = []
     
-    def create_excel_file(self, transactions: List[Dict[str, Any]], summary: Dict[str, Any]) -> bytes:
+    def create_excel_file(
+        self,
+        transactions: List[Dict[str, Any]],
+        summary: Dict[str, Any],
+        reconciliations: List[Dict[str, Any]] | None = None,
+    ) -> bytes:
         """
         Create a comprehensive Excel file with transaction data and analysis.
         
@@ -43,6 +51,7 @@ class ExcelGenerator:
         """
         # Create DataFrame
         self.transactions_df = pd.DataFrame(transactions)
+        self.reconciliations = [dict(record) for record in (reconciliations or [])]
         
         # Create workbook
         self.workbook = Workbook()
@@ -53,6 +62,7 @@ class ExcelGenerator:
         
         # Create sheets
         self._create_summary_sheet(summary)
+        create_reconciliation_sheet(self.workbook, self.reconciliations, self._safe_excel_value)
         self._create_transactions_sheet()
         self._create_scope_transaction_sheets()
         self._create_analysis_sheet()
@@ -271,6 +281,7 @@ class ExcelGenerator:
                 row += 1
         else:
             row = 16
+        content_end_row = row
         
         # Transaction totals
         if not self.transactions_df.empty:
@@ -305,10 +316,20 @@ class ExcelGenerator:
                 ws[f'B{summary_row + 3}'].font = Font(color="FF0000")
             else:
                 ws[f'B{summary_row + 3}'].font = Font(color="008000")
+
+            content_end_row = summary_row + 3
+
+        reconciliation_row = content_end_row + 2
+        content_end_row = append_reconciliation_summary(
+            ws,
+            self.reconciliations,
+            reconciliation_row,
+            self._safe_excel_value,
+        )
         
         # Errors section
         if summary['errors']:
-            error_row = max(20, row + 6)
+            error_row = max(20, content_end_row + 2)
             ws[f'A{error_row}'] = "Errores de procesamiento"
             ws[f'A{error_row}'].font = Font(bold=True, size=12, color="FF0000")
             

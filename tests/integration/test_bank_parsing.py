@@ -207,12 +207,16 @@ def test_multi_scope_fixture_excel_generation_succeeds(case):
         "errors": [],
         "selected_scopes": analysis["available_scopes"],
     }
-    workbook_bytes = ExcelGenerator().create_excel_file(result["transactions"], summary)
+    workbook_bytes = ExcelGenerator().create_excel_file(
+        result["transactions"],
+        summary,
+        result.get("reconciliations", []),
+    )
     workbook = load_workbook(io.BytesIO(workbook_bytes))
     scope_sheet_names = [
         name
         for name in workbook.sheetnames
-        if name not in {"Resumen", "Movimientos", "Análisis", "Resumen Mensual"}
+        if name not in {"Resumen", "Conciliación", "Movimientos", "Análisis", "Resumen Mensual"}
     ]
     transaction_scope_groups = {
         (transaction["bank"], transaction["scope_label"])

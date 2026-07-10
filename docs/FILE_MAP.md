@@ -13,6 +13,8 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `CONTRIBUTING.md` | Guía de contribución para colaboradores externos | Procedimiento para agregar bancos nuevos vía PR |
 | `app.py` | Entrada principal Streamlit | Código productivo; soporta `local` y `production-test` |
 | `excel_generator.py` | Generación de Excel | Código productivo |
+| `reconciliation.py` | Cálculo y estados de conciliación opcional | Código productivo; no bloquea parsing ni exportación |
+| `reconciliation_excel.py` | Hoja y resumen Excel de conciliación | Código productivo; aplica sanitización anti-fórmulas |
 | `format_cli.py` | CLI para train/validate/publish/regress | Código productivo |
 | `format_engine.py` | Motor declarativo de specs | Código productivo |
 | `format_training.py` | Helpers de entrenamiento, sanitización y publicación | Código productivo |
@@ -41,7 +43,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `parser_specs/bbva/default/spec.toml` | Formato publicado de BBVA consolidado | Vigente |
 | `parser_specs/bbva/account_summary/spec.toml` | Formato publicado de BBVA para resumen simple de cuenta | Vigente |
 | `parser_specs/mercado_pago/default/spec.toml` | Formato publicado de Mercado Pago para resumen de cuenta wallet | Vigente |
-| `parser_specs/brubank/default/spec.toml` | Formato publicado de Brubank para resumen de cuenta | Vigente |
+| `parser_specs/brubank/default/spec.toml` | Formato publicado de Brubank para resumen de cuenta | Vigente; incluye conciliación declarativa por scope y moneda |
 | `parser_specs/bbva/default/fixtures/sample_text.txt` | Fixture sanitizada de BBVA consolidado | Vigente; cubre cuentas, tarjeta de crédito y tarjeta de débito sin depender del PDF real faltante |
 | `parser_specs/brubank/default/fixtures/multi_account_sample_text.txt` | Fixture sanitizada de Brubank multi-cuenta | Vigente; cubre caja de ahorro ARS, cuenta remunerada ARS y cuenta USD sin movimientos |
 | `parser_specs/*/*/fixtures/sample_text.txt` | Fixture sanitizada principal de texto | Vigente; base para regresión declarativa por formato |
@@ -52,7 +54,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | Ruta | Rol | Estado / observación |
 | --- | --- | --- |
 | `tests/` | Fuente de verdad de la suite | Vigente |
-| `tests/unit/` | Tests unitarios | Vigente; incluye endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
+| `tests/unit/` | Tests unitarios | Vigente; incluye conciliación no bloqueante, endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
 | `tests/integration/` | Tests con PDFs sanitizados generados, fixtures de texto y pruebas opcionales sobre PDFs reales locales | Vigente; CI cubre extracción PDF sin depender de `local_samples/` |
 | `tests/fixtures/format_changed_partial/` | Fixtures sanitizadas de cambios parciales de tabla | Vigente; cubren `format_changed` por banco sin usar PDFs reales |
 | `tests/e2e/` | Smoke E2E con Playwright | Vigente; genera PDF sanitizado temporal y valida `production-test` |

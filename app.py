@@ -13,6 +13,7 @@ import toml
 from format_engine import FormatRegistry, FormatSpec
 from format_training import build_initial_spec, extract_text_from_pdf, publish_spec, save_draft
 from pdf_processor import PDFProcessor
+from reconciliation import aggregate_reconciliation_status
 import utils as _utils
 
 # Streamlit Cloud may rerun app.py after pulling code without clearing cached helper modules.
@@ -779,6 +780,7 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
         # Initialize processor
         pdf_processor = PDFProcessor()
         all_transactions = []
+        all_reconciliations = []
         analysis_map = {entry["file_id"]: entry for entry in analysis_results}
         selected_scope_map = {
             entry["file_id"]: _selected_scope_ids(entry["file_id"], entry["analysis"].get("available_scopes", []))
@@ -824,6 +826,7 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                 if result['success']:
                     transactions = result['transactions']
                     all_transactions.extend(transactions)
+                    all_reconciliations.extend(result.get('reconciliations', []))
                     processing_summary['successful_files'] += 1
                     processing_summary['total_transactions'] += len(transactions)
                     processing_summary['banks_detected'].add(result.get('bank_name', result['bank_detected']))
@@ -855,13 +858,18 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
         if all_transactions:
             # Generate Excel file
             excel_generator = ExcelGenerator()
-            excel_data = excel_generator.create_excel_file(all_transactions, processing_summary)
+            excel_data = excel_generator.create_excel_file(
+                all_transactions,
+                processing_summary,
+                all_reconciliations,
+            )
             
             # Store results in session state
             st.session_state.processed_data = {
                 'excel_data': excel_data,
                 'transactions': all_transactions,
-                'summary': processing_summary
+                'summary': processing_summary,
+                'reconciliations': all_reconciliations,
             }
             st.session_state.processing_complete = True
             
@@ -881,6 +889,7 @@ def display_results(mode: str = "local"):
     data = st.session_state.processed_data
     summary = data['summary']
     transactions = data['transactions']
+    reconciliations = data.get('reconciliations', [])
     scope_groups = _build_scope_groups(transactions)
     
     # Summary metrics
@@ -907,6 +916,15 @@ def display_results(mode: str = "local"):
         for scope in summary["selected_scopes"]:
             st.write(f"- {_scope_chip(scope)}")
     
+    reconciliation_status = aggregate_reconciliation_status(reconciliations)
+    if reconciliation_status == "passed":
+        st.success("Conciliación verificada. Consulta el detalle en la hoja «Conciliación» del Excel.")
+    elif reconciliation_status == "failed":
+        st.warning("El Excel fue generado con diferencias de conciliación. Revisa la hoja «Conciliación».")
+    elif reconciliation_status == "partial":
+        st.info("La conciliación está disponible solo para parte de los extractos. Consulta la hoja «Conciliación».")
+    else:
+        st.info("La conciliación no está disponible para estos formatos. El procesamiento no fue afectado.")
     # Errors if any
     if summary['errors']:
         with st.expander(tr("processing_errors"), expanded=False):
