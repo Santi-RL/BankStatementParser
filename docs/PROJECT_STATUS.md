@@ -13,23 +13,23 @@ El proyecto ya dejó de ser solo un prototipo con parsers sueltos. Hoy tiene:
 
 Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato. La aplicación está lista para pruebas controladas con datasets acotados; todavía no debe tratarse como lista para público general.
 
-## Estado comprobado al 6 de julio de 2026
+## Estado comprobado al 10 de julio de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q -rs` -> `106 passed` (sin tests omitidos ni warnings de pytest)
+- `python -m pytest -q` -> `113 passed`
 - `python format_cli.py regress` -> `success: true` con `processed: 7`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`, incluyendo tests Python, regresión declarativa y smoke E2E
 - `npm run test:e2e` -> `1 passed`; smoke Playwright en `production-test` con PDF sanitizado generado desde fixture Galicia
 
-Procesamiento manual comprobado con assets reales:
-- `attached_assets/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
-- `attached_assets/BancoRoela.Argentina.Test.pdf` -> `roela_ar`, 4913 transacciones, vía spec declarativa.
-- `attached_assets/BANCO CH 2024 1.pdf` -> `chase`, 12 transacciones, vía spec declarativa.
-- `attached_assets/BANCO CH 2024 2.pdf` -> `chase`, 11 transacciones, vía spec declarativa, incluyendo la operación del 29/02/2024.
-- `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` -> validación histórica de `bbva` consolidado con 5 scopes detectados y 192 transacciones; en este workspace la cobertura automatizada usa fixture sanitizada.
-- `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
-- `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
+Procesamiento manual comprobado con muestras reales locales:
+- `local_samples/galicia_ar/TestGalicia.pdf` -> `galicia_ar`, 52 transacciones, vía spec declarativa.
+- `local_samples/roela_ar/BancoRoela.Argentina.Test.pdf` -> `roela_ar`, 4913 transacciones, vía spec declarativa.
+- `local_samples/chase/BANCO CH 2024 1.pdf` -> `chase`, 12 transacciones, vía spec declarativa.
+- `local_samples/chase/BANCO CH 2024 2.pdf` -> `chase`, 11 transacciones, vía spec declarativa, incluyendo la operación del 29/02/2024.
+- `local_samples/bbva/01-2023 BBVA.pdf` -> validación histórica de `bbva` consolidado con 5 scopes detectados y 192 transacciones; la muestra no está disponible hoy y la cobertura automatizada usa fixture sanitizada.
+- `local_samples/bbva/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
+- `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
 - `Estado de cuenta Brubank [2026-01-01 al 2026-02-28]` -> `brubank`, 34 transacciones, vía spec declarativa publicada.
-- `Estado de cuenta Brubank junio 2026 multi-cuenta (PDF externo no versionado)` -> `brubank`, documento multi-cuenta con 3 scopes detectados y 47 movimientos procesados al seleccionar todos los scopes; la cuenta en dólares queda detectada sin movimientos.
+- `local_samples/brubank/<extracto junio 2026>.pdf` -> `brubank`, documento multi-cuenta validado desde la nueva ruta local con 3 scopes y 47 movimientos al seleccionar todos; la cuenta en dólares queda detectada sin movimientos.
 
 Nota operativa:
 - La cobertura multi-entidad automatizada ya no depende del PDF real BBVA consolidado faltante. `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
@@ -66,6 +66,7 @@ Nota operativa:
 - Hay workflow de GitHub Actions que ejecuta `python -m pytest -q`, `python format_cli.py regress` y `npm run test:e2e`.
 - Los tests de endurecimiento cubren la política anti-fórmulas compartida para Excel y CSV.
 - Los tests de integración multi-entidad cubren BBVA consolidado y Brubank multi-cuenta con fixtures sanitizadas, selección explícita de scopes, filtrado por grupo/scope individual y generación de Excel.
+- La extracción PDF tiene cobertura obligatoria con PDFs sanitizados generados de forma determinista, incluyendo las estrategias de columnas de Roela y bandas X de Mercado Pago.
 
 ### Motor declarativo
 - Existe `format_engine.py` con registro de specs TOML.
@@ -137,13 +138,13 @@ Nota operativa:
 ### Prioridad 5: preparación para exposición pública
 Esta prioridad queda al final. No debe frenar las mejoras funcionales anteriores.
 
-- Retirar PDFs reales versionados o reemplazarlos por muestras sintéticas/sanitizadas.
+- Purgar del historial Git los PDFs reales previamente versionados y coordinar la actualización segura del remoto.
 - Revisar fixtures existentes para eliminar nombres, direcciones, teléfonos, cuentas, CVU/CBU/CUIT/DNI u otros identificadores reales que todavía puedan quedar.
 - Definir política de privacidad, manejo de datos bancarios, retención de logs y responsabilidades operativas.
 - Definir despliegue, autenticación, límites de uso y monitoreo si se habilitan usuarios externos.
 
 ## Riesgo técnico principal actual
-El riesgo principal sigue siendo la cobertura funcional por formato: el runtime quedó limpio y extensible, pero cualquier banco o layout nuevo exige una spec publicada y probada. El riesgo operativo más importante antes de compartir el proyecto públicamente sigue siendo la presencia de PDFs reales y fixtures que requieren una nueva pasada de sanitización.
+El riesgo principal sigue siendo la cobertura funcional por formato. Antes de compartir el proyecto públicamente, todavía deben revisarse las fixtures versionadas y definirse la política operativa de privacidad.
 
 ## Siguiente hito recomendado
 El siguiente tramo lógico es:

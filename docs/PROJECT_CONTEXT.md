@@ -93,20 +93,22 @@ En documentos multi-entidad puede agregar metadatos opcionales sin romper compat
 - `linked_account`
 - `source_file`
 
-## Validación manual realizada sobre assets reales
+## Validación manual realizada sobre muestras reales locales
+Los PDFs reales viven exclusivamente en `local_samples/<bank_id>/`, ignorado por Git.
+
 Se procesaron localmente estos archivos con `venv\Scripts\python.exe`:
 
 | Archivo | Banco detectado | Resultado observado |
 | --- | --- | --- |
-| `attached_assets/TestGalicia.pdf` | `galicia_ar` | 52 transacciones |
-| `attached_assets/BancoRoela.Argentina.Test.pdf` | `roela_ar` | 4913 transacciones |
-| `attached_assets/BANCO CH 2024 1.pdf` | `chase` | 12 transacciones |
-| `attached_assets/BANCO CH 2024 2.pdf` | `chase` | 11 transacciones, incluyendo 29/02/2024 |
-| `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | `bbva` | Validación histórica de documento consolidado con 5 scopes y 192 transacciones; en este workspace la cobertura CI usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
-| `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
-| `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | `mercado_pago` | Resumen de cuenta wallet, 1 scope detectado y 232 transacciones |
+| `local_samples/galicia_ar/TestGalicia.pdf` | `galicia_ar` | 52 transacciones |
+| `local_samples/roela_ar/BancoRoela.Argentina.Test.pdf` | `roela_ar` | 4913 transacciones |
+| `local_samples/chase/BANCO CH 2024 1.pdf` | `chase` | 12 transacciones |
+| `local_samples/chase/BANCO CH 2024 2.pdf` | `chase` | 11 transacciones, incluyendo 29/02/2024 |
+| `local_samples/bbva/01-2023 BBVA.pdf` | `bbva` | Validación histórica de documento consolidado con 5 scopes y 192 transacciones; la muestra no está disponible hoy y la cobertura CI usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
+| `local_samples/bbva/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
+| `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | `mercado_pago` | Resumen de cuenta wallet, 1 scope detectado y 232 transacciones |
 | `Brubank ene-feb 2026 (PDF externo no versionado)` | `brubank` | Resumen de cuenta con 34 transacciones, vía spec declarativa |
-| `Brubank jun 2026 multi-cuenta (PDF externo no versionado)` | `brubank` | 3 scopes detectados: caja de ahorro ARS, cuenta remunerada ARS y caja de ahorro USD sin movimientos; 47 movimientos al seleccionar todos los scopes |
+| `local_samples/brubank/<extracto junio 2026>.pdf` | `brubank` | Muestra multi-cuenta local validada con 3 scopes y 47 movimientos al seleccionar todos |
 
 Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estático.
 

@@ -7,7 +7,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 
 | Archivo | Rol | Estado / observación |
 | --- | --- | --- |
-| `.gitignore` | Exclusiones locales | Cubre cachés, `.env*`, logs y artefactos locales de pruebas |
+| `.gitignore` | Exclusiones locales | Cubre cachés, `.env*`, logs, artefactos de pruebas y `local_samples/` |
 | `.github/workflows/ci.yml` | CI remoto | Ejecuta `pytest`, regresión declarativa y smoke E2E en push/PR a `main` |
 | `AGENTS.md` | Guía breve para futuros agentes | Contexto operativo rápido |
 | `CONTRIBUTING.md` | Guía de contribución para colaboradores externos | Procedimiento para agregar bancos nuevos vía PR |
@@ -53,33 +53,40 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | --- | --- | --- |
 | `tests/` | Fuente de verdad de la suite | Vigente |
 | `tests/unit/` | Tests unitarios | Vigente; incluye endurecimiento de runtime, Excel, workflow de formatos y scripts diagnósticos |
-| `tests/integration/` | Tests con PDFs reales disponibles y fixtures sanitizadas para flujos multi-entidad | Vigente |
+| `tests/integration/` | Tests con PDFs sanitizados generados, fixtures de texto y pruebas opcionales sobre PDFs reales locales | Vigente; CI cubre extracción PDF sin depender de `local_samples/` |
 | `tests/fixtures/format_changed_partial/` | Fixtures sanitizadas de cambios parciales de tabla | Vigente; cubren `format_changed` por banco sin usar PDFs reales |
 | `tests/e2e/` | Smoke E2E con Playwright | Vigente; genera PDF sanitizado temporal y valida `production-test` |
 | `tests/regression/` | Regresión de specs publicadas | Vigente |
 | `scripts/run_app.py` | Helper para levantar la app en puerto fijo | Vigente; acepta `--mode` y `--debug` |
 | `scripts/diagnostics/` | Scripts manuales de depuración | Vigente |
 
-## Assets reales de validación
+## Muestras reales locales no versionadas
 
 | Archivo | Rol | Estado / observación |
 | --- | --- | --- |
-| `attached_assets/BANCO CH 2024 1.pdf` | Muestra real de Chase | Se procesa con 12 transacciones |
-| `attached_assets/BANCO CH 2024 2.pdf` | Segunda muestra real de Chase | Se procesa con 11 transacciones, incluyendo 29/02/2024 |
-| `attached_assets/BancoRoela.Argentina.Test.pdf` | Muestra grande de Roela | Se procesa con 4913 transacciones |
+| `local_samples/chase/*.pdf` | Muestras reales de Chase | Uso local; 12 y 11 transacciones en las validaciones históricas |
+| `local_samples/roela_ar/*.pdf` | Muestra grande de Roela | Uso local; 4913 transacciones en la validación histórica |
+| `local_samples/galicia_ar/*.pdf` | Muestra real de Galicia | Uso local; 52 transacciones en la validación histórica |
+| `local_samples/bbva/*.pdf` | Muestras reales de BBVA | Uso local; hoy incluye el resumen simple |
+| `local_samples/mercado_pago/*.pdf` | Muestra real de Mercado Pago | Uso local; 232 transacciones en la validación histórica |
+| `local_samples/brubank/*.pdf` | Muestra real multi-cuenta de Brubank | Uso local; validada con 3 scopes y 47 movimientos |
+
+La estructura obligatoria es `local_samples/<bank_id>/`. La carpeta completa está ignorada por Git y nunca debe forzarse su agregado. Sólo las fixtures sanitizadas correspondientes se versionan bajo `parser_specs/`.
+
+## Assets de apoyo versionados
+
+| Archivo | Rol | Estado / observación |
+| --- | --- | --- |
 | `attached_assets/BancoRoela.Argentina.Test.png` | Captura visual de Roela | Soporte visual |
 | `attached_assets/TestBancoRoelaArg.txt` | Texto de muestra de Roela | Soporte manual útil |
-| `attached_assets/TestGalicia.pdf` | Muestra real de Galicia | Se procesa con 52 transacciones |
 | `attached_assets/TestGalicia.png` | Captura visual de Galicia | Soporte visual |
-| `attached_assets/nuevo_formato/BBVA/01-2023 BBVA.pdf` | Muestra real histórica de BBVA consolidado | No disponible en este workspace; la cobertura CI actual usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
-| `attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf` | Muestra real de BBVA resumen simple | Se procesa con 1 scope y 12 transacciones |
-| `attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | Muestra real de Mercado Pago | Se procesa con 1 scope y 232 transacciones |
 
 ## Artefactos locales no versionados
 
 | Ruta | Rol | Estado / observación |
 | --- | --- | --- |
 | `logs/app.log` | Log rotado de runtime | Generado localmente, no versionado |
+| `local_samples/` | PDFs bancarios reales organizados por `bank_id` | Exclusivamente local, ignorado por Git |
 | `.coverage*`, `htmlcov/` | Cobertura local | Generado localmente, no versionado |
 | `node_modules/` | Dependencias Node locales | Generado por `npm install`, no versionado |
 | `playwright-report/`, `test-results/` | Reportes y artefactos Playwright | Generados por `npm run test:e2e`, no versionados |

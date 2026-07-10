@@ -91,6 +91,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - El parseo de fechas sin año ya no depende del año implícito 1900 de `strptime`; inyecta un año explícito, conserva la inferencia del resumen y permite fechas bisiestas como 29/02/2024.
 - El repo dejó de depender de artefactos históricos de Replit y del lockfile legacy de `uv`.
 - La detección de banco ahora prioriza el match de specs publicadas y señales estructurales antes que menciones sueltas dentro del detalle de movimientos.
+- Los PDFs bancarios reales se retiraron de `HEAD` y pasaron a `local_samples/<bank_id>/`, ignorado por Git; los blobs de commits anteriores siguen pendientes de purga antes de una exposición pública.
 
 ### Fase 7: selección manual y dinámica de formato
 - La UI muestra un selector por archivo con todos los formatos publicados disponibles en el runtime declarativo.
@@ -153,7 +154,7 @@ Estas tareas no bloquean el parser, pero reducen confusión durante uso interno 
 ### Prioridad 5: preparación para exposición pública
 Esta prioridad queda deliberadamente después de las mejoras funcionales. No debe bloquear el trabajo de parser, cobertura y salida.
 
-- Retirar PDFs reales versionados o reemplazarlos por muestras sintéticas/sanitizadas.
+- Purgar del historial Git los PDFs reales previamente versionados y coordinar la actualización segura del remoto.
 - Revisar fixtures existentes para eliminar nombres, direcciones, teléfonos, cuentas, CVU/CBU/CUIT/DNI u otros identificadores reales que todavía puedan quedar.
 - Definir política de privacidad y manejo de datos bancarios.
 - Definir despliegue, autenticación, límites de uso, monitoreo y retención de logs si se habilitan usuarios externos.

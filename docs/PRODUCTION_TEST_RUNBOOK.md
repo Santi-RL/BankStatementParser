@@ -17,7 +17,7 @@ La app queda escuchando en `http://127.0.0.1:8501`.
 - Los errores inesperados se muestran sanitizados en UI y el detalle queda en el log.
 
 ## Smoke mínimo antes de habilitar usuarios
-1. Cargar `attached_assets/TestGalicia.pdf`.
+1. Cargar `local_samples/galicia_ar/TestGalicia.pdf`.
 2. Ejecutar `Analizar Extractos`.
 3. Ejecutar `Procesar Extractos`.
 4. Verificar resumen con 52 transacciones.

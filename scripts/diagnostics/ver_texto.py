@@ -9,7 +9,7 @@ def main() -> None:
     parser.add_argument(
         "pdf",
         nargs="?",
-        default=str(Path("attached_assets") / "BANCO CH 2024 1.pdf"),
+        default=str(Path("local_samples") / "chase" / "BANCO CH 2024 1.pdf"),
         help="Ruta al PDF",
     )
     args = parser.parse_args()

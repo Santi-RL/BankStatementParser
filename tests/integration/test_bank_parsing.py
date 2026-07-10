@@ -9,6 +9,16 @@ from excel_generator import ExcelGenerator
 from pdf_processor import PDFProcessor
 
 
+LOCAL_SAMPLES_ROOT = Path("local_samples")
+
+
+def _require_local_sample(relative_path: str) -> Path:
+    sample_path = LOCAL_SAMPLES_ROOT / relative_path
+    if not sample_path.is_file():
+        pytest.skip(f"Muestra bancaria local no disponible: {sample_path}")
+    return sample_path
+
+
 
 
 class FixtureTextProcessor(PDFProcessor):
@@ -216,8 +226,9 @@ def test_multi_scope_fixture_excel_generation_succeeds(case):
     assert all(re.search(r'[:\\/?*\[\]]', name) is None for name in workbook.sheetnames)
 
 def test_galicia_pdf_uses_declarative_spec():
+    pdf_path = _require_local_sample("galicia_ar/TestGalicia.pdf")
     processor = PDFProcessor()
-    result = processor.process_pdf("attached_assets/TestGalicia.pdf", "TestGalicia.pdf")
+    result = processor.process_pdf(str(pdf_path), pdf_path.name)
 
     assert result["success"] is True
     assert result["parse_status"] == "ok"
@@ -229,8 +240,9 @@ def test_galicia_pdf_uses_declarative_spec():
 
 
 def test_roela_pdf_uses_declarative_spec_successfully():
+    pdf_path = _require_local_sample("roela_ar/BancoRoela.Argentina.Test.pdf")
     processor = PDFProcessor()
-    result = processor.process_pdf("attached_assets/BancoRoela.Argentina.Test.pdf", "BancoRoela.Argentina.Test.pdf")
+    result = processor.process_pdf(str(pdf_path), pdf_path.name)
 
     assert result["success"] is True
     assert result["parse_status"] == "ok"
@@ -243,8 +255,9 @@ def test_roela_pdf_uses_declarative_spec_successfully():
 
 
 def test_chase_pdf_uses_declarative_spec_with_correct_dates_and_account():
+    pdf_path = _require_local_sample("chase/BANCO CH 2024 1.pdf")
     processor = PDFProcessor()
-    result = processor.process_pdf("attached_assets/BANCO CH 2024 1.pdf", "BANCO CH 2024 1.pdf")
+    result = processor.process_pdf(str(pdf_path), pdf_path.name)
 
     assert result["success"] is True
     assert result["parse_status"] == "ok"
@@ -258,8 +271,9 @@ def test_chase_pdf_uses_declarative_spec_with_correct_dates_and_account():
 
 
 def test_chase_second_pdf_matches_same_published_spec():
+    pdf_path = _require_local_sample("chase/BANCO CH 2024 2.pdf")
     processor = PDFProcessor()
-    result = processor.process_pdf("attached_assets/BANCO CH 2024 2.pdf", "BANCO CH 2024 2.pdf")
+    result = processor.process_pdf(str(pdf_path), pdf_path.name)
 
     assert result["success"] is True
     assert result["parse_status"] == "ok"
@@ -272,14 +286,15 @@ def test_chase_second_pdf_matches_same_published_spec():
 
 
 def test_bbva_account_summary_pdf_uses_new_single_scope_spec():
+    pdf_path = _require_local_sample("bbva/Resumen caja de ahorro BBVA 09-2023.pdf")
     processor = PDFProcessor()
     analysis = processor.analyze_pdf(
-        "attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf",
-        "Resumen caja de ahorro BBVA 09-2023.pdf",
+        str(pdf_path),
+        pdf_path.name,
     )
     result = processor.process_pdf(
-        "attached_assets/nuevo_formato/BBVA/Resumen caja de ahorro BBVA 09-2023.pdf",
-        "Resumen caja de ahorro BBVA 09-2023.pdf",
+        str(pdf_path),
+        pdf_path.name,
     )
 
     assert analysis["success"] is True
@@ -302,14 +317,15 @@ def test_bbva_account_summary_pdf_uses_new_single_scope_spec():
 
 
 def test_mercado_pago_pdf_uses_new_wallet_spec():
+    pdf_path = _require_local_sample("mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf")
     processor = PDFProcessor()
     analysis = processor.analyze_pdf(
-        "attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf",
-        "Resumen de cuenta Mercado Pago 02-2023.pdf",
+        str(pdf_path),
+        pdf_path.name,
     )
     result = processor.process_pdf(
-        "attached_assets/nuevo_formato/Mercado Pago/Resumen de cuenta Mercado Pago 02-2023.pdf",
-        "Resumen de cuenta Mercado Pago 02-2023.pdf",
+        str(pdf_path),
+        pdf_path.name,
     )
 
     assert analysis["success"] is True

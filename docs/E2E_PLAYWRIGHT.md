@@ -9,8 +9,6 @@ Validar en un navegador real que la app Streamlit en modo `production-test` cubr
 4. resumen visible y descargas Excel/CSV disponibles,
 5. backoffice `Aprender Formatos` oculto.
 
-El smoke automatizado no usa PDFs reales de `attached_assets/`. Genera un PDF temporal desde `parser_specs/galicia_ar/default/fixtures/sample_text.txt`, por lo que queda preparado para CI sin exponer datos bancarios privados.
-
 ## Preparación local
 Instalar dependencias Python si todavía no están instaladas:
 

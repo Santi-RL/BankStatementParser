@@ -62,6 +62,8 @@ git checkout -b feat/add-<bank_id>
 
 Necesitás un PDF real del extracto bancario. La CLI extrae el texto, genera un borrador de spec y crea fixtures sanitizadas automáticamente.
 
+Guardá previamente el PDF real en `local_samples/<bank_id>/`. Esa carpeta es exclusivamente local y está ignorada por Git; no copies extractos reales a `attached_assets/`, `parser_specs/` ni a otra ruta versionada.
+
 ```bash
 python format_cli.py train path/al/extracto.pdf \
   --bank-id "santander_ar" \
@@ -437,7 +439,7 @@ Sí. Usá un `format_id` diferente (ej: `account_summary`, `credit_card`). Cada 
 El sistema tiene detección de cambios (`change_detection`). Si la cobertura baja del umbral, devuelve `format_changed` en vez de datos incorrectos. Para soportar el nuevo formato, se publica una nueva versión de la spec.
 
 **¿Necesito incluir el PDF real en el PR?**
-No. Solo las fixtures sanitizadas. Los PDFs reales son binarios pesados y contienen datos personales.
+No. Guardalo únicamente en `local_samples/<bank_id>/`, que está ignorado por Git. El PR debe incluir sólo las fixtures sanitizadas.
 
 **¿Cómo nombro mi banco si opera en varios países?**
 Usá el sufijo de país: `santander_ar`, `santander_es`, `santander_mx`. Cada país tiene formatos de extracto diferentes.

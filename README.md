@@ -24,6 +24,18 @@ Actualmente hay formatos declarativos publicados para:
 
 Si el banco es detectado pero no tiene una spec publicada, el resultado esperado es `unknown_format`.
 
+## Muestras PDF locales
+
+Los extractos bancarios reales usados para validación manual deben guardarse siempre en:
+
+```text
+local_samples/<bank_id>/
+```
+
+`local_samples/` está ignorado por Git porque esos archivos pueden contener datos bancarios y personales. No guardar PDFs reales en `attached_assets/`, `parser_specs/` ni ninguna otra ruta versionada. Para tests y regresión compartidos, usar únicamente fixtures sanitizadas bajo `parser_specs/<bank_id>/<format_id>/fixtures/`.
+
+Esta exclusión evita nuevos commits, pero no borra PDFs presentes en el historial anterior. Antes de exponer públicamente el repositorio debe limpiarse también el historial Git y actualizarse el remoto.
+
 ## Instalación de Dependencias
 
 Antes de ejecutar la aplicación instala las dependencias con pip:

@@ -12,3 +12,6 @@ playwright-report/
 test-results/
 .clawpatch/
 node_modules/
+
+# Muestras bancarias reales: sólo uso local, nunca versionar.
+/local_samples/

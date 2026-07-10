@@ -25,7 +25,8 @@ La arquitectura buscada es un runtime declarativo y extensible: cada banco/forma
 - Los tests vigentes viven en `tests/` y se dividen en unitarios, integración y regresión.
 - Los scripts de diagnóstico vigentes viven en `scripts/diagnostics/`.
 - `scripts/run_app.py` es el runner local oficial para Streamlit.
-- `attached_assets/` contiene PDFs y capturas usados como muestras reales para validar formatos; tratarlos como datos sensibles.
+- `local_samples/<bank_id>/` contiene los PDFs reales usados para validación manual. Toda la carpeta está ignorada por Git y debe permanecer exclusivamente local.
+- `attached_assets/` queda reservado para capturas y apoyos no PDF ya versionados; no guardar allí nuevos extractos bancarios.
 
 ## Flujo principal actual
 1. `app.py` recibe PDFs desde Streamlit.
@@ -74,6 +75,7 @@ Estados y diagnósticos importantes del parser:
 ## Tests y CI
 - El CI remoto vive en `.github/workflows/ci.yml` y corre en push/PR contra `main`.
 - El CI instala `requirements.txt`, ejecuta `python -m pytest -q` y luego `python format_cli.py regress`.
+- Los tests que usan PDFs reales deben resolverlos desde `local_samples/` y omitir el caso cuando la muestra no esté disponible. La cobertura obligatoria de CI debe depender de fixtures sanitizadas versionadas.
 - Toda implementación nueva que cambie comportamiento, contratos, parsing, specs, UI, exportaciones o seguridad debe agregar o actualizar tests proporcionales al riesgo.
 - Para cambios de specs, cubrir la regresión con fixtures sanitizadas y validar `format_cli.py regress`.
 - Para cambios de motor, `PDFProcessor`, exportadores o utilidades compartidas, agregar tests unitarios o de integración que fallen sin el cambio.
@@ -86,6 +88,7 @@ Estados y diagnósticos importantes del parser:
 - Antes de hacer commit o push, verificar que el árbol esté limpio salvo los cambios esperados, que los tests relevantes pasen y que no queden ramas temporales locales o remotas que puedan confundir.
 
 ## Riesgos conocidos
+- Los PDFs retirados de `HEAD` siguen recuperables desde commits anteriores. No considerar el repo apto para exposición pública hasta limpiar el historial Git y coordinar la actualización del remoto.
 - La detección de banco sigue siendo heurística.
 - Los bancos sin spec publicada deben fallar como `unknown_format`.
 - Un banco conocido cuya estructura cambió debe fallar como `format_changed`, no producir datos silenciosamente incorrectos.
@@ -96,8 +99,9 @@ Estados y diagnósticos importantes del parser:
 ## Reglas prácticas para futuros cambios
 - Mantener el runtime 100% declarativo; no reintroducir parsers Python como fallback.
 - Preservar la forma normalizada de las transacciones; cambiar claves rompe app, validación, Excel y CSV.
-- Si se toca una spec o el motor declarativo, validar con fixtures y, cuando aplique, con una muestra real de `attached_assets/`.
-- No agregar PDFs reales nuevos al repo salvo pedido explícito. Preferir fixtures sanitizadas y revisar datos personales antes de versionar.
+- Si se toca una spec o el motor declarativo, validar con fixtures y, cuando aplique, con una muestra real de `local_samples/<bank_id>/`.
+- Guardar todos los modelos de extractos PDF reales exclusivamente bajo `local_samples/<bank_id>/`. Esa carpeta debe seguir ignorada por Git; nunca forzar su agregado ni mover PDFs reales a una ruta versionada.
+- Sólo las fixtures sanitizadas de texto y transacciones esperadas pueden vivir en `parser_specs/<bank_id>/<format_id>/fixtures/`. Revisar datos personales antes de versionarlas.
 - Si se toca UI, parsing, exportaciones o seguridad de archivos, revisar si corresponde actualizar `docs/ROADMAP.md`, `docs/PROJECT_STATUS.md`, `docs/FILE_MAP.md`, `README.md` o `CONTRIBUTING.md`.
 - Después de cada bloque grande de cambios, actualizar `docs/ROADMAP.md` y, si cambió el estado general del proyecto, también `docs/PROJECT_STATUS.md`.
 - Priorizar funcionalidad y confiabilidad del parser antes que preparación para exposición pública, según el orden vigente en `docs/ROADMAP.md`.
