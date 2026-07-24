@@ -110,6 +110,14 @@ TRANSLATIONS = {
         "en": "No transactions could be extracted from the uploaded files.",
         "es": "No se pudieron extraer transacciones de los archivos cargados.",
     },
+    "no_activity_extracted": {
+        "en": "✅ {name}: valid statement with no transactions",
+        "es": "✅ {name}: extracto válido sin movimientos",
+    },
+    "no_activity_result": {
+        "en": "The successfully processed statements contain no transactions.",
+        "es": "Los extractos procesados correctamente no contienen movimientos.",
+    },
     "processing_error": {
         "en": "\u274c An error occurred during processing: {error}",
         "es": "\u274c Ocurri\u00F3 un error durante el procesamiento: {error}",
@@ -526,6 +534,10 @@ def _display_total_amount(transactions: List[Dict[str, Any]]) -> str:
     total_amount = sum(float(transaction.get('amount', 0)) for transaction in transactions if transaction.get('amount'))
     return format_currency(total_amount, resolve_single_currency(transactions))
 
+
+def _has_successful_processing(summary: Dict[str, Any]) -> bool:
+    return int(summary.get("successful_files", 0)) > 0
+
 def main(debug: bool = False, lang: str = LANG, mode: str = "local"):
     """Launch the Streamlit application."""
     global LANG
@@ -831,7 +843,10 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
                     processing_summary['total_transactions'] += len(transactions)
                     processing_summary['banks_detected'].add(result.get('bank_name', result['bank_detected']))
 
-                    st.success(tr("transactions_extracted", name=uploaded_file.name, count=len(transactions)))
+                    if transactions:
+                        st.success(tr("transactions_extracted", name=uploaded_file.name, count=len(transactions)))
+                    else:
+                        st.success(tr("no_activity_extracted", name=uploaded_file.name))
                 else:
                     processing_summary['failed_files'] += 1
                     processing_summary['errors'].append(f"{uploaded_file.name}: {result['error']}")
@@ -855,7 +870,7 @@ def process_files(uploaded_files: List[Any], analysis_results: List[Dict[str, An
         progress_bar.progress(1.0)
         status_text.text(tr("processing_complete_status"))
         
-        if all_transactions:
+        if _has_successful_processing(processing_summary):
             # Generate Excel file
             excel_generator = ExcelGenerator()
             excel_data = excel_generator.create_excel_file(
@@ -931,6 +946,9 @@ def display_results(mode: str = "local"):
             for error in summary['errors']:
                 st.error(error)
     
+    if not transactions:
+        st.info(tr("no_activity_result"))
+
     # Transaction preview
     if transactions:
         st.subheader(tr("preview_header"))

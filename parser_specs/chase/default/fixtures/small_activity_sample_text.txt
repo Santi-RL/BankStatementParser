@@ -1,0 +1,22 @@
+JPMorgan Chase Bank, N.A.
+October 22, 2025throughNovember 21, 2025
+Account Number 000000000000001
+CHECKING SUMMARY
+AMOUNT
+Beginning Balance $1,345.12
+Deposits and Additions 1 $500.00
+Electronic Withdrawals 1 -$800.00
+Fees 1 -$15.00
+Ending Balance 3 $1,030.12
+DEPOSITS AND ADDITIONS
+DATE DESCRIPTION AMOUNT
+11/17 Online Transfer From Chk ...0001 Transaction#: 100000000001 $500.00
+Total Deposits and Additions $500.00
+ELECTRONIC WITHDRAWALS
+DATE DESCRIPTION AMOUNT
+11/05 Online Transfer To Chk ...0001 Transaction#: 100000000002 $800.00
+Total Electronic Withdrawals $800.00
+FEES
+DATE DESCRIPTION AMOUNT
+11/21 Monthly Service Fee $15.00
+Total Fees $15.00

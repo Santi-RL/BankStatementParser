@@ -7,7 +7,7 @@ import pytest
 from openpyxl import load_workbook
 
 import pdf_processor as pdf_processor_module
-from app import _build_csv_export, _display_total_amount
+from app import _build_csv_export, _display_total_amount, _has_successful_processing
 from excel_generator import ExcelGenerator
 from pdf_processor import PDFProcessor
 from utils import escape_spreadsheet_formula_value, temporary_pdf_copy
@@ -115,6 +115,47 @@ def test_display_total_amount_flags_multiple_currencies():
     ]
 
     assert _display_total_amount(transactions) == "No aplica (múltiples monedas)"
+
+
+def test_successful_processing_does_not_require_transactions():
+    assert _has_successful_processing({"successful_files": 1}) is True
+    assert _has_successful_processing({"successful_files": 0}) is False
+
+
+def test_excel_supports_a_reconciled_statement_without_transactions():
+    reconciliation = {
+        "source_file": "chase-no-activity.pdf",
+        "bank": "JPMorgan Chase",
+        "scope_label": "",
+        "currency": "USD",
+        "period_start": "2025-09-20",
+        "period_end": "2025-10-21",
+        "opening_balance": 12345.67,
+        "credits": "",
+        "debits": "",
+        "net_movements": 0.0,
+        "calculated_closing_balance": 12345.67,
+        "closing_balance": 12345.67,
+        "difference": 0.0,
+        "status": "passed",
+        "reason": "balanced",
+    }
+    summary = _build_summary(total_transactions=0)
+    summary["banks_detected"] = {"JPMorgan Chase"}
+
+    workbook_bytes = ExcelGenerator().create_excel_file(
+        [],
+        summary,
+        [reconciliation],
+    )
+    workbook = load_workbook(io.BytesIO(workbook_bytes))
+
+    assert _find_summary_value(workbook, "Total de movimientos:") == 0
+    assert workbook["Movimientos"]["A1"].value == "No se encontraron movimientos"
+    assert workbook["Conciliación"]["G2"].value == 12345.67
+    assert workbook["Conciliación"]["J2"].value == 0
+    assert workbook["Conciliación"]["L2"].value == 12345.67
+    assert workbook["Conciliación"]["N2"].value == "Conciliado"
 
 
 def test_excel_scope_sheet_titles_are_sanitized_and_deduplicated():

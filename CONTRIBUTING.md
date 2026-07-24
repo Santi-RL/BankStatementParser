@@ -104,6 +104,10 @@ Editá `spec.toml` directamente hasta que el parseo sea correcto. Los campos cla
 | `normalize.date_formats` | Formatos de fecha Python (`strptime`) | Si las fechas no se parsean |
 | `change_detection.min_transactions` | Mínimo de transacciones esperadas | Si el extracto de ejemplo es pequeño |
 | `change_detection.min_match_ratio` | Cobertura mínima (candidatos vs matcheados) | Ajustar según complejidad del formato |
+| `change_detection.empty_statement_pattern` | Firma estructural estricta de un extracto válido sin actividad | Sólo cuando el banco omite por completo la tabla si no hay movimientos |
+| `change_detection.empty_statement_requires_reconciliation` | Exige que los saldos concilien antes de aceptar cero movimientos | Mantener en `true` salvo una razón documentada y cubierta por tests |
+
+No bajes `min_transactions` a cero para resolver un extracto sin actividad: eso puede ocultar un cambio real de formato. Usá `empty_statement_pattern` junto con una sección de `[reconciliation]`; el motor sólo acepta el caso vacío si no hay filas candidatas ni rechazadas y la conciliación requerida resulta `passed`.
 
 ### Paso 4: Validar iterativamente
 

@@ -53,6 +53,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
   - contexto dinámico por bloque,
   - filtrado por entidades seleccionadas,
   - actualización parcial de scopes sin perder moneda ya detectada.
+  - aceptación opt-in de extractos sin movimientos mediante firma estructural estricta y conciliación obligatoria por defecto.
 
 ### Fase 4: aprendizaje asistido y publicación
 - Existe backoffice en Streamlit para aprender formatos.
@@ -69,7 +70,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - La UI exige selección explícita por entidad concreta antes de procesar documentos consolidados.
 - La salida conserva compatibilidad con el modelo actual y agrega metadatos opcionales por scope.
 - Excel ahora mantiene `Movimientos` como hoja consolidada y agrega hojas por entidad cuando se procesan múltiples scopes.
-- Se incorporó conciliación declarativa opcional y no bloqueante, inicialmente para Brubank: calcula por scope y moneda `saldo inicial + neto de movimientos` contra saldo final, y exporta estados `passed`, `failed` o `not_available` en una hoja auxiliar.
+- Se incorporó conciliación declarativa opcional y no bloqueante para Brubank y Chase: calcula por extracto, scope y moneda `saldo inicial + neto de movimientos` contra saldo final, y exporta estados `passed`, `failed` o `not_available` en una hoja auxiliar.
 - Los formatos sin saldos compatibles continúan procesándose normalmente y quedan identificados como conciliación no disponible; la adopción puede avanzar banco por banco sin bloquear la salida.
 - La CLI `validate-draft` ya reporta scopes descubiertos.
 - La cobertura multi-entidad ya no depende del PDF real BBVA faltante: `tests/integration/test_bank_parsing.py` usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta.
@@ -105,7 +106,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 
 ### Formatos ya migrados
 - `galicia_ar/default`
-- `chase/default`
+- `chase/default` v2, con scope único, conciliación declarativa y fixtures sanitizadas para extractos válidos tanto sin movimientos como con actividad reducida
 - `roela_ar/default`
 - `bbva/default`
 - `bbva/account_summary`
@@ -117,7 +118,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 ### Prioridad 0: correcciones funcionales y de salida
 Estas tareas van primero porque afectan la confiabilidad del resultado entregado al usuario, incluso en una prueba controlada.
 
-- Sin pendientes funcionales abiertos en esta prioridad después de corregir el parseo de fechas sin año.
+- Sin pendientes funcionales abiertos en esta prioridad después de corregir el parseo de fechas sin año y la salida de extractos válidos sin movimientos.
 
 ### Prioridad 1: robustez del parser y detección de cambios
 Estas tareas fortalecen el motor existente antes de sumar más superficie.

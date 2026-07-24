@@ -194,6 +194,30 @@ class PDFProcessor:
             scoped_result = base_spec_result
             available_scope_ids = {scope["id"] for scope in analysis.get("available_scopes", [])}
             requested_scope_ids = list(dict.fromkeys(selected_scope_ids or []))
+            unknown_scope_ids = sorted(set(requested_scope_ids) - available_scope_ids)
+            if unknown_scope_ids:
+                result = {
+                    'success': False,
+                    'error': (
+                        'Selected scopes are not available in this statement: '
+                        + ', '.join(unknown_scope_ids)
+                    ),
+                    'transactions': [],
+                    'available_scopes': analysis.get('available_scopes', []),
+                    'multi_scope': analysis.get('multi_scope', False),
+                    'bank_detected': spec_match.spec.bank_id,
+                    'bank_name': spec_match.spec.display_name,
+                    'parse_status': 'validation_failed',
+                    'format_id': spec_match.spec.format_id,
+                    'format_version': spec_match.spec.version,
+                    'diagnostics': analysis.get('diagnostics', {}),
+                }
+                if debug and debug_log is not None:
+                    debug_log.append(
+                        f"Rejected {len(unknown_scope_ids)} unavailable selected scopes"
+                    )
+                    result['debug_log'] = debug_log
+                return result
             if requested_scope_ids and set(requested_scope_ids) != available_scope_ids:
                 if debug and debug_log is not None:
                     debug_log.append(f"Re-running declarative parser with {len(requested_scope_ids)} selected scopes")
@@ -206,7 +230,10 @@ class PDFProcessor:
                 valid_transactions = [dict(transaction) for transaction in analysis['transactions']]
             else:
                 valid_transactions = self._validate_transactions(scoped_result.transactions)
-            if not valid_transactions:
+            empty_statement_detected = bool(
+                scoped_result.diagnostics.get("empty_statement_detected")
+            )
+            if not valid_transactions and not empty_statement_detected:
                 result = {
                     'success': False,
                     'error': 'Declarative format matched, but no valid transactions were produced.',

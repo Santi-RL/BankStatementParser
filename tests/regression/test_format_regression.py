@@ -334,6 +334,7 @@ def test_guard_rejects_ungrouped_four_digit_amount_tail():
             "JPMorgan Chase Bank, N.A.",
             "000000771927196",
             "Statement through February 29, 2024",
+            "CHECKING SUMMARY",
             "DEPOSITS AND ADDITIONS",
             *changed_rows,
             "Total Deposits and Additions $5.00",

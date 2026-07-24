@@ -110,6 +110,15 @@ class FormatSpec:
 
         self.min_transactions = int(self.change_detection.get("min_transactions", 1))
         self.min_match_ratio = float(self.change_detection.get("min_match_ratio", 0.5))
+        empty_statement_pattern = self.change_detection.get("empty_statement_pattern", "")
+        self.empty_statement_regex = (
+            re.compile(empty_statement_pattern, re.IGNORECASE | re.MULTILINE)
+            if empty_statement_pattern
+            else None
+        )
+        self.empty_statement_requires_reconciliation = bool(
+            self.change_detection.get("empty_statement_requires_reconciliation", True)
+        )
         self.supports_explicit_scopes = bool(
             self.scope_definitions
             or any(
@@ -376,6 +385,15 @@ class FormatSpec:
                 "context_rules": [],
             }
         ]
+        global_candidate_lines = sum(
+            1
+            for line in lines
+            if any(
+                scope["candidate_pattern"]
+                and scope["candidate_pattern"].search(line)
+                for scope in scopes
+            )
+        )
 
         for scope in scopes:
             scope_transactions, scope_diagnostics = self._parse_scope(
@@ -405,14 +423,34 @@ class FormatSpec:
         )
 
         coverage = matched_starts / candidate_lines if candidate_lines else 0.0
-        passes_change_detection = (
+        regular_statement_passes = (
             rejected_matches == 0
             and len(transactions) >= self.min_transactions
             and coverage >= self.min_match_ratio
         )
+        empty_statement_pattern_matched = bool(
+            self.empty_statement_regex
+            and self.empty_statement_regex.search(text)
+        )
+        empty_statement_reconciled = bool(reconciliations) and all(
+            reconciliation.get("status") == "passed"
+            for reconciliation in reconciliations
+        )
+        empty_statement_detected = bool(
+            empty_statement_pattern_matched
+            and not transactions
+            and global_candidate_lines == 0
+            and rejected_matches == 0
+            and (
+                not self.empty_statement_requires_reconciliation
+                or empty_statement_reconciled
+            )
+        )
+        passes_change_detection = regular_statement_passes or empty_statement_detected
         diagnostics = {
             "matched_starts": matched_starts,
             "candidate_lines": candidate_lines,
+            "global_candidate_lines": global_candidate_lines,
             "coverage": round(coverage, 4),
             "transactions_found": len(transactions),
             "rejected_matches": rejected_matches,
@@ -426,6 +464,9 @@ class FormatSpec:
             "available_scopes": sorted_scopes,
             "reconciliation_supported": self.supports_reconciliation,
             "reconciliations_found": len(reconciliations),
+            "empty_statement_pattern_matched": empty_statement_pattern_matched,
+            "empty_statement_reconciled": empty_statement_reconciled,
+            "empty_statement_detected": empty_statement_detected,
         }
         return SpecParseResult(
             transactions=transactions,

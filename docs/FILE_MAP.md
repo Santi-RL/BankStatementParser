@@ -38,7 +38,9 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | Ruta | Rol | Estado / observación |
 | --- | --- | --- |
 | `parser_specs/galicia_ar/default/spec.toml` | Formato publicado de Galicia | Vigente |
-| `parser_specs/chase/default/spec.toml` | Formato publicado de Chase | Vigente |
+| `parser_specs/chase/default/spec.toml` | Formato publicado de Chase | Vigente; v2 acepta extractos sin actividad sólo con firma estricta y conciliación de saldos |
+| `parser_specs/chase/default/fixtures/no_activity_sample_text.txt` | Fixture sanitizada de Chase sin movimientos | Vigente; cubre salida exitosa con cero movimientos y saldo inicial igual al final |
+| `parser_specs/chase/default/fixtures/small_activity_sample_text.txt` | Fixture sanitizada de Chase con actividad reducida | Vigente; cubre tres movimientos, scope único y conciliación aprobada |
 | `parser_specs/roela_ar/default/spec.toml` | Formato publicado de Roela | Vigente |
 | `parser_specs/bbva/default/spec.toml` | Formato publicado de BBVA consolidado | Vigente |
 | `parser_specs/bbva/account_summary/spec.toml` | Formato publicado de BBVA para resumen simple de cuenta | Vigente |

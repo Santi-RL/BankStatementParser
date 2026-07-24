@@ -1,6 +1,7 @@
 JPMorgan Chase Bank, N.A.
 000000771927196
 Statement through February 29, 2024
+CHECKING SUMMARY
 DEPOSITS AND ADDITIONS
 02/05 Zelle Payment From Person A $1,900.00 Posted
 02/08 Deposit 2096462829 $300.00 Posted

@@ -27,6 +27,130 @@ def test_detect_bank_chase():
     assert processor._detect_bank("This is a statement from JPMorgan Chase Bank.") == "chase"
 
 
+def test_chase_no_activity_statement_is_successfully_processed():
+    text = Path(
+        "parser_specs/chase/default/fixtures/no_activity_sample_text.txt"
+    ).read_text(encoding="utf-8")
+    processor = DummyProcessor(text)
+
+    analysis = processor.analyze_pdf("dummy.pdf", "chase-no-activity.pdf")
+    result = processor.process_pdf("dummy.pdf", "chase-no-activity.pdf")
+
+    assert analysis["success"] is True
+    assert analysis["parse_status"] == "ok"
+    assert analysis["format_id"] == "default"
+    assert analysis["format_version"] == 2
+    assert analysis["total_transactions"] == 0
+    assert analysis["diagnostics"]["empty_statement_detected"] is True
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["transactions"] == []
+    assert result["total_transactions"] == 0
+    assert result["reconciliation_status"] == "passed"
+    assert len(result["reconciliations"]) == 1
+    reconciliation = result["reconciliations"][0]
+    assert reconciliation["period_start"] == "2025-09-20"
+    assert reconciliation["period_end"] == "2025-10-21"
+    assert reconciliation["opening_balance"] == 12345.67
+    assert reconciliation["net_movements"] == 0.0
+    assert reconciliation["closing_balance"] == 12345.67
+    assert reconciliation["difference"] == 0.0
+
+
+def test_chase_no_activity_signature_requires_balanced_summary():
+    text = Path(
+        "parser_specs/chase/default/fixtures/no_activity_sample_text.txt"
+    ).read_text(encoding="utf-8")
+    text = text.replace("Ending Balance $12,345.67", "Ending Balance $12,345.69")
+
+    result = DummyProcessor(text).process_pdf("dummy.pdf", "chase-unbalanced.pdf")
+
+    assert result["success"] is False
+    assert result["parse_status"] == "format_changed"
+    assert result["diagnostics"]["empty_statement_pattern_matched"] is True
+    assert result["diagnostics"]["empty_statement_reconciled"] is False
+    assert result["diagnostics"]["empty_statement_detected"] is False
+
+
+def test_chase_no_activity_signature_rejects_candidates_under_unknown_section():
+    text = Path(
+        "parser_specs/chase/default/fixtures/no_activity_sample_text.txt"
+    ).read_text(encoding="utf-8")
+    text = "\n".join(
+        [
+            text,
+            "ACCOUNT ACTIVITY",
+            "10/05 Unexpected deposit $500.00",
+        ]
+    )
+
+    result = DummyProcessor(text).process_pdf(
+        "dummy.pdf",
+        "chase-unknown-activity-section.pdf",
+    )
+
+    assert result["success"] is False
+    assert result["parse_status"] == "format_changed"
+    assert result["diagnostics"]["candidate_lines"] == 0
+    assert result["diagnostics"]["global_candidate_lines"] == 1
+    assert result["diagnostics"]["empty_statement_pattern_matched"] is True
+    assert result["diagnostics"]["empty_statement_reconciled"] is True
+    assert result["diagnostics"]["empty_statement_detected"] is False
+
+
+def test_chase_no_activity_rejects_an_unknown_selected_scope():
+    text = Path(
+        "parser_specs/chase/default/fixtures/no_activity_sample_text.txt"
+    ).read_text(encoding="utf-8")
+
+    result = DummyProcessor(text).process_pdf(
+        "dummy.pdf",
+        "chase-no-activity.pdf",
+        selected_scope_ids=["bank_account:unknown"],
+    )
+
+    assert result["success"] is False
+    assert result["parse_status"] == "validation_failed"
+    assert result["transactions"] == []
+    assert "bank_account:unknown" in result["error"]
+
+
+def test_chase_small_activity_statement_is_successfully_processed():
+    text = Path(
+        "parser_specs/chase/default/fixtures/small_activity_sample_text.txt"
+    ).read_text(encoding="utf-8")
+
+    result = DummyProcessor(text).process_pdf("dummy.pdf", "chase-small-activity.pdf")
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["format_version"] == 2
+    assert result["total_transactions"] == 3
+    assert [scope["id"] for scope in result["available_scopes"]] == [
+        "bank_account:checking"
+    ]
+    assert {transaction["scope_id"] for transaction in result["transactions"]} == {
+        "bank_account:checking"
+    }
+    assert [transaction["amount"] for transaction in result["transactions"]] == [
+        500.0,
+        -800.0,
+        -15.0,
+    ]
+    assert {transaction["date"] for transaction in result["transactions"]} == {
+        "2025-11-05",
+        "2025-11-17",
+        "2025-11-21",
+    }
+    assert result["diagnostics"]["coverage"] == 1.0
+    assert result["diagnostics"]["rejected_matches"] == 0
+    assert result["diagnostics"]["empty_statement_detected"] is False
+    assert result["reconciliation_status"] == "passed"
+    assert result["reconciliations"][0]["scope_id"] == "bank_account:checking"
+
+
+
 def test_detect_bank_mercado_pago():
     processor = PDFProcessor()
     text = "Resumen de cuenta Mercado Pago con CVU 0000003100043499119011 y mercadopago.com.ar"

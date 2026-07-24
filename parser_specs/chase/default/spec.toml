@@ -1,7 +1,7 @@
 [meta]
 bank_id = "chase"
 format_id = "default"
-version = 1
+version = 2
 status = "published"
 country = "US"
 currency_default = "USD"
@@ -10,11 +10,10 @@ display_name = "JPMorgan Chase"
 [detect]
 required_keywords = [
   "JPMorgan Chase Bank, N.A.",
-  "DEPOSITS AND ADDITIONS",
-  "ELECTRONIC WITHDRAWALS",
+  "CHECKING SUMMARY",
 ]
 excluded_keywords = []
-min_score = 0.66
+min_score = 1.0
 
 [extract]
 strategy = "line_regex"
@@ -27,6 +26,7 @@ stop_patterns = ['^Total Deposits and Additions']
 line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>\$?[\d,]+\.\d{2})$'
 candidate_pattern = '^\d{2}/\d{2}\s+'
 multiline = false
+default_scope_id = "bank_account:checking"
 amount_sign = "positive"
 
 [[extract.sections]]
@@ -37,6 +37,7 @@ line_pattern = '^(?P<date>\d{2}/\d{2})\s+(?P<description>.+?)\s+(?P<amount>\$?[\
 candidate_pattern = '^\d{2}/\d{2}\s+'
 multiline = false
 amount_sign = "negative"
+default_scope_id = "bank_account:checking"
 
 [[extract.sections]]
 name = "fees"
@@ -47,17 +48,43 @@ candidate_pattern = '^\d{2}/\d{2}\s+'
 multiline = false
 amount_sign = "negative"
 
+default_scope_id = "bank_account:checking"
+
+[[scopes]]
+name = "checking"
+pattern = '(?m)^(?:Account Number\s+)?(?P<account>\d{15})$'
+scope_id_template = "bank_account:checking"
+label_template = "Chase Total Checking"
+product_type = "bank_account"
+account_template = '{account}'
+currency = "USD"
+source_sections = ["deposits", "withdrawals", "fees"]
 [fields]
 date = "date"
 description = "description"
 amount = "amount"
 balance = ""
-account_pattern = '(?m)^(\d{15})$'
+account_pattern = '(?m)^(?:Account Number\s+)?(\d{15})$'
 
 [normalize]
 date_formats = ['%m/%d']
 statement_year_pattern = 'through.*?(?P<year>20\d{2})'
 
+[reconciliation]
+tolerance = "0.01"
+precision = "0.01"
+period_pattern = '(?P<period_start>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})\s*through\s*(?P<period_end>[A-Z][a-z]+\s+\d{1,2},\s+\d{4})'
+period_date_formats = ['%B %d, %Y']
+
+[[reconciliation.sections]]
+name = "checking"
+currency = "USD"
+opening_pattern = '^Beginning Balance\s+\$(?P<opening_balance>-?\d{1,3}(?:,\d{3})*\.\d{2})$'
+closing_pattern = '^Ending Balance(?:\s+\d+)?\s+\$(?P<closing_balance>-?\d{1,3}(?:,\d{3})*\.\d{2})$'
+scope_id = "bank_account:checking"
+
 [change_detection]
-min_transactions = 5
+min_transactions = 1
 min_match_ratio = 0.9
+empty_statement_pattern = '(?s:^\*?start\*?\s*summary\s*$\s*^Chase Total Checking\s*$\s*^CHECKING SUMMARY\s*$\s*^AMOUNT\s*$\s*^Beginning Balance\s+\$-?\d{1,3}(?:,\d{3})*\.\d{2}\s*$\s*^Ending Balance\s+\$-?\d{1,3}(?:,\d{3})*\.\d{2}\s*$\s*^\*?end\*?\s*summary\s*$)'
+empty_statement_requires_reconciliation = true

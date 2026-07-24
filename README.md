@@ -28,7 +28,13 @@ Si el banco es detectado pero no tiene una spec publicada, el resultado esperado
 
 Los formatos que declaren saldos de resumen pueden incluir en el Excel una hoja `Conciliación`. El control compara, por extracto, cuenta, moneda y período, el saldo inicial más el neto de movimientos contra el saldo final informado.
 
-La conciliación es opcional y no bloqueante. Si un formato todavía no la soporta, si faltan saldos o si existe una diferencia, la aplicación igualmente procesa los movimientos y genera el archivo; el estado y el detalle quedan informados en el Excel. Brubank es el primer formato con este control declarativo.
+La conciliación es opcional y no bloqueante. Si un formato todavía no la soporta, si faltan saldos o si existe una diferencia, la aplicación igualmente procesa los movimientos y genera el archivo; el estado y el detalle quedan informados en el Excel. Brubank y Chase ya usan este control declarativo.
+
+## Extractos sin movimientos
+
+Un extracto correctamente identificado puede ser válido aunque no contenga movimientos. Para aceptarlo, la spec debe reconocer una firma explícita de extracto vacío y, por defecto, verificar que el saldo inicial más cero movimientos coincida con el saldo final.
+
+La salida esperada es `parse_status = "ok"`, una lista `transactions` vacía y `total_transactions = 0`. El Excel se genera igualmente: la hoja `Movimientos` informa que no se encontraron movimientos y la hoja `Conciliación` conserva período, moneda, saldos y diferencia. No se crea una transacción artificial para representar el saldo inicial.
 
 ## Muestras PDF locales
 

@@ -25,6 +25,8 @@ Procesamiento manual comprobado con muestras reales locales:
 - `local_samples/roela_ar/BancoRoela.Argentina.Test.pdf` -> `roela_ar`, 4913 transacciones, vía spec declarativa.
 - `local_samples/chase/BANCO CH 2024 1.pdf` -> `chase`, 12 transacciones, vía spec declarativa.
 - `local_samples/chase/BANCO CH 2024 2.pdf` -> `chase`, 11 transacciones, vía spec declarativa, incluyendo la operación del 29/02/2024.
+- `Extracto Chase octubre 2025 (PDF externo no versionado)` -> `chase/default` v2, cero movimientos, período y saldos reconocidos, conciliación `passed` y salida `parse_status = "ok"`.
+- `Extracto Chase noviembre 2025 (PDF externo no versionado)` -> `chase/default` v2, 3 movimientos, cobertura `1.0`, cero rechazos, scope único y conciliación `passed`.
 - `local_samples/bbva/01-2023 BBVA.pdf` -> validación histórica de `bbva` consolidado con 5 scopes detectados y 192 transacciones; la muestra no está disponible hoy y la cobertura automatizada usa fixture sanitizada.
 - `local_samples/bbva/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
@@ -86,6 +88,7 @@ Nota operativa:
 - El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
 - El core declarativo ya soporta documentos multi-entidad con descubrimiento de scopes y filtrado por selección explícita.
 - Las actualizaciones parciales de scopes ya no pisan la moneda previamente detectada cuando una regla solo completa datos como el número de cuenta.
+- El core declarativo acepta de forma opt-in extractos sin movimientos sólo si una firma estructural explícita coincide, no hay filas candidatas o rechazadas y la conciliación requerida resulta `passed`.
 - El fallback Python legacy fue retirado del runtime.
 
 ### Selección manual de formato
@@ -102,7 +105,7 @@ Nota operativa:
 
 ### Migración declarativa ya hecha
 - `galicia_ar/default` publicado y cubierto por regresión.
-- `chase/default` publicado y cubierto por regresión.
+- `chase/default` v2 publicado y cubierto por regresión, fixtures sanitizadas sin actividad y con actividad reducida, y validación manual con dos PDFs reales de cero y tres movimientos.
 - `roela_ar/default` publicado y cubierto por regresión.
 - `bbva/default` publicado y cubierto por regresión/integración.
 - `bbva/account_summary` publicado y cubierto por regresión/integración.
@@ -112,7 +115,7 @@ Nota operativa:
 ## Lo que todavía falta
 
 ### Prioridad 0: correcciones funcionales y de salida
-- Sin pendientes abiertos en esta prioridad después de corregir el parseo de fechas sin año.
+- Sin pendientes abiertos en esta prioridad después de corregir el parseo de fechas sin año y la salida de extractos válidos sin movimientos.
 
 ### Prioridad 1: robustez del parser y detección de cambios
 - Mejorar los diagnósticos de `format_changed` para mostrar umbrales fallidos, cobertura, candidatos y secciones afectadas.

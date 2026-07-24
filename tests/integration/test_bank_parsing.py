@@ -267,7 +267,7 @@ def test_chase_pdf_uses_declarative_spec_with_correct_dates_and_account():
     assert result["parse_status"] == "ok"
     assert result["bank_detected"] == "chase"
     assert result["format_id"] == "default"
-    assert result["format_version"] == 1
+    assert result["format_version"] == 2
     assert result["total_transactions"] == 12
     assert result["transactions"][0]["date"] == "2024-01-02"
     assert result["transactions"][4]["date"] == "2024-01-03"

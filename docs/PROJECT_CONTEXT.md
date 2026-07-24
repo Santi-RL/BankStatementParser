@@ -13,6 +13,7 @@ La idea central no es solo “leer PDFs”, sino crear una capa de normalizació
 - Usa únicamente formatos declarativos publicados en `parser_specs/`.
 - Ejecuta un preanálisis cuando detecta documentos con múltiples cuentas o tarjetas extraíbles.
 - Genera un `.xlsx` con hojas de resumen, movimientos y análisis.
+- Acepta extractos válidos sin movimientos cuando la spec reconoce una firma vacía estricta y los saldos concilian.
 - Permite descargar también un CSV.
 - Incluye un backoffice dentro de Streamlit para entrenar y publicar nuevos formatos declarativos.
 - Incluye un modo `production-test` que oculta el backoffice y sanea la salida operativa para pruebas controladas.
@@ -59,6 +60,8 @@ Arma el Excel final. Hoy crea cinco hojas base:
 - `Resumen Mensual`
 
 La hoja `Conciliación` informa por extracto, scope, moneda y período si el saldo inicial más el neto de movimientos coincide con el saldo final. Es un control auxiliar: una diferencia o la ausencia de saldos no bloquea el procesamiento ni la exportación.
+
+En un extracto válido sin actividad, `transactions` queda vacío y el Excel se genera igualmente. `Movimientos` informa que no se encontraron movimientos y `Conciliación` conserva el control de saldo inicial, neto cero y saldo final; el saldo inicial no se transforma en una transacción artificial.
 
 Cuando se seleccionan múltiples entidades, agrega también una hoja por cuenta o tarjeta extraída. Las hojas, títulos, columnas y valores visibles de exportación se muestran en español; las claves internas del modelo siguen en inglés.
 
