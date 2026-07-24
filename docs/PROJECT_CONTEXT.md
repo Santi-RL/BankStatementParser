@@ -6,8 +6,8 @@
 La idea central no es solo “leer PDFs”, sino crear una capa de normalización reusable para distintos bancos y formatos de extracto.
 
 ## Qué hace hoy
-- Acepta múltiples PDFs por carga.
-- Rechaza archivos no PDF y archivos grandes.
+- Acepta hasta 12 PDFs por carga para procesar, por ejemplo, un año completo de resúmenes mensuales.
+- Rechaza archivos no PDF y archivos de más de 50 MB.
 - Extrae texto con `pdfplumber`, usa `pypdf` como fallback y tiene un tercer fallback muy básico sobre el binario bruto.
 - Detecta banco por heurísticas de texto.
 - Usa únicamente formatos declarativos publicados en `parser_specs/`.
@@ -128,6 +128,7 @@ Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estáti
 - La cobertura multi-entidad de integración usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta, incluyendo entidades sin movimientos.
 
 ## Límites explícitos del producto actual
+- Cada carga admite como máximo 12 archivos PDF de hasta 50 MB cada uno.
 - Solo soporta PDFs basados en texto. No hay OCR.
 - La detección de bancos es heurística y frágil.
 - Un banco detectado pero sin spec publicada debe fallar como `unknown_format`.

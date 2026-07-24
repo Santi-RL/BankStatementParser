@@ -10,6 +10,8 @@ from typing import Any, Iterable, Iterator, List, Optional
 
 
 FORMULA_TRIGGER_CHARACTERS = ("=", "+", "-", "@", "\t", "\r", "\n")
+MAX_PDF_FILES = 12
+MAX_PDF_SIZE_MB = 50
 TRANSACTION_PRESENTATION_COLUMN_ORDER = [
     "date",
     "description",
@@ -273,12 +275,10 @@ def validate_pdf_files(uploaded_files: List[Any]) -> dict:
         Dictionary with validation results
     """
     errors = []
-    max_files = 10
-    max_size_mb = 50
     
     # Check number of files
-    if len(uploaded_files) > max_files:
-        errors.append(f"Demasiados archivos cargados. Máximo permitido: {max_files}")
+    if len(uploaded_files) > MAX_PDF_FILES:
+        errors.append(f"Demasiados archivos cargados. Máximo permitido: {MAX_PDF_FILES}")
     
     # Check each file
     for file in uploaded_files:
@@ -289,10 +289,10 @@ def validate_pdf_files(uploaded_files: List[Any]) -> dict:
         
         # Check file size
         file_size_mb = len(file.getvalue()) / (1024 * 1024)
-        if file_size_mb > max_size_mb:
+        if file_size_mb > MAX_PDF_SIZE_MB:
             errors.append(
                 f"El archivo {file.name} es demasiado grande ({file_size_mb:.1f}MB). "
-                f"Máximo permitido: {max_size_mb}MB"
+                f"Máximo permitido: {MAX_PDF_SIZE_MB}MB"
             )
         
         # Reset file pointer after reading

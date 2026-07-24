@@ -2,6 +2,10 @@
 
 Esta aplicación convierte extractos bancarios en PDF a archivos Excel mediante la interfaz de Streamlit.
 
+## Límites de carga
+
+Cada lote admite hasta 12 extractos bancarios en formato PDF, lo que permite procesar juntos los doce resúmenes mensuales de un año. Cada archivo puede ocupar como máximo 50 MB y debe contener texto extraíble; la aplicación no incorpora OCR para imágenes escaneadas.
+
 ## Documentación interna
 
 Si vas a retomar el proyecto o a trabajar con agentes, empieza por estos archivos:

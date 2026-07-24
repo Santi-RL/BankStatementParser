@@ -7,10 +7,10 @@ import pytest
 from openpyxl import load_workbook
 
 import pdf_processor as pdf_processor_module
-from app import _build_csv_export, _display_total_amount, _has_successful_processing
+from app import TRANSLATIONS, _build_csv_export, _display_total_amount, _has_successful_processing
 from excel_generator import ExcelGenerator
 from pdf_processor import PDFProcessor
-from utils import escape_spreadsheet_formula_value, temporary_pdf_copy
+from utils import MAX_PDF_FILES, escape_spreadsheet_formula_value, temporary_pdf_copy, validate_pdf_files
 
 
 def _build_summary(total_transactions: int, selected_scopes: list[dict] | None = None) -> dict:
@@ -31,6 +31,44 @@ def _find_summary_value(workbook, label: str):
         if row[0].value == label:
             return row[1].value
     raise AssertionError(f"Label not found in Resumen sheet: {label}")
+
+
+class UploadedPdf:
+    def __init__(self, name: str):
+        self.name = name
+        self._buffer = io.BytesIO(b"%PDF-1.4 test payload")
+
+    def getvalue(self) -> bytes:
+        return self._buffer.getvalue()
+
+    def seek(self, position: int):
+        return self._buffer.seek(position)
+
+
+def _uploaded_pdf_batch(count: int) -> list[UploadedPdf]:
+    return [UploadedPdf(f"extracto-{index:02d}.pdf") for index in range(1, count + 1)]
+
+
+def test_pdf_upload_limit_accepts_twelve_files():
+    result = validate_pdf_files(_uploaded_pdf_batch(12))
+
+    assert MAX_PDF_FILES == 12
+    assert result == {"valid": True, "errors": []}
+
+
+def test_pdf_upload_limit_rejects_thirteen_files():
+    result = validate_pdf_files(_uploaded_pdf_batch(13))
+
+    assert result == {
+        "valid": False,
+        "errors": ["Demasiados archivos cargados. Máximo permitido: 12"],
+    }
+
+
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_pdf_upload_limit_is_synchronized_with_ui_copy(language):
+    assert str(MAX_PDF_FILES) in TRANSLATIONS["instructions_text"][language]
+    assert str(MAX_PDF_FILES) in TRANSLATIONS["file_uploader_help"][language]
 
 
 @pytest.mark.parametrize("value", ["=1+1", "+1", "-1", "@cmd", "\tcmd", "\rcmd", "\ncmd"])

@@ -17,7 +17,7 @@ from reconciliation import aggregate_reconciliation_status
 import utils as _utils
 
 # Streamlit Cloud may rerun app.py after pulling code without clearing cached helper modules.
-if not hasattr(_utils, "user_facing_product_type"):
+if not hasattr(_utils, "user_facing_product_type") or not hasattr(_utils, "MAX_PDF_FILES"):
     _utils = importlib.reload(_utils)
 
 import excel_generator as _excel_generator
@@ -27,6 +27,8 @@ if not hasattr(_excel_generator.ExcelGenerator, "_prepare_transaction_export_dat
 
 ExcelGenerator = _excel_generator.ExcelGenerator
 from utils import (
+    MAX_PDF_FILES,
+    MAX_PDF_SIZE_MB,
     escape_spreadsheet_formula_value,
     format_currency,
     get_supported_banks,
@@ -58,8 +60,8 @@ TRANSLATIONS = {
     "debug_mode": {"en": "\U0001f41e Debug Mode", "es": "\U0001f41e Modo Depuraci\u00F3n"},
     "instructions_header": {"en": "\U0001f4cb Instructions", "es": "\U0001f4cb Instrucciones"},
     "instructions_text": {
-        "en": """\n        **File Requirements:**\n        - PDF format only\n        - Text-based PDFs (not scanned images)\n        - Maximum 10 files per upload\n        - Maximum 50MB per file\n\n        **Output:**\n        - Structured Excel file\n        - Standardized transaction format\n        - Summary statistics\n        """,
-        "es": """\n        **Requisitos de Archivo:**\n        - Solo formato PDF\n        - PDFs basados en texto (no im\u00E1genes escaneadas)\n        - M\u00E1ximo 10 archivos por carga\n        - M\u00E1ximo 50MB por archivo\n\n        **Salida:**\n        - Archivo Excel estructurado\n        - Formato de transacciones estandarizado\n        - Estad\u00EDsticas resumidas\n        """,
+        "en": f"""\n        **File Requirements:**\n        - PDF format only\n        - Text-based PDFs (not scanned images)\n        - Maximum {MAX_PDF_FILES} files per upload\n        - Maximum {MAX_PDF_SIZE_MB}MB per file\n\n        **Output:**\n        - Structured Excel file\n        - Standardized transaction format\n        - Summary statistics\n        """,
+        "es": f"""\n        **Requisitos de Archivo:**\n        - Solo formato PDF\n        - PDFs basados en texto (no im\u00E1genes escaneadas)\n        - M\u00E1ximo {MAX_PDF_FILES} archivos por carga\n        - M\u00E1ximo {MAX_PDF_SIZE_MB}MB por archivo\n\n        **Salida:**\n        - Archivo Excel estructurado\n        - Formato de transacciones estandarizado\n        - Estad\u00EDsticas resumidas\n        """,
     },
     "supported_banks_header": {"en": "\U0001f3e6 Supported Banks", "es": "\U0001f3e6 Bancos Soportados"},
     "sample_header": {"en": "\U0001f4ca Sample Output Structure", "es": "\U0001f4ca Ejemplo de Estructura de Salida"},
@@ -70,8 +72,8 @@ TRANSLATIONS = {
     "upload_header": {"en": "\U0001f4c1 Upload Bank Statements", "es": "\U0001f4c1 Sube Extractos Bancarios"},
     "file_uploader_label": {"en": "Choose PDF files", "es": "Elige archivos PDF"},
     "file_uploader_help": {
-        "en": "Upload multiple bank statement PDF files. Maximum 10 files, 50MB each.",
-        "es": "Sube varios archivos PDF de extractos bancarios. M\u00E1ximo 10 archivos, 50MB cada uno.",
+        "en": f"Upload multiple bank statement PDF files. Maximum {MAX_PDF_FILES} files, {MAX_PDF_SIZE_MB}MB each.",
+        "es": f"Sube varios archivos PDF de extractos bancarios. M\u00E1ximo {MAX_PDF_FILES} archivos, {MAX_PDF_SIZE_MB}MB cada uno.",
     },
     "valid_files": {
         "en": "\u2705 {n} valid PDF files uploaded",
