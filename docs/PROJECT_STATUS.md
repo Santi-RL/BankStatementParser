@@ -13,10 +13,10 @@ El proyecto ya dejó de ser solo un prototipo con parsers sueltos. Hoy tiene:
 
 Sigue siendo, de todos modos, una base en consolidación y no un producto cerrado. El runtime productivo ya es declarativo, pero la cobertura real sigue dependiendo de publicar specs por banco y formato. La aplicación está lista para pruebas controladas con datasets acotados; todavía no debe tratarse como lista para público general.
 
-## Estado comprobado al 10 de julio de 2026
+## Estado comprobado al 7 de agosto de 2026
 Validación local ejecutada con `venv\Scripts\python.exe`:
-- `python -m pytest -q` -> `119 passed`
-- `python format_cli.py regress` -> `success: true` con `processed: 7`
+- `python -m pytest -q` -> `136 passed`
+- `python format_cli.py regress` -> `success: true` con `processed: 8`
 - CI remoto configurado en `.github/workflows/ci.yml` para push/PR a `main`, incluyendo tests Python, regresión declarativa y smoke E2E
 - `npm run test:e2e` -> `1 passed`; smoke Playwright en `production-test` con PDF sanitizado generado desde fixture Galicia
 
@@ -30,6 +30,7 @@ Procesamiento manual comprobado con muestras reales locales:
 - `local_samples/bbva/01-2023 BBVA.pdf` -> validación histórica de `bbva` consolidado con 5 scopes detectados y 192 transacciones; la muestra no está disponible hoy y la cobertura automatizada usa fixture sanitizada.
 - `local_samples/bbva/Resumen caja de ahorro BBVA 09-2023.pdf` -> `bbva`, resumen simple con 1 scope detectado y 12 transacciones.
 - `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf` -> `mercado_pago`, resumen wallet con 1 scope detectado y 232 transacciones.
+- `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 07-2026 v2.pdf` -> `mercado_pago/account_summary_pesos` v1, 1 scope, 562 transacciones, cobertura `1.0` y neto conciliado manualmente contra la diferencia entre saldo inicial y final.
 - `Estado de cuenta Brubank [2026-01-01 al 2026-02-28]` -> `brubank`, 34 transacciones, vía spec declarativa publicada.
 - `local_samples/brubank/<extracto junio 2026>.pdf` -> `brubank`, documento multi-cuenta validado desde la nueva ruta local con 3 scopes y 47 movimientos al seleccionar todos; las 3 conciliaciones resultan correctas, incluida la cuenta en dólares sin movimientos.
 
@@ -85,7 +86,7 @@ Nota operativa:
 - Los rechazos de esa guardia se exponen en `diagnostics.rejected_matches` y fuerzan `format_changed`, incluso si el resto del extracto todavía alcanza `min_transactions`.
 - El core declarativo ya soporta preextracción específica desde PDF y reglas de signo basadas en códigos para formatos complejos como Roela.
 - El core declarativo ya soporta también derivar `amount` desde columnas separadas de `debit`/`credit`, como en Brubank.
-- El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, como Mercado Pago.
+- El core declarativo ya soporta también reconstrucción tabular por bandas X para PDFs donde el texto sale partido alrededor de cada fila, incluidas las dos geometrías publicadas de Mercado Pago.
 - El core declarativo ya soporta documentos multi-entidad con descubrimiento de scopes y filtrado por selección explícita.
 - Las actualizaciones parciales de scopes ya no pisan la moneda previamente detectada cuando una regla solo completa datos como el número de cuenta.
 - El core declarativo acepta de forma opt-in extractos sin movimientos sólo si una firma estructural explícita coincide, no hay filas candidatas o rechazadas y la conciliación requerida resulta `passed`.
@@ -110,6 +111,7 @@ Nota operativa:
 - `bbva/default` publicado y cubierto por regresión/integración.
 - `bbva/account_summary` publicado y cubierto por regresión/integración.
 - `mercado_pago/default` publicado y cubierto por regresión/integración.
+- `mercado_pago/account_summary_pesos` publicado para el layout “Resumen de cuenta en pesos”, con fixtures sanitizadas, regresión, prueba PDF posicional y compatibilidad preservada con `default`.
 - `brubank/default` publicado y cubierto por regresión, fixture sanitizada multi-cuenta y validación manual con PDFs reales, incluyendo caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos.
 
 ## Lo que todavía falta

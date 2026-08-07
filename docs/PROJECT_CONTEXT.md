@@ -49,7 +49,7 @@ Es el orquestador real del dominio. Se encarga de:
 - validar y completar transacciones.
 
 ### `parser_specs/`
-Contiene el registro declarativo versionado por banco/formato. Cada formato tiene su `spec.toml` y sus fixtures sanitizadas. Hoy Galicia, Chase, Roela, BBVA, Mercado Pago y Brubank ya están migrados a este modelo, incluyendo dos variantes publicadas de BBVA.
+Contiene el registro declarativo versionado por banco/formato. Cada formato tiene su `spec.toml` y sus fixtures sanitizadas. Hoy Galicia, Chase, Roela, BBVA, Mercado Pago y Brubank ya están migrados a este modelo, incluyendo dos variantes publicadas de BBVA y dos de Mercado Pago.
 
 ### `excel_generator.py`
 Arma el Excel final. Hoy crea cinco hojas base:
@@ -75,6 +75,7 @@ Centraliza helpers reutilizados por varios módulos: limpieza de texto, parseo d
 - `bbva/default`
 - `bbva/account_summary`
 - `mercado_pago/default`
+- `mercado_pago/account_summary_pesos`
 - `brubank/default`
 
 ## Esquema de transacción que consume todo el sistema
@@ -114,6 +115,7 @@ Se procesaron localmente estos archivos con `venv\Scripts\python.exe`:
 | `local_samples/bbva/01-2023 BBVA.pdf` | `bbva` | Validación histórica de documento consolidado con 5 scopes y 192 transacciones; la muestra no está disponible hoy y la cobertura CI usa `parser_specs/bbva/default/fixtures/sample_text.txt` |
 | `local_samples/bbva/Resumen caja de ahorro BBVA 09-2023.pdf` | `bbva` | Resumen simple de cuenta, 1 scope detectado y 12 transacciones |
 | `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 02-2023.pdf` | `mercado_pago` | Resumen de cuenta wallet, 1 scope detectado y 232 transacciones |
+| `local_samples/mercado_pago/Resumen de cuenta Mercado Pago 07-2026 v2.pdf` | `mercado_pago` | Nueva variante “Resumen de cuenta en pesos”, 1 scope, 562 transacciones y cobertura 1,0 |
 | `Brubank ene-feb 2026 (PDF externo no versionado)` | `brubank` | Resumen de cuenta con 34 transacciones, vía spec declarativa |
 | `local_samples/brubank/<extracto junio 2026>.pdf` | `brubank` | Muestra multi-cuenta local validada con 3 scopes y 47 movimientos al seleccionar todos |
 
@@ -124,7 +126,7 @@ Eso confirma que el pipeline base funciona hoy y no es solo un prototipo estáti
 - Hay regresión offline para los formatos declarativos publicados.
 - Existe un helper `scripts/run_app.py`, configuración Playwright, runbook en `docs/E2E_PLAYWRIGHT.md` y job de CI para smoke real automatizado con navegador.
 - Existe un runbook específico de primera salida en `docs/PRODUCTION_TEST_RUNBOOK.md`.
-- La suite actual valida formatos declarativos publicados para Galicia, Chase, Roela, BBVA, Mercado Pago y Brubank.
+- La suite actual valida formatos declarativos publicados para Galicia, Chase, Roela, BBVA, las dos variantes de Mercado Pago y Brubank.
 - La cobertura multi-entidad de integración usa fixtures sanitizadas parametrizadas para BBVA consolidado y Brubank multi-cuenta, incluyendo entidades sin movimientos.
 
 ## Límites explícitos del producto actual

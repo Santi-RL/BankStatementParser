@@ -15,6 +15,7 @@ required_keywords = [
 ]
 excluded_keywords = [
   "Banco de Galicia y Buenos Aires",
+  "RESUMEN DE CUENTA EN PESOS",
 ]
 min_score = 1.0
 

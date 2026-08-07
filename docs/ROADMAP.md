@@ -111,6 +111,7 @@ Convertir el proyecto en una herramienta confiable y extensible para transformar
 - `bbva/default`
 - `bbva/account_summary`
 - `mercado_pago/default`
+- `mercado_pago/account_summary_pesos` v1, con geometría X independiente para el nuevo “Resumen de cuenta en pesos” y compatibilidad preservada con `default`
 - `brubank/default` v3, con soporte para resumen multi-cuenta y conciliación declarativa cubiertos por fixture sanitizada: caja de ahorro, cuenta remunerada y cuenta en dólares sin movimientos
 
 ## Pendiente

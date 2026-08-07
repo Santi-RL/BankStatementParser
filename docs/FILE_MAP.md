@@ -45,6 +45,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `parser_specs/bbva/default/spec.toml` | Formato publicado de BBVA consolidado | Vigente |
 | `parser_specs/bbva/account_summary/spec.toml` | Formato publicado de BBVA para resumen simple de cuenta | Vigente |
 | `parser_specs/mercado_pago/default/spec.toml` | Formato publicado de Mercado Pago para resumen de cuenta wallet | Vigente |
+| `parser_specs/mercado_pago/account_summary_pesos/spec.toml` | Variante publicada de Mercado Pago para “Resumen de cuenta en pesos” | Vigente; conserva compatibilidad con `mercado_pago/default` y usa bandas X propias |
 | `parser_specs/brubank/default/spec.toml` | Formato publicado de Brubank para resumen de cuenta | Vigente; incluye conciliación declarativa por scope y moneda |
 | `parser_specs/bbva/default/fixtures/sample_text.txt` | Fixture sanitizada de BBVA consolidado | Vigente; cubre cuentas, tarjeta de crédito y tarjeta de débito sin depender del PDF real faltante |
 | `parser_specs/brubank/default/fixtures/multi_account_sample_text.txt` | Fixture sanitizada de Brubank multi-cuenta | Vigente; cubre caja de ahorro ARS, cuenta remunerada ARS y cuenta USD sin movimientos |
@@ -72,7 +73,7 @@ Este mapa cubre los archivos y directorios relevantes del proyecto en su estado 
 | `local_samples/roela_ar/*.pdf` | Muestra grande de Roela | Uso local; 4913 transacciones en la validación histórica |
 | `local_samples/galicia_ar/*.pdf` | Muestra real de Galicia | Uso local; 52 transacciones en la validación histórica |
 | `local_samples/bbva/*.pdf` | Muestras reales de BBVA | Uso local; hoy incluye el resumen simple |
-| `local_samples/mercado_pago/*.pdf` | Muestra real de Mercado Pago | Uso local; 232 transacciones en la validación histórica |
+| `local_samples/mercado_pago/*.pdf` | Muestras reales de Mercado Pago | Uso local; 232 transacciones en la variante histórica y 562 en “Resumen de cuenta en pesos” |
 | `local_samples/brubank/*.pdf` | Muestra real multi-cuenta de Brubank | Uso local; validada con 3 scopes y 47 movimientos |
 
 La estructura obligatoria es `local_samples/<bank_id>/`. La carpeta completa está ignorada por Git y nunca debe forzarse su agregado. Sólo las fixtures sanitizadas correspondientes se versionan bajo `parser_specs/`.

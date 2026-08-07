@@ -350,3 +350,33 @@ def test_mercado_pago_pdf_uses_new_wallet_spec():
     assert result["transactions"][0]["account"] == "0000003100043499119011"
     assert result["transactions"][111]["amount"] == 7830.0
     assert result["transactions"][-1]["description"] == "Rendimientos"
+
+
+def test_mercado_pago_account_summary_pesos_pdf_uses_compatible_variant():
+    pdf_path = _require_local_sample("mercado_pago/Resumen de cuenta Mercado Pago 07-2026 v2.pdf")
+    processor = PDFProcessor()
+    analysis = processor.analyze_pdf(
+        str(pdf_path),
+        pdf_path.name,
+    )
+    result = processor.process_pdf(
+        str(pdf_path),
+        pdf_path.name,
+    )
+
+    assert analysis["success"] is True
+    assert analysis["bank_detected"] == "mercado_pago"
+    assert analysis["format_id"] == "account_summary_pesos"
+    assert analysis["multi_scope"] is False
+    assert len(analysis["available_scopes"]) == 1
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["bank_detected"] == "mercado_pago"
+    assert result["format_id"] == "account_summary_pesos"
+    assert result["format_version"] == 1
+    assert result["total_transactions"] == 562
+    assert result["diagnostics"]["coverage"] == 1.0
+    assert result["transactions"][0]["description"] == "Rendimientos"
+    assert result["transactions"][-1]["description"] == "Transferencia enviada Alejandro"
+    assert result["transactions"][-1]["balance"] == 1822412.11

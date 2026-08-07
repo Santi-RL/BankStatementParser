@@ -121,3 +121,54 @@ def test_generated_mercado_pago_pdf_exercises_x_band_extraction(tmp_path):
     assert result["bank_detected"] == "mercado_pago"
     assert result["format_id"] == "default"
     assert result["total_transactions"] == 11
+
+
+def test_generated_mercado_pago_account_summary_pesos_pdf_exercises_new_x_bands(tmp_path):
+    fixture_path = Path("parser_specs/mercado_pago/account_summary_pesos/fixtures/sample_text.txt")
+    lines = [line for line in fixture_path.read_text(encoding="utf-8").splitlines() if line]
+    line_pattern = re.compile(
+        r"^(?P<date>\d{2}-\d{2}-\d{4})\s+"
+        r"(?P<description>.+?)\s+"
+        r"(?P<operation_id>\d{9,15})\s+"
+        r"(?P<amount>-?[\d.]+,\d{2})\s+"
+        r"(?P<balance>-?[\d.]+,\d{2})$"
+    )
+    items = [
+        (40, 780 - index * 12, line, 8)
+        for index, line in enumerate(lines[:8])
+    ]
+    for index, line in enumerate(lines[8:]):
+        match = line_pattern.match(line)
+        assert match is not None
+        description_words = match.group("description").split()
+        split_at = max(1, len(description_words) // 2)
+        description_lines = [
+            " ".join(description_words[:split_at]),
+            " ".join(description_words[split_at:]),
+        ]
+        y = 650 - index * 38
+        items.extend(
+            [
+                (40, y, match.group("date"), 5),
+                (89, y + 6, description_lines[0], 4.5),
+                (197, y, match.group("operation_id"), 5),
+                (278, y, "$", 5),
+                (288, y, match.group("amount"), 5),
+                (358, y, "$", 5),
+                (368, y, match.group("balance"), 5),
+            ]
+        )
+        if description_lines[1]:
+            items.append((89, y - 6, description_lines[1], 4.5))
+
+    pdf_path = create_positioned_text_pdf([items], tmp_path / "mercado-pago-account-summary-pesos.pdf")
+
+    result = PDFProcessor().process_pdf(str(pdf_path), pdf_path.name)
+
+    assert result["success"] is True
+    assert result["parse_status"] == "ok"
+    assert result["bank_detected"] == "mercado_pago"
+    assert result["format_id"] == "account_summary_pesos"
+    assert result["total_transactions"] == 11
+    assert result["diagnostics"]["coverage"] == 1.0
+    assert sum(transaction["amount"] for transaction in result["transactions"]) == 0.0

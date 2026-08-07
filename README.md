@@ -23,7 +23,7 @@ Actualmente hay formatos declarativos publicados para:
 - Banco Roela (Argentina)
 - Chase / JPMorgan Chase
 - BBVA (extracto consolidado con múltiples tarjetas y cuentas, y resumen simple)
-- Mercado Pago
+- Mercado Pago (resumen histórico y nueva variante “Resumen de cuenta en pesos”)
 - Brubank
 
 Si el banco es detectado pero no tiene una spec publicada, el resultado esperado es `unknown_format`.

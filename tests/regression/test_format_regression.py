@@ -62,6 +62,16 @@ PARTIAL_TABLE_CHANGE_CASES = [
         "min_candidate_lines": 10,
     },
     {
+        "id": "mercado_pago_account_summary_pesos_extra_fee_column",
+        "bank_id": "mercado_pago",
+        "format_id": "account_summary_pesos",
+        "spec_path": Path("parser_specs/mercado_pago/account_summary_pesos/spec.toml"),
+        "fixture_path": Path(
+            "tests/fixtures/format_changed_partial/mercado_pago_account_summary_pesos_extra_fee_column.txt"
+        ),
+        "min_candidate_lines": 10,
+    },
+    {
         "id": "brubank_extra_amount_column",
         "bank_id": "brubank",
         "format_id": "default",
